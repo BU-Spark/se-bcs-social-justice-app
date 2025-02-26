@@ -131,3 +131,6 @@ dist
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# prisma migrations
+/prisma/migrations
