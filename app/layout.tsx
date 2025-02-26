@@ -1,21 +1,28 @@
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
-import './globals.css';
+import type { Metadata } from "next";
+import { Roboto } from "next/font/google";
+import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
+import Header from "@/components/Header";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+const roboto = Roboto({ weight: "400", subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Social Justice App",
+  description:
+    "Community for underpriveleged people to connect and share resources",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>
-          <header className="flex justify-end items-center p-4 gap-4 h-16">
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton />
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-          </header>
-          {children}
+        <body className={roboto.className}>
+          <Header />
+          <main className="container">{children}</main>
         </body>
       </html>
     </ClerkProvider>
