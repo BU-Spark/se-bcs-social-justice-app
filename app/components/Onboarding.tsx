@@ -4,25 +4,28 @@ import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
 
-interface FormData {
-  email: string;
-  phone: string;
-  ethnicity: string[];
-  interests: string[];
-  referrer: string[];
-}
-
 const Onboarding = () => {
   const { user } = useUser();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [step, setStep] = useState<number>(1);
-  const [formData, setFormData] = useState<FormData>({
-    email: "",
-    phone: "",
-    ethnicity: [],
-    interests: ["Social Justice"],
+  const [interestOptions, setInterestOptions] = useState<string[]>([]);
+  const [formData, setFormData] = useState<{
+    username: string;
+    phoneNumber: string;
+    ethnicity: string;
+    interests: string[];
+    referrer: string[];
+    email: string;
+  }>({
+    username: "",
+    phoneNumber: "",
+    ethnicity: "",
+    interests: [],
     referrer: [],
+    email: "",
   });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const ethnicityOptions: string[] = [
     "American Indian",
@@ -42,44 +45,102 @@ const Onboarding = () => {
     "Advertisement",
     "Referral",
   ];
-  const interestOptions: string[] = [
-    "Social Justice",
-    "Environmental Justice",
-    "Racial Justice",
-    "Culture",
-    "Diversity",
-    "Education",
-  ];
 
   useEffect(() => {
-    // Show onboarding modal only for first-time users
-    const isNewUser = localStorage.getItem("isNewUser");
-    if (!isNewUser && user) {
-      setIsOpen(true);
+    if (!user) return;
+    console.log(`user is: ${user}`);
+    setFormData((prev) => ({
+      ...prev,
+      email: user?.emailAddresses[0]?.emailAddress || "",
+    }));
+
+    // Fetch interests from API
+    async function fetchInterests() {
+      try {
+        const response = await fetch("/api/interests");
+        if (response.ok) {
+          const data = await response.json();
+          setInterestOptions(data.map((item: { name: string }) => item.name));
+        } else {
+          console.error("Failed to fetch interests");
+        }
+      } catch (error) {
+        console.error("Error fetching interests:", error);
+      }
     }
+
+    fetchInterests();
   }, [user]);
 
-  const handleNext = () => setStep((prev) => prev + 1);
-  const handleBack = () => setStep((prev) => prev - 1);
-  const handleChange = (key: keyof FormData, value: string | string[]) => {
-    setFormData({ ...formData, [key]: value });
+  const validatePhoneNumber = (phone: string): boolean => {
+    return /^\d{10}$/.test(phone);
   };
 
-  const handleSubmit = () => {
-    // Save data and prevent modal from showing again
-    localStorage.setItem("isNewUser", "false");
-    setIsOpen(false);
+  const handleNext = () => {
+    // Example validation for step 2
+    if (step === 2) {
+      const newErrors: { [key: string]: string } = {};
+      if (!formData.username) newErrors.username = "Username is required";
+      if (!formData.phoneNumber) {
+        newErrors.phoneNumber = "Phone number is required";
+      } else if (!validatePhoneNumber(formData.phoneNumber)) {
+        newErrors.phoneNumber = "Please enter a valid phone number";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+    }
+
+    setStep((prev) => prev + 1);
+  };
+  const handleBack = () => setStep((prev) => prev - 1);
+  const handleChange = (
+    key: keyof typeof formData,
+    value: string | string[],
+  ) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    try {
+      console.log(`form-data is: ${JSON.stringify(formData)}`);
+      const response = await fetch("/api/update-user", {
+        method: "POST",
+        body: JSON.stringify(formData),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        console.log("User data updated successfully.");
+        setIsOpen(false);
+      } else {
+        console.error("Failed to update user.");
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (confirm("Are you sure you want to exit? Your progress will be lost.")) {
+      setIsOpen(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black opacity-80 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
       <div className="bg-white p-12 rounded-lg shadow-lg w-[600px] h-[500px] md:w-[700px] md:h-[550px] lg:w-[700px] lg:h-[550px] flex flex-col justify-between">
         {/* Close Button */}
         <button
           className="text-gray-500 hover:text-gray-800 text-xl font-bold"
-          onClick={() => setIsOpen(false)}
+          onClick={handleClose}
         >
           ×
         </button>
@@ -139,14 +200,17 @@ const Onboarding = () => {
             </p>
             <div className="mt-4">
               <label className="block text-sm font-medium">
-                What is your email address?
+                Choose your username?
               </label>
               <input
-                type="email"
-                className="w-full border p-2 rounded mt-1"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
+                type="text"
+                className={`w-full border p-2 rounded mt-1 ${errors.username ? "border-red-500" : ""}`}
+                value={formData.username}
+                onChange={(e) => handleChange("username", e.target.value)}
               />
+              {errors.username && (
+                <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+              )}
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium">
@@ -154,38 +218,35 @@ const Onboarding = () => {
               </label>
               <input
                 type="tel"
-                className="w-full border p-2 rounded mt-1"
-                placeholder="(123) - 456 - 7890"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
+                className={`w-full border p-2 rounded mt-1 ${errors.phoneNumber ? "border-red-500" : ""}`}
+                placeholder="1234567890"
+                value={formData.phoneNumber}
+                onChange={(e) => handleChange("phoneNumber", e.target.value)}
               />
+              {errors.phoneNumber && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.phoneNumber}
+                </p>
+              )}
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium">
-                Which race(s)/ethnicities best describe you?
+                Which race/ethnicity best describes you?
               </label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <select
+                className="w-full border p-2 rounded mt-1 bg-white"
+                value={formData.ethnicity || ""}
+                onChange={(e) => handleChange("ethnicity", e.target.value)}
+              >
+                <option value="" disabled>
+                  Select an option
+                </option>
                 {ethnicityOptions.map((ethnicity) => (
-                  <label
-                    key={ethnicity}
-                    className="flex items-center space-x-2"
-                  >
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      onChange={(e) => {
-                        const updatedEthnicity = e.target.checked
-                          ? [...formData.ethnicity, ethnicity]
-                          : formData.ethnicity.filter(
-                              (item) => item !== ethnicity,
-                            );
-                        handleChange("ethnicity", updatedEthnicity);
-                      }}
-                    />
-                    <span>{ethnicity}</span>
-                  </label>
+                  <option key={ethnicity} value={ethnicity}>
+                    {ethnicity}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
             <div className="mt-6 flex justify-between">
               <button
@@ -252,22 +313,30 @@ const Onboarding = () => {
               Select your preferred topics.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {interestOptions.map((interest) => (
-                <button
-                  key={interest}
-                  className={`px-4 py-2 border rounded ${formData.interests.includes(interest) ? "bg-black text-white" : "bg-gray-200"}`}
-                  onClick={() => {
-                    const updatedInterests = formData.interests.includes(
-                      interest,
-                    )
-                      ? formData.interests.filter((item) => item !== interest)
-                      : [...formData.interests, interest];
-                    handleChange("interests", updatedInterests);
-                  }}
-                >
-                  {interest}
-                </button>
-              ))}
+              {interestOptions.length > 0 ? (
+                interestOptions.map((interest) => (
+                  <button
+                    key={interest}
+                    className={`px-4 py-2 border rounded ${
+                      formData.interests.includes(interest)
+                        ? "bg-black text-white"
+                        : "bg-gray-200"
+                    }`}
+                    onClick={() => {
+                      const updatedInterests = formData.interests.includes(
+                        interest,
+                      )
+                        ? formData.interests.filter((item) => item !== interest)
+                        : [...formData.interests, interest];
+                      handleChange("interests", updatedInterests);
+                    }}
+                  >
+                    {interest}
+                  </button>
+                ))
+              ) : (
+                <p className="text-gray-500">Loading interests...</p>
+              )}
             </div>
             <div className="mt-6 flex justify-between">
               <button
@@ -294,9 +363,40 @@ const Onboarding = () => {
             <p>Your account has been set up. Taking you to the homepage.</p>
             <button
               onClick={handleSubmit}
-              className="mt-6 px-4 py-2 bg-blue-500 text-white rounded"
+              disabled={isLoading}
+              className={`mt-6 px-4 py-2 bg-blue-500 text-white rounded ${
+                isLoading
+                  ? "opacity-70 cursor-not-allowed"
+                  : "hover:bg-blue-600"
+              }`}
             >
-              Confirm
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                "Confirm"
+              )}
             </button>
           </div>
         )}
