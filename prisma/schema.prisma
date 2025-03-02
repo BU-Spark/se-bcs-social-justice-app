@@ -18,6 +18,7 @@ model User {
   phoneNumber String?
   referrer    String[]
   interests   UserInterest[]
+  onboardingComplete Boolean @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
