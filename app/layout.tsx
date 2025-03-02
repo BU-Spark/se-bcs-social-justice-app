@@ -9,7 +9,7 @@ const roboto = Roboto({ weight: "400", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Social Justice App",
   description:
-    "Community for underpriveleged people to connect and share resources",
+    "Community for underprivileged people to connect and share resources",
 };
 
 export default async function RootLayout({
