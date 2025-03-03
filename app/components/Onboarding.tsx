@@ -136,270 +136,283 @@ const Onboarding = () => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
-      <div className="bg-white p-12 rounded-lg shadow-lg w-[600px] h-[500px] md:w-[700px] md:h-[550px] lg:w-[700px] lg:h-[550px] flex flex-col justify-between">
-        {/* Close Button */}
-        <button
-          className="text-gray-500 hover:text-gray-800 text-xl font-bold"
-          onClick={handleClose}
-        >
-          ×
-        </button>
-        {step === 1 && (
-          <div className="p-6 flex flex-col h-full">
-            {/* Header Section */}
-            <div className="flex justify-between items-start">
-              <div className="flex items-center space-x-2">
-                <img
-                  src="/logo.png"
-                  alt="Onboarding Logo"
-                  className="rounded-lg w-16"
+      <div className="bg-white rounded-lg shadow-lg w-[600px] h-[500px] md:w-[700px] md:h-[550px] lg:w-[700px] lg:h-[550px] flex flex-col relative">
+        <div className="absolute top-4 w-full px-6 flex justify-between items-center">
+          {/* Step Indicator - Only visible for steps 2, 3, and 4 */}
+          {step > 1 && step < 5 ? (
+            <span className="text-blue-600 font-bold text-md">
+              Step {step - 1}/3
+            </span>
+          ) : (
+            <div></div> // Empty div to maintain layout consistency
+          )}
+
+          {/* Close Button - Always stays on the right */}
+          <button
+            className="text-gray-500 hover:text-gray-800 text-2xl font-bold"
+            onClick={handleClose}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Content area with fixed height to allow for scrolling if needed */}
+        <div className="flex-1 p-12 overflow-y-auto">
+          {step === 1 && (
+            <div className="flex flex-col h-full">
+              {/* Header Section */}
+              <div className="flex justify-between items-start w-full">
+                <div className="flex items-center space-x-4 w-full">
+                  <img
+                    src="/logo.png"
+                    alt="Onboarding Logo"
+                    className="rounded-lg w-20"
+                  />
+                  <h2 className="text-lg font-bold w-full">
+                    Welcome to Be The Messenger.
+                    <br />
+                    Meet the Messenger!
+                  </h2>
+                </div>
+              </div>
+              {/* Image & Description */}
+              <div className="mt-8 flex space-x-4 ml-12">
+                <Image
+                  src="/messenger.jpg"
+                  alt="Messenger"
+                  width={100}
+                  height={100}
+                  className="rounded-lg w-64 h-64 object-cover"
                 />
-                <h2 className="text-lg font-bold">
-                  Welcome to Be The Messenger.
-                  <br />
-                  Meet the Messenger!
-                </h2>
+                <p className="text-gray-600 text-sm p-12 text-center">
+                  Dr. Brian Chad Starks is a change maker in the field of social
+                  justice. As the CEO and founder of BCS and Associates, he
+                  strives to empower others in the fight against systemic
+                  inequalities. He invites you to join this platform and be a
+                  catalyst for transformation!
+                </p>
               </div>
             </div>
-            {/* Image & Description */}
-            <div className="mt-4 flex space-x-4">
-              <Image
-                src="/messenger.jpg"
-                alt="Messenger"
-                width={100}
-                height={100}
-                className="rounded-lg w-64 h-64 object-cover"
-              />
-              <p className="text-gray-600 text-sm">
-                Dr. Brian Chad Starks is a change maker in the field of social
-                justice. As the CEO and founder of BCS and Associates, he
-                strives to empower others in the fight against systemic
-                inequalities. He invites you to join this platform and be a
-                catalyst for transformation!
+          )}
+
+          {step === 2 && (
+            <div className="mt-3">
+              <h2 className="text-xl font-bold text-center">
+                Tell us more about yourself.
+              </h2>
+              <p className="text-gray-500 text-center text-sm">
+                Choose the ideal interests so we can help you connect with the
+                right
+                <br />
+                people and personalize your content.
               </p>
+              <div className="mt-6">
+                <label className="block text-sm font-medium">
+                  Choose your username?
+                </label>
+                <input
+                  type="text"
+                  className={`w-full border p-2 rounded mt-1 ${errors.username ? "border-red-500" : ""}`}
+                  value={formData.username}
+                  onChange={(e) => handleChange("username", e.target.value)}
+                />
+                {errors.username && (
+                  <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+                )}
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium">
+                  What is your phone number?
+                </label>
+                <input
+                  type="tel"
+                  className={`w-full border p-2 rounded mt-1 ${errors.phoneNumber ? "border-red-500" : ""}`}
+                  placeholder="1234567890"
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleChange("phoneNumber", e.target.value)}
+                />
+                {errors.phoneNumber && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.phoneNumber}
+                  </p>
+                )}
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium">
+                  Which race/ethnicity best describes you?
+                </label>
+                <select
+                  className="w-full border p-2 rounded mt-1 bg-white"
+                  value={formData.ethnicity || ""}
+                  onChange={(e) => handleChange("ethnicity", e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select an option
+                  </option>
+                  {ethnicityOptions.map((ethnicity) => (
+                    <option key={ethnicity} value={ethnicity}>
+                      {ethnicity}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            {/* Buttons */}
-            <div className="mt-6 flex justify-end space-x-3">
+          )}
+
+          {step === 3 && (
+            <div className="mt-3">
+              <h2 className="text-xl font-bold text-center">
+                How did you hear about us?
+              </h2>
+              <p className="text-gray-500 text-center text-sm">
+                Please let us know how you bumped into us!
+                <br />
+                (Check all that apply)*
+              </p>
+              <div className="flex justify-center items-center h-full">
+                <div className="grid grid-cols-2 gap-4 mt-16">
+                  {referralOptions.map((option) => (
+                    <label key={option} className="flex items-center space-x-4">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        onChange={(e) => {
+                          const updatedReferrer = e.target.checked
+                            ? [...formData.referrer, option]
+                            : formData.referrer.filter(
+                                (item) => item !== option,
+                              );
+                          handleChange("referrer", updatedReferrer);
+                        }}
+                      />
+                      <span>{option}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="mt-3">
+              <h2 className="text-xl font-bold text-center">
+                Choose your interests
+              </h2>
+              <p className="text-gray-500 text-center text-sm">
+                Select your preferred topics.
+              </p>
+              <div className="mt-12 flex flex-wrap gap-2">
+                {interestOptions.length > 0 ? (
+                  interestOptions.map((interest) => (
+                    <button
+                      key={interest}
+                      className={`px-4 py-2 border rounded ${
+                        formData.interests.includes(interest)
+                          ? "bg-black text-white"
+                          : "bg-gray-200"
+                      }`}
+                      onClick={() => {
+                        const updatedInterests = formData.interests.includes(
+                          interest,
+                        )
+                          ? formData.interests.filter(
+                              (item) => item !== interest,
+                            )
+                          : [...formData.interests, interest];
+                        handleChange("interests", updatedInterests);
+                      }}
+                    >
+                      {interest}
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-gray-500">Loading interests...</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="text-center mt-3">
+              <h2 className="text-xl font-bold">
+                It&apos;s time to be the messenger.
+              </h2>
+              <p className="text-gray-500 text-center text-sm">
+                Your account has been set up. Taking you to the homepage.
+              </p>
+              <div className="mt-12 flex items-center justify-center w-full">
+                <img
+                  src="/get_started.png"
+                  alt="Getting Started"
+                  className="w-60 h-auto object-contain"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Fixed button area at the bottom */}
+        <div className="p-6 border-t">
+          <div className="flex justify-between items-center">
+            {step > 1 ? (
+              <button
+                onClick={handleBack}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Back
+              </button>
+            ) : (
+              <div></div>
+            )}
+
+            {step < 5 ? (
               <button
                 onClick={handleNext}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Next
+                {"Next"}
               </button>
-            </div>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className={`px-4 py-2 bg-blue-600 text-white rounded ${
+                  isLoading
+                    ? "opacity-70 cursor-not-allowed"
+                    : "hover:bg-blue-700"
+                }`}
+              >
+                {isLoading ? (
+                  <span className="flex items-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+            )}
           </div>
-        )}
-
-        {step === 2 && (
-          <div>
-            <h2 className="text-xl font-bold text-center">
-              Tell us more about yourself.
-            </h2>
-            <p className="text-gray-600 text-center">
-              Choose ideal interests to personalize your content.
-            </p>
-            <div className="mt-4">
-              <label className="block text-sm font-medium">
-                Choose your username?
-              </label>
-              <input
-                type="text"
-                className={`w-full border p-2 rounded mt-1 ${errors.username ? "border-red-500" : ""}`}
-                value={formData.username}
-                onChange={(e) => handleChange("username", e.target.value)}
-              />
-              {errors.username && (
-                <p className="text-red-500 text-xs mt-1">{errors.username}</p>
-              )}
-            </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium">
-                What is your phone number?
-              </label>
-              <input
-                type="tel"
-                className={`w-full border p-2 rounded mt-1 ${errors.phoneNumber ? "border-red-500" : ""}`}
-                placeholder="1234567890"
-                value={formData.phoneNumber}
-                onChange={(e) => handleChange("phoneNumber", e.target.value)}
-              />
-              {errors.phoneNumber && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.phoneNumber}
-                </p>
-              )}
-            </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium">
-                Which race/ethnicity best describes you?
-              </label>
-              <select
-                className="w-full border p-2 rounded mt-1 bg-white"
-                value={formData.ethnicity || ""}
-                onChange={(e) => handleChange("ethnicity", e.target.value)}
-              >
-                <option value="" disabled>
-                  Select an option
-                </option>
-                {ethnicityOptions.map((ethnicity) => (
-                  <option key={ethnicity} value={ethnicity}>
-                    {ethnicity}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="mt-6 flex justify-between">
-              <button
-                onClick={handleBack}
-                className="px-4 py-2 bg-gray-300 rounded"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleNext}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-              >
-                Next Step
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div>
-            <h2 className="text-xl font-bold text-center">
-              How did you hear about us?
-            </h2>
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              {referralOptions.map((option) => (
-                <label key={option} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    onChange={(e) => {
-                      const updatedReferrer = e.target.checked
-                        ? [...formData.referrer, option]
-                        : formData.referrer.filter((item) => item !== option);
-                      handleChange("referrer", updatedReferrer);
-                    }}
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-            <div className="mt-6 flex justify-between">
-              <button
-                onClick={handleBack}
-                className="px-4 py-2 bg-gray-300 rounded"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleNext}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-              >
-                Next Step
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div>
-            <h2 className="text-xl font-bold text-center">
-              Choose your interests
-            </h2>
-            <p className="text-gray-600 text-center">
-              Select your preferred topics.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {interestOptions.length > 0 ? (
-                interestOptions.map((interest) => (
-                  <button
-                    key={interest}
-                    className={`px-4 py-2 border rounded ${
-                      formData.interests.includes(interest)
-                        ? "bg-black text-white"
-                        : "bg-gray-200"
-                    }`}
-                    onClick={() => {
-                      const updatedInterests = formData.interests.includes(
-                        interest,
-                      )
-                        ? formData.interests.filter((item) => item !== interest)
-                        : [...formData.interests, interest];
-                      handleChange("interests", updatedInterests);
-                    }}
-                  >
-                    {interest}
-                  </button>
-                ))
-              ) : (
-                <p className="text-gray-500">Loading interests...</p>
-              )}
-            </div>
-            <div className="mt-6 flex justify-between">
-              <button
-                onClick={handleBack}
-                className="px-4 py-2 bg-gray-300 rounded"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleNext}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-              >
-                Next Step
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 5 && (
-          <div className="text-center">
-            <h2 className="text-xl font-bold">
-              It’s time to be the messenger.
-            </h2>
-            <p>Your account has been set up. Taking you to the homepage.</p>
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className={`mt-6 px-4 py-2 bg-blue-500 text-white rounded ${
-                isLoading
-                  ? "opacity-70 cursor-not-allowed"
-                  : "hover:bg-blue-600"
-              }`}
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : (
-                "Confirm"
-              )}
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
