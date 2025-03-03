@@ -42,13 +42,19 @@ const ContentContainer = styled.div`
 
 const MicrophoneIcon = styled.div`
   position: absolute;
-  top: -150px;
+  top: -212px;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 120px;
   height: 120px;
   z-index: 1;
+`;
+
+const SignInWrapper = styled.div`
+  transform: scale(1.25);
+  transform-origin: center;
+  width: 100%;
 `;
 
 export default function Page() {
@@ -62,7 +68,6 @@ export default function Page() {
           layout="fill"
           objectFit="cover"
           objectPosition="center"
-          quality={100}
         />
       </Background>
       <MainContainer>
@@ -75,7 +80,9 @@ export default function Page() {
               height={120}
             />
           </MicrophoneIcon>
-          <SignIn />
+          <SignInWrapper>
+            <SignIn />
+          </SignInWrapper>
         </ContentContainer>
       </MainContainer>
     </>
