@@ -2,68 +2,82 @@
 
 import { SignUp } from "@clerk/nextjs";
 import Image from "next/image";
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 
-const Container = styled.div`
-  position: relative;
+const GlobalStyle = createGlobalStyle`
+  body {
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+`;
+
+const Background = styled.div`
+  position: fixed; 
   width: 100vw;
   height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  opacity: 0.6;
+`;
+
+const MainContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  height: 100vh;
+  position: relative;
 `;
 
-const BackgroundImage = styled(Image)`
-  object-fit: cover;
+const ContentContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  position: relative;
 `;
 
 const MicrophoneIcon = styled.div`
   position: absolute;
-  top: 5%;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-`;
-
-const SignInContainer = styled.div`
-  background-color: white;
-  padding: 3vw 2vw;
-  border-radius: 1vw;
-  box-shadow: 0 0.4vw 0.8vw black;
-  text-align: center;
-  width: 80vw;
-  max-width: 40vw;
+  top: -150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 120px;
+  height: 120px;
   z-index: 1;
-
-  @media (min-width: 768px) {
-    max-width: 35vw;
-  }
-
-  @media (min-width: 1024px) {
-    max-width: 30vw;
-  }
 `;
-
 
 export default function Page() {
   return (
-    <Container>
-      <BackgroundImage
-        src="/signin.png"
-        alt="Background Image"
-        layout="fill"
-        quality={100}
-      />
-
-      <MicrophoneIcon>
+    <>
+      <GlobalStyle />
+      <Background>
         <Image
-          src="/mic.png"
-          alt="Microphone Icon"
-          width={50}
-          height={50}
+          src="/signin.png"
+          alt="Background Image"
+          layout="fill"
+          objectFit="cover"
+          objectPosition="center"
+          quality={100}
         />
-      </MicrophoneIcon>
-      <SignUp />
-    </Container>
+      </Background>
+      <MainContainer>
+        <ContentContainer>
+          <MicrophoneIcon>
+            <Image
+              src="/mic.png"
+              alt="Microphone Icon"
+              width={120}
+              height={120}
+            />
+          </MicrophoneIcon>
+          <SignUp />
+        </ContentContainer>
+      </MainContainer>
+    </>
   );
 }
