@@ -13,7 +13,7 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const Background = styled.div`
-  position: fixed; 
+  position: fixed;
   width: 100vw;
   height: 100vh;
   top: 0;
@@ -42,7 +42,7 @@ const ContentContainer = styled.div`
 
 const MicrophoneIcon = styled.div`
   position: absolute;
-  top: -212px;
+  top: -130px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -52,7 +52,6 @@ const MicrophoneIcon = styled.div`
 `;
 
 const SignUpWrapper = styled.div`
-  transform: scale(1.25);
   transform-origin: center;
   width: 100%;
 `;
