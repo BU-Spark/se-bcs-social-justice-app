@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
-import { completeOnboarding } from "@/lib/completeOnboarding";
 
 const Onboarding = () => {
   const { user } = useUser();
@@ -115,7 +114,7 @@ const Onboarding = () => {
       });
 
       if (response.ok) {
-        await completeOnboarding(user.id);
+        console.log("User data updated successfully.");
         setIsOpen(false);
       } else {
         console.error("Failed to update user.");
