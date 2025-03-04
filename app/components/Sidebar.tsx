@@ -76,10 +76,10 @@ const Sidebar = () => {
               <UserButton afterSignOutUrl="/sign-in" />
               {isOpen && <span className="text-sm">Profile</span>}
             </div>
-            <button className="flex items-center space-x-3 w-full text-left p-2 mt-3 bg-red-600 hover:bg-red-700 rounded-md">
+            {/* <button className="flex items-center space-x-3 w-full text-left p-2 mt-3 bg-red-600 hover:bg-red-700 rounded-md">
               <FiLogOut />
               {isOpen && <span>Logout</span>}
-            </button>
+            </button> */}
           </SignedIn>
 
           <SignedOut>
