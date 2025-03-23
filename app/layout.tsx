@@ -3,7 +3,7 @@ import { Roboto } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { checkUser } from "@/lib/checkUser";
-
+import Sidebar from "./components/Sidebar";
 const roboto = Roboto({ weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -27,7 +27,10 @@ export default async function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={`${roboto.className} bg-gray-100 text-gray-900`}>
-          <main className="container mx-auto p-4">{children}</main>
+          <div className="flex min-h-screen">
+            <Sidebar/>
+            <main className="container mx-auto p-4">{children}</main>
+          </div>
         </body>
       </html>
     </ClerkProvider>

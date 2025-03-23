@@ -1,5 +1,6 @@
+// app/api/test-user/route.ts
+
 import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server'; 
 
 const prisma = new PrismaClient();
 
@@ -8,10 +9,10 @@ export async function POST(request: Request) {
     const { clerkUserId, email, name, username, imageUrl, ethnicity, phoneNumber, referrer } = await request.json();
 
     if (!clerkUserId || !email) {
-      return NextResponse.json(
-        { error: 'clerkUserId and email are required.' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'clerkUserId and email are required.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const newUser = await prisma.user.create({
@@ -27,12 +28,15 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(newUser, { status: 201 });
+    return new Response(JSON.stringify(newUser), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error creating user:', error);
-    return NextResponse.json(
-      { error: 'Error creating user' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Error creating user' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

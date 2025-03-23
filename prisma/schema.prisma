@@ -17,9 +17,10 @@ model User {
   ethnicity   String?
   phoneNumber String?
   referrer    String[]
-  interests   UserInterest[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  interests   UserInterest[]
+  memberships CommunityMembers[] 
 }
 
 model Interest {
@@ -31,8 +32,29 @@ model Interest {
 model UserInterest {
   userId     String
   interestId String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, interestId])
+}
+
+model Community {
+  id          String                  @id @default(cuid())
+  name        String                  @unique
+  imageUrl    String?
+  type        String
+  description String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  members     CommunityMembers[]
+}
+
+
+model CommunityMembers {
+  userId       String
+  communityId  String
+  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, communityId])
 }

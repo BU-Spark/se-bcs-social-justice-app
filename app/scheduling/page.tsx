@@ -86,8 +86,8 @@ const StyledText = styled.div`
 const DashboardPage = () => {
   return (
     <div>
-      <h1>Welcome, Amanda</h1>
-      <p>Here are your communities and recommendations.</p>
+      <h1>Welcome, to the scheduling page</h1>
+
 
       <StyledSection>
         <StyledHeader>My Communities</StyledHeader>
