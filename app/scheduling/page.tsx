@@ -1,7 +1,5 @@
 "use client";
 import styled from "@emotion/styled";
-import { useUser } from "@clerk/nextjs";
-
 
 const mockData = {
   communities: [
@@ -78,7 +76,7 @@ const StyledImage = styled.img`
 const StyledHeader = styled.h2`
   font-size: 28px;
   font-weight: bold;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 `;
 
 const StyledText = styled.div`
@@ -86,11 +84,10 @@ const StyledText = styled.div`
 `;
 
 const DashboardPage = () => {
-  const { user } = useUser();
   return (
     <div>
-      <h1>Welcome, {user?.fullName}</h1>
-      <p>Here are your communities and recommendations.</p>
+      <h1>Welcome, to the scheduling page</h1>
+
 
       <StyledSection>
         <StyledHeader>My Communities</StyledHeader>
