@@ -1,5 +1,7 @@
 "use client";
 import styled from "@emotion/styled";
+import { useUser } from "@clerk/nextjs";
+
 
 const mockData = {
   communities: [
@@ -52,29 +54,29 @@ const mockData = {
 };
 
 const StyledSection = styled.section`
-  margin-bottom: 30px;
+  margin-bottom: 28px;
 `;
 
 const StyledDiv = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
-  padding: 15px;
+  margin-bottom: 12px;
+  padding: 12px;
   border: 1px solid black;
   border-radius: 8px;
   background-color: white;
-  gap: 15px;
+  gap: 12px;
 `;
 
 const StyledImage = styled.img`
   width: 100px;
   height: 100px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 12px;
 `;
 
 const StyledHeader = styled.h2`
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
   margin-bottom: 15px;
 `;
@@ -84,9 +86,10 @@ const StyledText = styled.div`
 `;
 
 const DashboardPage = () => {
+  const { user } = useUser();
   return (
     <div>
-      <h1>Welcome, Amanda</h1>
+      <h1>Welcome, {user?.fullName}</h1>
       <p>Here are your communities and recommendations.</p>
 
       <StyledSection>
