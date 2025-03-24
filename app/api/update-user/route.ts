@@ -1,37 +1,68 @@
-import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server'; 
+import { NextResponse } from "next/server";
+import { currentUser } from "@clerk/nextjs/server";
+import prisma from "@/lib/db";
 
-const prisma = new PrismaClient();
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { clerkUserId, email, name, username, imageUrl, ethnicity, phoneNumber, referrer } = await request.json();
+    const user = await currentUser();
+    if (!user)
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-    if (!clerkUserId || !email) {
-      return NextResponse.json(
-        { error: 'clerkUserId and email are required.' },
-        { status: 400 }
-      );
-    }
+    const { username, ethnicity, phoneNumber, referrer, interests } =
+      await req.json();
 
-    const newUser = await prisma.user.create({
+    // Update the user details in Prisma
+    const updatedUser = await prisma.user.update({
+      where: { clerkUserId: user.id },
       data: {
-        clerkUserId,
-        email,
-        name: name || null,
-        username: username || null,
-        imageUrl: imageUrl || null,
-        ethnicity: ethnicity || null,
-        phoneNumber: phoneNumber || null,
-        referrer: referrer || [],
+        username,
+        ethnicity,
+        phoneNumber,
+        referrer,
       },
     });
 
-    return NextResponse.json(newUser, { status: 201 });
-  } catch (error) {
-    console.error('Error creating user:', error);
+    // Process interests separately (many-to-many relationship)
+    if (interests.length > 0) {
+      const existingInterests = await prisma.interest.findMany({
+        where: { name: { in: interests } },
+      });
+
+      const newInterests = interests
+        .filter(
+          (i: string) =>
+            !existingInterests.map((e: { name: unknown }) => e.name).includes(i)
+        )
+        .map((name: string) => ({ name }));
+
+      if (newInterests.length > 0) {
+        await prisma.interest.createMany({ data: newInterests });
+      }
+
+      const allInterests = await prisma.interest.findMany({
+        where: { name: { in: interests } },
+      });
+
+      await prisma.userInterest.deleteMany({
+        where: { userId: updatedUser.id },
+      });
+
+      await prisma.userInterest.createMany({
+        data: allInterests.map((i) => ({
+          userId: updatedUser.id,
+          interestId: i.id,
+        })),
+      });
+    }
+
     return NextResponse.json(
-      { error: 'Error creating user' },
+      { message: "User updated successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
