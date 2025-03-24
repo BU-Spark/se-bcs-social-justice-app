@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import { FiLogOut, FiMenu, FiX } from "react-icons/fi";
+import { FiMenu, FiX } from "react-icons/fi";
 import {
   FaTachometerAlt,
   FaCalendarAlt,

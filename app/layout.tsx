@@ -28,7 +28,7 @@ export default async function RootLayout({
       <html lang="en">
         <body className={`${roboto.className} bg-gray-100 text-gray-900`}>
           <div className="flex min-h-screen">
-            <Sidebar/>
+            <Sidebar />
             <main className="container mx-auto p-4">{children}</main>
           </div>
         </body>

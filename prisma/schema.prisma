@@ -20,7 +20,9 @@ model User {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   interests   UserInterest[]
-  memberships CommunityMembers[] 
+  memberships CommunityMembers[]
+  hostedAppointments Appointment[] @relation("hostRelation")
+  appointmentAttendances AppointmentAttendee[]
 }
 
 model Interest {
@@ -57,4 +59,71 @@ model CommunityMembers {
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, communityId])
+}
+
+model AppointmentType {
+  id           String        @id @default(cuid())
+  typeName     String        @db.VarChar(100)
+  description  String?       @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+}
+
+model Appointment {
+  id                String               @id @default(cuid())
+  appointmentTypeId String
+  hostId            String
+  startTime         DateTime
+  endTime           DateTime
+  timeZone          String               @default("UTC") @db.VarChar(50)
+  locationOrLink    String?              @db.VarChar(255)
+  status            AppointmentStatus    @default(scheduled)
+  google_event_id   String?              @db.VarChar(255)
+  google_synced_at  DateTime?
+  isRecurring       Boolean              @default(false)
+  recurrencePattern RecurrencePattern?
+  recurrenceEndDate DateTime?
+  parentAppointmentId String?
+  childAppointments Appointment[]        @relation("RecurringAppointments")
+  parentAppointment Appointment?         @relation("RecurringAppointments", fields: [parentAppointmentId], references: [id])
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  appointmentType   AppointmentType      @relation(fields: [appointmentTypeId], references: [id])
+  host              User                 @relation("hostRelation", fields: [hostId], references: [id])
+  attendees         AppointmentAttendee[]
+}
+
+model AppointmentAttendee {
+  id                 String       @default(cuid())
+  appointmentId      String
+  userId             String
+  role               AttendeeRole @default(client)
+  additionalComments String?      @db.Text
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  appointment        Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, appointmentId])
+}
+
+enum AppointmentStatus {
+  scheduled
+  completed
+  canceled
+}
+
+enum AttendeeRole {
+  client
+  coach
+  participant
+}
+
+enum RecurrencePattern {
+  daily
+  weekly
+  biweekly
+  monthly
+  custom
 }
