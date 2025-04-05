@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import { FiMenu, FiX } from "react-icons/fi";
+import { useSidebar } from "./SidebarContext";
+import { useEffect, useState } from "react";
 import {
   FaTachometerAlt,
   FaCalendarAlt,
@@ -25,16 +25,29 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(true); // Sidebar state
-  const pathname = usePathname(); // Get current path
+  const pathname = usePathname();
+  const { isExpanded, setIsExpanded } = useSidebar();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <aside
-      className={`fixed top-0 left-0 h-full bg-blue-900 text-white w-64 transition-all duration-300 ${isOpen ? "w-64" : "w-20"}`}
+      className={`fixed top-0 left-0 h-full bg-blue-900 text-white transition-all duration-300 ease-in-out z-50 ${
+        isExpanded ? "w-64" : "w-16"
+      }`}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
     >
       <div className="flex flex-col h-full">
-        {/* Logo + Toggle Button */}
-        <div className="flex items-center justify-between p-4">
+        {/* Logo */}
+        <div className="p-4">
           <Link href="/" className="flex items-center space-x-2">
             <Image
               src="/logo.png"
@@ -43,16 +56,12 @@ const Sidebar = () => {
               height={40}
               className="w-10 h-10"
             />
-            {isOpen && (
-              <span className="text-lg font-bold">BE THE MESSENGER</span>
-            )}
+            <span
+              className={`text-lg font-bold whitespace-nowrap ${isExpanded ? "block" : "hidden"}`}
+            >
+              BE THE MESSENGER
+            </span>
           </Link>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-white focus:outline-none"
-          >
-            {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-          </button>
         </div>
 
         {/* Navigation Links */}
@@ -61,25 +70,31 @@ const Sidebar = () => {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center space-x-3 p-3 mx-2 rounded-md transition ${pathname === item.href ? "bg-blue-700" : "hover:bg-blue-800"}`}
+              className={`flex items-center space-x-3 p-3 mx-2 rounded-md transition ${
+                pathname === item.href ? "bg-blue-700" : "hover:bg-blue-800"
+              }`}
             >
               <span className="text-xl">{item.icon}</span>
-              {isOpen && <span className="text-md">{item.name}</span>}
+              <span
+                className={`text-md whitespace-nowrap ${isExpanded ? "block" : "hidden"}`}
+              >
+                {item.name}
+              </span>
             </Link>
           ))}
         </nav>
 
-        {/* User Info & Logout Button */}
+        {/* User Info */}
         <div className="p-4 mt-auto">
           <SignedIn>
             <div className="flex items-center space-x-3">
               <UserButton afterSignOutUrl="/sign-in" />
-              {isOpen && <span className="text-sm">Profile</span>}
+              <span
+                className={`text-sm whitespace-nowrap ${isExpanded ? "block" : "hidden"}`}
+              >
+                Profile
+              </span>
             </div>
-            {/* <button className="flex items-center space-x-3 w-full text-left p-2 mt-3 bg-red-600 hover:bg-red-700 rounded-md">
-              <FiLogOut />
-              {isOpen && <span>Logout</span>}
-            </button> */}
           </SignedIn>
 
           <SignedOut>

@@ -1,8 +1,10 @@
 "use client";
 import styled from "@emotion/styled";
 import { useUser } from "@clerk/nextjs";
-import Sidebar from "../components/Sidebar";
+import { useSidebar } from "../components/SidebarContext";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import Onboarding from "../components/Onboarding";
 
 const mockData = {
   communities: [
@@ -62,21 +64,12 @@ const mockData = {
   ],
 };
 
-const StyledContainer = styled.div`
-  display: flex;
-  min-height: 100vh;
-`;
-
-const StyledSidebarContainer = styled.div`
-  width: 220px;
-  background-color: white;
-  border-right: 1px solid black;
-  padding: 16px;
-`;
-
-const StyledMainContent = styled.div`
+const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
   padding: 16px;
+  margin-left: ${(props) => (props.isExpanded ? "256px" : "64px")};
+  transition: margin-left 0.3s ease-in-out;
+  width: calc(100% - ${(props) => (props.isExpanded ? "256px" : "64px")});
 `;
 
 const StyledSection = styled.section`
@@ -124,51 +117,50 @@ const StyledButton = styled.button`
   }
 `;
 
-const DashboardPage = () => {
+const HomePage = () => {
   const { user } = useUser();
+  const { isExpanded } = useSidebar();
+  const searchParams = useSearchParams();
+  const fromSignup = searchParams.get("from") === "signup";
 
   return (
-    <StyledContainer>
-      <StyledSidebarContainer>
-        <Sidebar />
-      </StyledSidebarContainer>
-      <StyledMainContent>
-        <StyledHeader>Welcome, {user?.fullName}</StyledHeader>
-        <p>Here are your communities and recommendations.</p>
-        <br />
-        <StyledSection>
-          <StyledHeader>My Communities</StyledHeader>
-          {mockData.communities.map((community) => (
-            <StyledDiv key={community.id}>
-              <StyledImage src={community.imageUrl} alt={community.name} />
-              <StyledText>
-                <strong>{community.name}</strong>
-                <p>{community.description}</p>
-              </StyledText>
-              <Link href={`/communities/${community.id}`} passHref>
-                <StyledButton>View</StyledButton>
-              </Link>
-            </StyledDiv>
-          ))}
-        </StyledSection>
-        <StyledSection>
-          <StyledHeader>Recommended Communities</StyledHeader>
-          {mockData.recommendedGroups.map((group) => (
-            <StyledDiv key={group.id}>
-              <StyledImage src={group.imageUrl} alt={group.name} />
-              <StyledText>
-                <strong>{group.name}</strong>
-                <p>{group.description}</p>
-              </StyledText>
-              <Link href={`/communities/${group.id}`} passHref>
-                <StyledButton>View</StyledButton>
-              </Link>
-            </StyledDiv>
-          ))}
-        </StyledSection>
-      </StyledMainContent>
-    </StyledContainer>
+    <StyledMainContent isExpanded={isExpanded}>
+      {fromSignup && <Onboarding />}
+      <StyledHeader>Welcome, {user?.fullName}</StyledHeader>
+      <p>Here are your communities and recommendations.</p>
+      <br />
+      <StyledSection>
+        <StyledHeader>My Communities</StyledHeader>
+        {mockData.communities.map((community) => (
+          <StyledDiv key={community.id}>
+            <StyledImage src={community.imageUrl} alt={community.name} />
+            <StyledText>
+              <strong>{community.name}</strong>
+              <p>{community.description}</p>
+            </StyledText>
+            <Link href={`/communities/${community.id}`} passHref>
+              <StyledButton>View</StyledButton>
+            </Link>
+          </StyledDiv>
+        ))}
+      </StyledSection>
+      <StyledSection>
+        <StyledHeader>Recommended Communities</StyledHeader>
+        {mockData.recommendedGroups.map((group) => (
+          <StyledDiv key={group.id}>
+            <StyledImage src={group.imageUrl} alt={group.name} />
+            <StyledText>
+              <strong>{group.name}</strong>
+              <p>{group.description}</p>
+            </StyledText>
+            <Link href={`/communities/${group.id}`} passHref>
+              <StyledButton>View</StyledButton>
+            </Link>
+          </StyledDiv>
+        ))}
+      </StyledSection>
+    </StyledMainContent>
   );
 };
 
-export default DashboardPage;
+export default HomePage;

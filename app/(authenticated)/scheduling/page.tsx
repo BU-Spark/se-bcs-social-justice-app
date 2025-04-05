@@ -1,23 +1,31 @@
 "use client";
 
+import styled from "@emotion/styled";
+import { useSidebar } from "../../components/SidebarContext";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const StyledMainContent = styled.div<{ isExpanded: boolean }>`
+  flex: 1;
+  padding: 16px;
+  margin-left: ${(props) => (props.isExpanded ? "256px" : "64px")};
+  transition: margin-left 0.3s ease-in-out;
+`;
+
 export default function SchedulingPage() {
+  const { isExpanded } = useSidebar();
   const [appointmentType, setAppointmentType] = useState<
     "one-on-one" | "group" | ""
   >("");
   const router = useRouter();
 
   const handleNext = () => {
-    if (!appointmentType) return; // Require a selection
-    // Pass the chosen type to the next step as a query param
+    if (!appointmentType) return;
     router.push(`/scheduling/select-date?type=${appointmentType}`);
   };
 
   return (
-    <div className="ml-64 p-8">
-      {/* Offsetting content to the right of the sidebar */}
+    <StyledMainContent isExpanded={isExpanded}>
       <h1 className="text-2xl font-bold mb-4">Schedule an Appointment</h1>
       <p className="mb-6 text-gray-700">Choose an appointment type:</p>
 
@@ -52,6 +60,6 @@ export default function SchedulingPage() {
           Next
         </button>
       </div>
-    </div>
+    </StyledMainContent>
   );
 }

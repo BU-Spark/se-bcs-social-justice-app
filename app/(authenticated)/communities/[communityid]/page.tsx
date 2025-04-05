@@ -3,7 +3,7 @@
 import { notFound } from "next/navigation";
 import styled from "@emotion/styled";
 import Link from "next/link";
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../../../components/Sidebar";
 
 async function getCommunityData(communityid: string) {
   const communities = [
