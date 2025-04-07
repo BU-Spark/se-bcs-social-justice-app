@@ -1,18 +1,37 @@
+// app/api/communities/route.ts
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 
 export async function GET() {
   try {
-    const user = await currentUser();
-    if (!user) {
+    // Get Clerk authenticated user
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // Fetch or create the local user based on Clerk's user id
+    let localUser = await prisma.user.findUnique({
+      where: { clerkUserId: clerkUser.id },
+    });
+
+    // (Optional) If user record not found, you may decide to create one or return an error:
+    if (!localUser) {
+      localUser = await prisma.user.create({
+        data: {
+          clerkUserId: clerkUser.id,
+          email: clerkUser.emailAddresses?.[0]?.emailAddress || "",
+          name: clerkUser.fullName || "",
+        },
+      });
+    }
+
+    // Use the local user's id to query memberships
     const joinedCommunities = await prisma.community.findMany({
       where: {
         members: {
-          some: { userId: user.id },
+          some: { userId: localUser.id },
         },
       },
       select: {
@@ -28,7 +47,7 @@ export async function GET() {
       where: {
         NOT: {
           members: {
-            some: { userId: user.id },
+            some: { userId: localUser.id },
           },
         },
       },
@@ -43,13 +62,13 @@ export async function GET() {
 
     return NextResponse.json(
       { joinedCommunities, recommendedCommunities },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error fetching communities:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

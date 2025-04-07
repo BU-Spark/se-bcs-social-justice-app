@@ -8,21 +8,24 @@ datasource db {
 }
 
 model User {
-  id          String         @id @default(cuid())
-  clerkUserId String         @unique
-  email       String         @unique
-  name        String?
-  imageUrl    String?
-  username    String?        @unique
-  ethnicity   String?
-  phoneNumber String?
-  referrer    String[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  interests   UserInterest[]
-  memberships CommunityMembers[]
-  hostedAppointments Appointment[] @relation("hostRelation")
+  id                     String                @id @default(cuid())
+  clerkUserId            String                @unique
+  email                  String                @unique
+  name                   String?
+  imageUrl               String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  ethnicity              String?
+  phoneNumber            String?
+  username               String?               @unique
+  referrer               String[]
+  hostedAppointments     Appointment[]         @relation("hostRelation")
   appointmentAttendances AppointmentAttendee[]
+  memberships            CommunityMembers[]
+  interests              UserInterest[]
+  comments               Comment[]
+  votes                  Vote[]
+  posts                  Posting[]
 }
 
 model Interest {
@@ -41,22 +44,22 @@ model UserInterest {
 }
 
 model Community {
-  id          String                  @id @default(cuid())
-  name        String                  @unique
+  id          String             @id @default(cuid())
+  name        String             @unique
   imageUrl    String?
-  type        String?
+  type        String
   description String?
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   members     CommunityMembers[]
+  posts       Posting[]
 }
 
-
 model CommunityMembers {
-  userId       String
-  communityId  String
-  community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, communityId])
 }
@@ -64,34 +67,34 @@ model CommunityMembers {
 model AppointmentType {
   id           String        @id @default(cuid())
   typeName     String        @db.VarChar(100)
-  description  String?       @db.Text
+  description  String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
 }
 
 model Appointment {
-  id                String               @id @default(cuid())
-  appointmentTypeId String
-  hostId            String
-  startTime         DateTime
-  endTime           DateTime
-  timeZone          String               @default("UTC") @db.VarChar(50)
-  locationOrLink    String?              @db.VarChar(255)
-  status            AppointmentStatus    @default(scheduled)
-  google_event_id   String?              @db.VarChar(255)
-  google_synced_at  DateTime?
-  isRecurring       Boolean              @default(false)
-  recurrencePattern RecurrencePattern?
-  recurrenceEndDate DateTime?
+  id                  String                @id @default(cuid())
+  appointmentTypeId   String
+  hostId              String
+  startTime           DateTime
+  endTime             DateTime
+  timeZone            String                @default("UTC") @db.VarChar(50)
+  locationOrLink      String?               @db.VarChar(255)
+  status              AppointmentStatus     @default(scheduled)
+  google_event_id     String?               @db.VarChar(255)
+  google_synced_at    DateTime?
+  isRecurring         Boolean               @default(false)
+  recurrencePattern   RecurrencePattern?
+  recurrenceEndDate   DateTime?
   parentAppointmentId String?
-  childAppointments Appointment[]        @relation("RecurringAppointments")
-  parentAppointment Appointment?         @relation("RecurringAppointments", fields: [parentAppointmentId], references: [id])
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  appointmentType   AppointmentType      @relation(fields: [appointmentTypeId], references: [id])
-  host              User                 @relation("hostRelation", fields: [hostId], references: [id])
-  attendees         AppointmentAttendee[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  appointmentType     AppointmentType       @relation(fields: [appointmentTypeId], references: [id])
+  host                User                  @relation("hostRelation", fields: [hostId], references: [id])
+  parentAppointment   Appointment?          @relation("RecurringAppointments", fields: [parentAppointmentId], references: [id])
+  childAppointments   Appointment[]         @relation("RecurringAppointments")
+  attendees           AppointmentAttendee[]
 }
 
 model AppointmentAttendee {
@@ -99,7 +102,7 @@ model AppointmentAttendee {
   appointmentId      String
   userId             String
   role               AttendeeRole @default(client)
-  additionalComments String?      @db.Text
+  additionalComments String?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   appointment        Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
@@ -126,4 +129,47 @@ enum RecurrencePattern {
   biweekly
   monthly
   custom
+}
+
+model Posting {
+  id          String    @id @default(cuid())
+  title       String
+  content     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  communityId String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id])
+  comments    Comment[]
+  votes       Vote[]
+  score       Int       @default(0)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  postId    String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  post      Posting     @relation(fields: [postId], references: [id])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  type      VoteType
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Posting     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
 }
