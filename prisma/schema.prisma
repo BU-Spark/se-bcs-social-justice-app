@@ -65,6 +65,7 @@ model AppointmentType {
   id           String        @id @default(cuid())
   typeName     String        @db.VarChar(100)
   description  String?       @db.Text
+  icon         String        @db.VarChar(50)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]

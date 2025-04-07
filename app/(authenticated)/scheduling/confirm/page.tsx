@@ -1,133 +1,154 @@
 "use client";
-
-import { useSearchParams, useRouter } from "next/navigation";
+import styled from "@emotion/styled";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSidebar } from "../../../components/SidebarContext";
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
-import { parse } from "date-fns";
+import { format } from "date-fns";
+
+const StyledMainContent = styled.div<{ isExpanded: boolean }>`
+  flex: 1;
+  padding: 16px;
+  margin-left: ${(props) => (props.isExpanded ? "256px" : "64px")};
+  transition: margin-left 0.3s ease-in-out;
+  width: calc(100% - ${(props) => (props.isExpanded ? "256px" : "64px")});
+`;
+
+const StyledContainer = styled.div`
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px;
+`;
+
+const StyledTitle = styled.h1`
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 24px;
+`;
+
+const StyledSubtitle = styled.p`
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 32px;
+`;
+
+const StyledCard = styled.div`
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 32px;
+`;
+
+const StyledDetailRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e8f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const StyledLabel = styled.span`
+  color: #666;
+`;
+
+const StyledValue = styled.span`
+  font-weight: 500;
+`;
+
+const StyledButton = styled.button`
+  background: #4299e1;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+
+  &:hover {
+    background: #2b6cb0;
+  }
+
+  &:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+  }
+`;
+
+const StyledTextArea = styled.textarea`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-top: 16px;
+  resize: vertical;
+  min-height: 100px;
+
+  &:focus {
+    outline: none;
+    border-color: #4299e1;
+  }
+`;
+
+interface Attendee {
+  name: string;
+  email: string;
+}
 
 interface AppointmentType {
   id: string;
   typeName: string;
   description: string | null;
+  icon: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function ConfirmPage() {
-  const searchParams = useSearchParams();
+export default function ConfirmAppointment() {
   const router = useRouter();
-  const { userId } = useAuth();
+  const searchParams = useSearchParams();
+  const { isExpanded } = useSidebar();
+  const [additionalComments, setAdditionalComments] = useState("");
+  const [appointmentType, setAppointmentType] =
+    useState<AppointmentType | null>(null);
 
-  // Retrieve the data passed from the previous page
-  const appointmentType = searchParams.get("type") || "one-on-one";
-  const date = searchParams.get("date") || "";
-  const time = searchParams.get("time") || "";
+  const appointmentTypeId = searchParams.get("type");
+  const date = searchParams.get("date");
   const isRecurring = searchParams.get("isRecurring") === "true";
-  const recurrencePattern = searchParams.get("recurrencePattern") || "";
-  const recurrenceEndDate = searchParams.get("recurrenceEndDate") || "";
+  const recurrencePattern = searchParams.get("recurrencePattern");
+  const attendeesParam = searchParams.get("attendees");
+  const attendees: Attendee[] = attendeesParam
+    ? JSON.parse(attendeesParam)
+    : [];
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [comments, setComments] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [, setLoadingTypes] = useState(true);
-  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>(
-    [],
-  );
-
-  // Fetch appointment types on component mount
   useEffect(() => {
-    const fetchAppointmentTypes = async () => {
-      try {
-        const response = await fetch("/api/appointments/types");
-        if (response.ok) {
-          const data = await response.json();
-          setAppointmentTypes(data.appointmentTypes || []);
+    const fetchAppointmentType = async () => {
+      if (appointmentTypeId) {
+        try {
+          const response = await fetch(
+            `/api/appointment-types/${appointmentTypeId}`,
+          );
+          if (response.ok) {
+            const data = await response.json();
+            setAppointmentType(data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch appointment type:", error);
         }
-      } catch (error) {
-        console.error("Error fetching appointment types:", error);
-      } finally {
-        setLoadingTypes(false);
       }
     };
 
-    fetchAppointmentTypes();
-  }, []);
+    fetchAppointmentType();
+  }, [appointmentTypeId]);
 
-  // Transform date and time into ISO string format for API
-  const getDateTime = (dateStr: string, timeStr: string) => {
-    // Handle both 12-hour and 24-hour formats
-    if (timeStr.includes("AM") || timeStr.includes("PM")) {
-      const [timePart, meridian] = timeStr.split(" ");
-      const [hours, minutes] = timePart.split(":");
-
-      const parsedDate = parse(
-        `${dateStr} ${hours}:${minutes} ${meridian}`,
-        "yyyy-MM-dd h:mm a",
-        new Date(),
-      );
-
-      return parsedDate.toISOString();
-    } else {
-      // 24-hour format
-      const [hours, minutes] = timeStr.split(":");
-      const dateObj = new Date(dateStr);
-      dateObj.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-      return dateObj.toISOString();
-    }
-  };
-
-  const handleSchedule = async () => {
-    if (!name || !email) {
-      setError("Please fill in your name and email");
-      return;
-    }
-
-    if (!userId) {
-      setError("You must be logged in to schedule an appointment");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError("");
-
+  const handleConfirm = async () => {
     try {
-      // Find or create appointment type
-      let appointmentTypeId = "";
-
-      // Check if we already have the type
-      const foundType = appointmentTypes.find(
-        (type) => type.typeName.toLowerCase() === appointmentType.toLowerCase(),
-      );
-
-      if (foundType) {
-        appointmentTypeId = foundType.id;
-      } else {
-        // Create a new appointment type
-        const createTypeResponse = await fetch("/api/appointments/types", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            typeName: appointmentType,
-            description: `${appointmentType} appointment type`,
-          }),
-        });
-
-        if (!createTypeResponse.ok) {
-          throw new Error("Failed to create appointment type");
-        }
-
-        const typeData = await createTypeResponse.json();
-        appointmentTypeId = typeData.appointmentType.id;
+      if (!appointmentTypeId || !date) {
+        throw new Error("Missing required appointment details");
       }
 
-      // Calculate start and end times
-      const startTime = getDateTime(date, time);
-      const endTimeDate = new Date(startTime);
-      endTimeDate.setMinutes(endTimeDate.getMinutes() + 30); // Default to 30 min appointment
-
-      // Create the appointment
       const response = await fetch("/api/appointments", {
         method: "POST",
         headers: {
@@ -135,138 +156,118 @@ export default function ConfirmPage() {
         },
         body: JSON.stringify({
           appointmentTypeId,
-          startTime,
-          endTime: endTimeDate.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          locationOrLink: "Virtual", // Default to virtual
-          attendees: [
-            {
-              userId,
-              role: "client",
-              comments,
-            },
-          ],
+          date: new Date(date).toISOString(),
           isRecurring,
-          recurrencePattern: isRecurring ? recurrencePattern : null,
-          recurrenceEndDate:
-            isRecurring && recurrenceEndDate ? recurrenceEndDate : null,
+          recurrencePattern,
+          additionalComments,
+          attendees,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to schedule appointment");
+        throw new Error("Failed to create appointment");
       }
 
-      const data = await response.json();
-      console.log("Appointment scheduled:", data);
-
-      // Show success and redirect
-      alert("Your appointment has been scheduled successfully!");
-      router.push("/dashboard");
-    } catch (error: unknown) {
-      console.error("Error scheduling appointment:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to schedule appointment. Please try again.",
-      );
-    } finally {
-      setIsSubmitting(false);
+      // Redirect to success page or dashboard
+      router.push("/");
+    } catch (error) {
+      console.error("Failed to create appointment:", error);
+      // TODO: Add error handling UI
     }
   };
 
-  return (
-    <div className="max-w-2xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-4">Confirm Your Appointment</h1>
+  if (!date) {
+    return (
+      <StyledMainContent isExpanded={isExpanded}>
+        <StyledContainer>
+          <StyledTitle>Invalid Appointment</StyledTitle>
+          <StyledSubtitle>
+            The appointment details are incomplete. Please start over.
+          </StyledSubtitle>
+          <StyledButton onClick={() => router.push("/scheduling")}>
+            Start Over
+          </StyledButton>
+        </StyledContainer>
+      </StyledMainContent>
+    );
+  }
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Appointment Details</h2>
-        <div className="mb-6 space-y-2">
-          <p className="text-gray-700">
-            <span className="font-medium">Type:</span>{" "}
-            {appointmentType === "one-on-one"
-              ? "One-on-One"
-              : "Group Consulting"}
-          </p>
-          <p className="text-gray-700">
-            <span className="font-medium">Date:</span> {date}
-          </p>
-          <p className="text-gray-700">
-            <span className="font-medium">Time:</span> {time}
-          </p>
+  const appointmentDate = new Date(date);
+
+  return (
+    <StyledMainContent isExpanded={isExpanded}>
+      <StyledContainer>
+        <StyledTitle>Confirm Appointment</StyledTitle>
+        <StyledSubtitle>
+          Please review your appointment details before confirming
+        </StyledSubtitle>
+
+        <StyledCard>
+          <StyledDetailRow>
+            <StyledLabel>Appointment Type</StyledLabel>
+            <StyledValue>
+              {appointmentType ? appointmentType.typeName : "Loading..."}
+            </StyledValue>
+          </StyledDetailRow>
+
+          <StyledDetailRow>
+            <StyledLabel>Date</StyledLabel>
+            <StyledValue>{format(appointmentDate, "MMMM d, yyyy")}</StyledValue>
+          </StyledDetailRow>
+
+          <StyledDetailRow>
+            <StyledLabel>Time</StyledLabel>
+            <StyledValue>{format(appointmentDate, "h:mm a")}</StyledValue>
+          </StyledDetailRow>
 
           {isRecurring && (
-            <>
-              <p className="text-gray-700">
-                <span className="font-medium">Recurring:</span> Yes
-              </p>
-              {recurrencePattern && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Frequency:</span>{" "}
-                  {recurrencePattern.charAt(0).toUpperCase() +
-                    recurrencePattern.slice(1)}
-                </p>
-              )}
-              {recurrenceEndDate && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Until:</span>{" "}
-                  {recurrenceEndDate}
-                </p>
-              )}
-            </>
+            <StyledDetailRow>
+              <StyledLabel>Recurrence</StyledLabel>
+              <StyledValue>
+                {recurrencePattern
+                  ? recurrencePattern.charAt(0).toUpperCase() +
+                    recurrencePattern.slice(1)
+                  : "Not specified"}
+              </StyledValue>
+            </StyledDetailRow>
           )}
-        </div>
+        </StyledCard>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block font-medium mb-1">Name</label>
-            <input
-              type="text"
-              className="border border-gray-300 p-2 rounded w-full"
-              placeholder="Enter your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
+        <StyledCard>
+          <h2 className="text-xl font-semibold mb-4">Attendees</h2>
+          {attendees.map((attendee, index) => (
+            <StyledDetailRow key={index}>
+              <div>
+                <StyledLabel>Attendee {index + 1}</StyledLabel>
+                <StyledValue className="block">
+                  {attendee.name} ({attendee.email})
+                </StyledValue>
+              </div>
+            </StyledDetailRow>
+          ))}
+        </StyledCard>
 
-          <div>
-            <label className="block font-medium mb-1">Email</label>
-            <input
-              type="email"
-              className="border border-gray-300 p-2 rounded w-full"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+        <StyledCard>
+          <h2 className="text-xl font-semibold mb-4">Additional Comments</h2>
+          <StyledTextArea
+            placeholder="Add any additional information or requirements for your appointment..."
+            value={additionalComments}
+            onChange={(e) => setAdditionalComments(e.target.value)}
+          />
+        </StyledCard>
 
-          <div>
-            <label className="block font-medium mb-1">
-              Additional Comments
-            </label>
-            <textarea
-              className="border border-gray-300 p-2 rounded w-full"
-              placeholder="Any additional details or questions?"
-              rows={3}
-              value={comments}
-              onChange={(e) => setComments(e.target.value)}
-            />
-          </div>
-
-          {error && <div className="text-red-500 mt-2">{error}</div>}
-
-          <button
-            onClick={handleSchedule}
-            className="bg-blue-700 text-white px-6 py-2 rounded-md w-full disabled:bg-blue-400"
-            disabled={isSubmitting || !userId}
+        <div className="flex justify-end space-x-4">
+          <StyledButton
+            onClick={() => router.back()}
+            style={{ background: "#e2e8f0", color: "#4a5568" }}
           >
-            {isSubmitting ? "Scheduling..." : "Confirm Appointment"}
-          </button>
+            Back
+          </StyledButton>
+          <StyledButton onClick={handleConfirm}>
+            Confirm Appointment
+          </StyledButton>
         </div>
-      </div>
-    </div>
+      </StyledContainer>
+    </StyledMainContent>
   );
 }

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AttendeeRole, RecurrencePattern } from "@prisma/client";
+import { PrismaClient, RecurrencePattern } from "@prisma/client";
 import { checkUser } from "@/lib/checkUser";
 
-const prisma = new PrismaClient();
+const prismaClient = new PrismaClient();
 
 // Create a new appointment
 export async function POST(request: NextRequest) {
@@ -18,18 +18,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       appointmentTypeId,
-      startTime,
-      endTime,
-      timeZone,
-      locationOrLink,
-      attendees,
+      date,
       isRecurring,
       recurrencePattern,
-      recurrenceEndDate,
+      attendees,
     } = body;
 
     // Validate required fields
-    if (!appointmentTypeId || !startTime || !endTime) {
+    if (!appointmentTypeId || !date) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -37,33 +33,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the appointment
-    const appointment = await prisma.$transaction(async (tx) => {
+    const appointment = await prismaClient.$transaction(async (tx) => {
       const newAppointment = await tx.appointment.create({
         data: {
           appointmentTypeId,
+          startTime: new Date(date),
+          endTime: new Date(new Date(date).getTime() + 60 * 60 * 1000), // Default 1 hour duration
+          isRecurring,
+          recurrencePattern,
           hostId: user.id,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          timeZone: timeZone || "UTC",
-          locationOrLink,
-          isRecurring: !!isRecurring,
-          recurrencePattern: recurrencePattern || null,
-          recurrenceEndDate: recurrenceEndDate
-            ? new Date(recurrenceEndDate)
-            : null,
+        },
+        include: {
+          attendees: true,
         },
       });
 
       // Add attendees if specified
       if (attendees && attendees.length > 0) {
         const attendeePromises = attendees.map(
-          (attendee: { userId: string; role?: string; comments?: string }) => {
+          (attendee: { name: string; email: string }) => {
             return tx.appointmentAttendee.create({
               data: {
                 appointmentId: newAppointment.id,
-                userId: attendee.userId,
-                role: (attendee.role as AttendeeRole) || "client",
-                additionalComments: attendee.comments,
+                userId: user.id, // Using host's ID for now, should be updated with actual attendee IDs
+                role: "client",
+                additionalComments: `External attendee: ${attendee.name} (${attendee.email})`,
               },
             });
           },
@@ -76,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Handle recurring appointments if needed
-    if (isRecurring && recurrencePattern && recurrenceEndDate) {
+    if (isRecurring && recurrencePattern) {
       const recurringAppointments = await createRecurringAppointments(
         {
           id: appointment.id,
@@ -84,12 +78,10 @@ export async function POST(request: NextRequest) {
           hostId: appointment.hostId,
           startTime: appointment.startTime,
           endTime: appointment.endTime,
-          timeZone: appointment.timeZone,
-          locationOrLink: appointment.locationOrLink || undefined,
+          isRecurring: appointment.isRecurring,
+          recurrencePattern: appointment.recurrencePattern,
         },
         recurrencePattern,
-        new Date(recurrenceEndDate),
-        attendees,
       );
 
       return NextResponse.json(
@@ -126,16 +118,10 @@ async function createRecurringAppointments(
     hostId: string;
     startTime: Date;
     endTime: Date;
-    timeZone: string;
-    locationOrLink?: string;
+    isRecurring: boolean;
+    recurrencePattern: string | null;
   },
   pattern: string,
-  endDate: Date,
-  attendees?: Array<{
-    userId: string;
-    role?: string;
-    comments?: string;
-  }>,
 ) {
   const recurringAppointments = [];
   const startDate = new Date(parentAppointment.startTime);
@@ -167,12 +153,12 @@ async function createRecurringAppointments(
   let currentDate = new Date(startDate);
   currentDate.setDate(currentDate.getDate() + dateIncrement); // Start with next occurrence
 
-  while (currentDate <= endDate) {
+  while (currentDate <= new Date(parentAppointment.startTime)) {
     // Calculate the new end time based on the duration
     const newEndTime = new Date(currentDate.getTime() + duration);
 
     // Create the recurring appointment
-    const recurringAppointment = await prisma.$transaction(async (tx) => {
+    const recurringAppointment = await prismaClient.$transaction(async (tx) => {
       const newRecurringAppointment = await tx.appointment.create({
         data: {
           appointmentTypeId: parentAppointment.appointmentTypeId,
@@ -180,28 +166,13 @@ async function createRecurringAppointments(
           parentAppointmentId: parentAppointment.id,
           startTime: currentDate,
           endTime: newEndTime,
-          timeZone: parentAppointment.timeZone,
-          locationOrLink: parentAppointment.locationOrLink ?? undefined,
           isRecurring: true,
           recurrencePattern: (pattern as RecurrencePattern) || null,
         },
+        include: {
+          attendees: true,
+        },
       });
-
-      // Add attendees to recurring appointments if needed
-      if (attendees && attendees.length > 0) {
-        const attendeePromises = attendees.map((attendee) => {
-          return tx.appointmentAttendee.create({
-            data: {
-              appointmentId: newRecurringAppointment.id,
-              userId: attendee.userId,
-              role: (attendee.role as AttendeeRole) || "client",
-              additionalComments: attendee.comments,
-            },
-          });
-        });
-
-        await Promise.all(attendeePromises);
-      }
 
       return newRecurringAppointment;
     });
@@ -250,7 +221,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find appointments where user is host or attendee
-    const appointments = await prisma.appointment.findMany({
+    const appointments = await prismaClient.appointment.findMany({
       where: {
         OR: [
           { hostId: user.id },
