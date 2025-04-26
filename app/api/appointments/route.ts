@@ -1,6 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, RecurrencePattern } from "@prisma/client";
 import { checkUser } from "@/lib/checkUser";
+import { createZoomMeeting, formatRecurrenceData } from "@/lib/zoomApi";
+
+// Type definition for recurrence data
+interface RecurrenceData {
+  type?: number;
+  repeat_interval?: number;
+  weekly_days?: number[];
+  monthly_day?: number;
+  end_times?: number;
+  end_date_time?: string;
+  [key: string]: unknown;
+}
+
+// Zoom meeting details interface
+interface ZoomMeetingDetails {
+  topic: string;
+  type: number;
+  start_time: string;
+  duration: number;
+  timezone: string;
+  agenda: string;
+  settings: {
+    host_video: boolean;
+    participant_video: boolean;
+    join_before_host: boolean;
+    mute_upon_entry: boolean;
+    waiting_room: boolean;
+    auto_recording: "none" | "local" | "cloud";
+  };
+  recurrence?: {
+    type: number;
+    repeat_interval?: number;
+    weekly_days?: string;
+    monthly_day?: number;
+    end_times?: number;
+    end_date_time?: string;
+  };
+}
 
 const prismaClient = new PrismaClient();
 
@@ -21,6 +59,8 @@ export async function POST(request: NextRequest) {
       date,
       isRecurring,
       recurrencePattern,
+      recurrenceData,
+      additionalComments,
       attendees,
     } = body;
 
@@ -32,17 +72,95 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate recurrence settings to avoid unexpected behavior
+    const shouldCreateRecurring =
+      isRecurring && recurrencePattern && recurrenceData;
+
+    // Log useful information to diagnose issues
+    console.log(
+      `Creating appointment with recurrence: ${shouldCreateRecurring}`,
+    );
+    console.log(`Recurrence pattern: ${recurrencePattern}`);
+    console.log(`Recurrence data:`, recurrenceData);
+
+    // Get appointment type details
+    const appointmentType = await prismaClient.appointmentType.findUnique({
+      where: { id: appointmentTypeId },
+    });
+
+    if (!appointmentType) {
+      return NextResponse.json(
+        { error: "Invalid appointment type" },
+        { status: 400 },
+      );
+    }
+
+    const startTime = new Date(date);
+    // Default to 1 hour duration
+    const endTime = new Date(new Date(date).getTime() + 60 * 60 * 1000);
+
+    // Create Zoom meeting
+    let zoomMeeting = null;
+    try {
+      const meetingTopic = `${appointmentType.title} with ${user.name || "Host"}`;
+      const durationMinutes = Math.round(
+        (endTime.getTime() - startTime.getTime()) / (60 * 1000),
+      );
+
+      const meetingDetails: ZoomMeetingDetails = {
+        topic: meetingTopic,
+        type: isRecurring ? 3 : 2, // 2 for scheduled, 3 for recurring with fixed time
+        start_time: startTime.toISOString(),
+        duration: durationMinutes,
+        timezone: "America/New_York", // Default timezone
+        agenda: additionalComments || `${appointmentType.title} appointment`,
+        settings: {
+          host_video: true,
+          participant_video: true,
+          join_before_host: false,
+          mute_upon_entry: true,
+          waiting_room: true,
+          auto_recording: "none",
+        },
+      };
+
+      // Add recurrence info if needed
+      if (isRecurring && recurrencePattern && recurrenceData) {
+        meetingDetails.recurrence = formatRecurrenceData(
+          recurrencePattern,
+          recurrenceData as RecurrenceData,
+        );
+      }
+
+      zoomMeeting = await createZoomMeeting(meetingDetails);
+    } catch (error) {
+      console.error("Error creating Zoom meeting:", error);
+      // Continue with appointment creation even if Zoom fails
+    }
+
     // Create the appointment
     const appointment = await prismaClient.$transaction(async (tx) => {
+      const appointmentData = {
+        appointmentTypeId,
+        startTime,
+        endTime,
+        isRecurring,
+        hostId: user.id,
+        locationOrLink: zoomMeeting ? zoomMeeting.join_url : null,
+      };
+
+      // Only add recurrence fields if it's a recurring appointment
+      if (isRecurring) {
+        Object.assign(appointmentData, {
+          recurrencePattern: recurrencePattern as RecurrencePattern,
+          recurrenceEndDate: recurrenceData?.end_date_time
+            ? new Date(recurrenceData.end_date_time as string)
+            : null,
+        });
+      }
+
       const newAppointment = await tx.appointment.create({
-        data: {
-          appointmentTypeId,
-          startTime: new Date(date),
-          endTime: new Date(new Date(date).getTime() + 60 * 60 * 1000), // Default 1 hour duration
-          isRecurring,
-          recurrencePattern,
-          hostId: user.id,
-        },
+        data: appointmentData,
         include: {
           attendees: true,
         },
@@ -50,54 +168,29 @@ export async function POST(request: NextRequest) {
 
       // Add attendees if specified
       if (attendees && attendees.length > 0) {
-        const attendeePromises = attendees.map(
-          (attendee: { name: string; email: string }) => {
-            return tx.appointmentAttendee.create({
-              data: {
-                appointmentId: newAppointment.id,
-                userId: user.id, // Using host's ID for now, should be updated with actual attendee IDs
-                role: "client",
-                additionalComments: `External attendee: ${attendee.name} (${attendee.email})`,
-              },
-            });
-          },
-        );
-
-        await Promise.all(attendeePromises);
+        for (const attendee of attendees) {
+          await tx.appointmentAttendee.create({
+            data: {
+              appointmentId: newAppointment.id,
+              email: attendee.email,
+              userId: null, // Will be linked to user account if they sign up
+              role: "client",
+              additionalComments,
+            },
+          });
+        }
       }
 
       return newAppointment;
     });
 
-    // Handle recurring appointments if needed
-    if (isRecurring && recurrencePattern) {
-      const recurringAppointments = await createRecurringAppointments(
-        {
-          id: appointment.id,
-          appointmentTypeId: appointment.appointmentTypeId,
-          hostId: appointment.hostId,
-          startTime: appointment.startTime,
-          endTime: appointment.endTime,
-          isRecurring: appointment.isRecurring,
-          recurrencePattern: appointment.recurrencePattern,
-        },
-        recurrencePattern,
-      );
-
-      return NextResponse.json(
-        {
-          appointment,
-          recurringAppointments,
-          message: "Appointment(s) created successfully",
-        },
-        { status: 201 },
-      );
-    }
-
+    // Return the appointment
     return NextResponse.json(
       {
         appointment,
-        message: "Appointment created successfully",
+        message: isRecurring
+          ? "Recurring appointment created successfully"
+          : "Appointment created successfully",
       },
       { status: 201 },
     );
@@ -108,83 +201,6 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-// Function to generate recurring appointments
-async function createRecurringAppointments(
-  parentAppointment: {
-    id: string;
-    appointmentTypeId: string;
-    hostId: string;
-    startTime: Date;
-    endTime: Date;
-    isRecurring: boolean;
-    recurrencePattern: string | null;
-  },
-  pattern: string,
-) {
-  const recurringAppointments = [];
-  const startDate = new Date(parentAppointment.startTime);
-
-  // Calculate duration of the appointment in milliseconds
-  const duration =
-    new Date(parentAppointment.endTime).getTime() - startDate.getTime();
-
-  // Set up date increments based on pattern
-  let dateIncrement: number;
-  switch (pattern) {
-    case "daily":
-      dateIncrement = 1; // 1 day
-      break;
-    case "weekly":
-      dateIncrement = 7; // 7 days
-      break;
-    case "biweekly":
-      dateIncrement = 14; // 14 days
-      break;
-    case "monthly":
-      dateIncrement = 30; // ~30 days (simplified)
-      break;
-    default:
-      dateIncrement = 7; // Default to weekly
-  }
-
-  // Generate recurring dates
-  let currentDate = new Date(startDate);
-  currentDate.setDate(currentDate.getDate() + dateIncrement); // Start with next occurrence
-
-  while (currentDate <= new Date(parentAppointment.startTime)) {
-    // Calculate the new end time based on the duration
-    const newEndTime = new Date(currentDate.getTime() + duration);
-
-    // Create the recurring appointment
-    const recurringAppointment = await prismaClient.$transaction(async (tx) => {
-      const newRecurringAppointment = await tx.appointment.create({
-        data: {
-          appointmentTypeId: parentAppointment.appointmentTypeId,
-          hostId: parentAppointment.hostId,
-          parentAppointmentId: parentAppointment.id,
-          startTime: currentDate,
-          endTime: newEndTime,
-          isRecurring: true,
-          recurrencePattern: (pattern as RecurrencePattern) || null,
-        },
-        include: {
-          attendees: true,
-        },
-      });
-
-      return newRecurringAppointment;
-    });
-
-    recurringAppointments.push(recurringAppointment);
-
-    // Move to next date
-    currentDate = new Date(currentDate);
-    currentDate.setDate(currentDate.getDate() + dateIncrement);
-  }
-
-  return recurringAppointments;
 }
 
 // Get all appointments for the current user

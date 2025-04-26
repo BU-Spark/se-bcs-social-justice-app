@@ -2,8 +2,17 @@
 
 import { useSidebar } from "@/app/components/SidebarContext";
 import styled from "@emotion/styled";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { CircularProgress } from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import GroupsIcon from "@mui/icons-material/Groups";
+import WorkIcon from "@mui/icons-material/Work";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import GavelIcon from "@mui/icons-material/Gavel";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import ShareIcon from "@mui/icons-material/Share";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -77,6 +86,7 @@ const CardImageContainer = styled.div`
   position: relative;
   width: 100%;
   height: 200px;
+  background-color: #f5f5f5;
 `;
 
 const CardContent = styled.div`
@@ -135,36 +145,85 @@ const IconButton = styled.button`
   }
 `;
 
-const coachingPackages = [
-  {
-    id: 1,
-    label: "Coaching Package",
-    title: "Empowering Black Communities",
-    frequency: "Weekly meetings",
-    duration: "1 hr",
-    image: "/Media.png",
-  },
-  {
-    id: 2,
-    label: "Coaching Package",
-    title: "Navigating the Criminal Justice System",
-    frequency: "Bi-weekly meetings",
-    duration: "1 hr 30 m",
-    image: "/Media(1).png",
-  },
-  {
-    id: 3,
-    label: "Coaching Package",
-    title: "Breakthrough to Greatness",
-    frequency: "Weekly meetings",
-    duration: "1 hr 30 m",
-    image: "/Media(2).png",
-  },
-];
+interface AppointmentType {
+  id: string;
+  typeName: string;
+  description: string | null;
+  icon: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const IconMap: { [key: string]: React.ComponentType } = {
+  Person: PersonIcon,
+  Groups: GroupsIcon,
+  Work: WorkIcon,
+  Psychology: PsychologyIcon,
+  Gavel: GavelIcon,
+};
+
+const DynamicIcon = ({ iconName }: { iconName: string }) => {
+  const IconComponent = IconMap[iconName];
+  if (!IconComponent) {
+    return <PersonIcon />; // Fallback icon
+  }
+  return <IconComponent />;
+};
 
 export default function CoachingPage() {
   const { isExpanded } = useSidebar();
   const [activeTab, setActiveTab] = useState("Coaching");
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>(
+    [],
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  useEffect(() => {
+    const fetchAppointmentTypes = async () => {
+      try {
+        const response = await fetch("/api/appointment-types");
+        if (!response.ok) {
+          throw new Error("Failed to fetch appointment types");
+        }
+        const data = await response.json();
+        setAppointmentTypes(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load appointment types",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointmentTypes();
+  }, []);
+
+  if (loading) {
+    return (
+      <StyledMainContent isExpanded={isExpanded}>
+        <div className="flex justify-center items-center h-screen">
+          <CircularProgress />
+        </div>
+      </StyledMainContent>
+    );
+  }
+
+  if (error) {
+    return (
+      <StyledMainContent isExpanded={isExpanded}>
+        <div className="flex justify-center items-center h-screen text-red-500">
+          {error}
+        </div>
+      </StyledMainContent>
+    );
+  }
 
   return (
     <StyledMainContent isExpanded={isExpanded}>
@@ -199,18 +258,27 @@ export default function CoachingPage() {
       </PageHeader>
 
       <CoachingGrid>
-        {coachingPackages.map((pkg) => (
-          <CoachingCard key={pkg.id}>
+        {appointmentTypes.map((type) => (
+          <CoachingCard key={type.id}>
             <CardImageContainer>
-              <Image
-                src={pkg.image}
-                alt={pkg.title}
-                fill
-                style={{ objectFit: "cover" }}
-              />
+              {!imageErrors[type.id] ? (
+                <Image
+                  src={`/images/coaching/${type.id}.jpg`}
+                  alt={type.typeName}
+                  fill
+                  style={{ objectFit: "cover" }}
+                  onError={() => {
+                    setImageErrors((prev) => ({ ...prev, [type.id]: true }));
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                  <DynamicIcon iconName={type.icon} />
+                </div>
+              )}
               <ActionButtons>
                 <IconButton>
-                  <HeartIcon />
+                  <FavoriteIcon />
                 </IconButton>
                 <IconButton>
                   <ShareIcon />
@@ -218,16 +286,15 @@ export default function CoachingPage() {
               </ActionButtons>
             </CardImageContainer>
             <CardContent>
-              <CardLabel>{pkg.label}</CardLabel>
-              <CardTitle>{pkg.title}</CardTitle>
+              <CardLabel>Coaching Package</CardLabel>
+              <CardTitle>{type.typeName}</CardTitle>
               <CardDetails>
                 <DetailItem>
-                  <LayersIcon />
-                  {pkg.frequency}
+                  <DynamicIcon iconName={type.icon} />
+                  Weekly meetings
                 </DetailItem>
                 <DetailItem>
-                  <ClockIcon />
-                  {pkg.duration}
+                  <AccessTimeIcon />1 hr
                 </DetailItem>
               </CardDetails>
             </CardContent>
@@ -237,58 +304,3 @@ export default function CoachingPage() {
     </StyledMainContent>
   );
 }
-
-const HeartIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-
-const ShareIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-    <polyline points="16 6 12 2 8 6" />
-    <line x1="12" y1="2" x2="12" y2="15" />
-  </svg>
-);
-
-const LayersIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-);
-
-const ClockIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
-);

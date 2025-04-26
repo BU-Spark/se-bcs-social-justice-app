@@ -16,6 +16,7 @@ model User {
   username    String?        @unique
   ethnicity   String?
   phoneNumber String?
+  role        UserRole       @default(member)
   referrer    String[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -29,6 +30,7 @@ model Interest {
   id    String         @id @default(cuid())
   name  String         @unique
   users UserInterest[]
+  communities CommunityInterest[]
 }
 
 model UserInterest {
@@ -49,8 +51,8 @@ model Community {
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
   members     CommunityMembers[]
+  interests   CommunityInterest[]
 }
-
 
 model CommunityMembers {
   userId       String
@@ -61,11 +63,21 @@ model CommunityMembers {
   @@id([userId, communityId])
 }
 
+model CommunityInterest {
+  communityId String
+  interestId  String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  interest    Interest  @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([communityId, interestId])
+}
+
 model AppointmentType {
   id           String        @id @default(cuid())
-  typeName     String        @db.VarChar(100)
+  title        String        @db.VarChar(100)
   description  String?       @db.Text
   icon         String        @db.VarChar(50)
+  accessType   AppointmentAccessType @default(private)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
@@ -80,8 +92,6 @@ model Appointment {
   timeZone          String               @default("UTC") @db.VarChar(50)
   locationOrLink    String?              @db.VarChar(255)
   status            AppointmentStatus    @default(scheduled)
-  google_event_id   String?              @db.VarChar(255)
-  google_synced_at  DateTime?
   isRecurring       Boolean              @default(false)
   recurrencePattern RecurrencePattern?
   recurrenceEndDate DateTime?
@@ -98,15 +108,16 @@ model Appointment {
 model AppointmentAttendee {
   id                 String       @default(cuid())
   appointmentId      String
-  userId             String
+  userId             String?
+  email              String
   role               AttendeeRole @default(client)
   additionalComments String?      @db.Text
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   appointment        Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([userId, appointmentId])
+  @@id([appointmentId, email])
 }
 
 enum AppointmentStatus {
@@ -127,4 +138,15 @@ enum RecurrencePattern {
   biweekly
   monthly
   custom
+}
+
+enum UserRole {
+  member
+  leader
+  admin
+}
+
+enum AppointmentAccessType {
+  private
+  public
 }

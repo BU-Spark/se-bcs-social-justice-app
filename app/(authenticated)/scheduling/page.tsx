@@ -5,12 +5,21 @@ import { useRouter } from "next/navigation";
 import { useSidebar } from "../../components/SidebarContext";
 import { useEffect, useState } from "react";
 import { CircularProgress } from "@mui/material";
+import {
+  Person,
+  Groups,
+  Psychology,
+  Gavel,
+  Event,
+  School,
+} from "@mui/icons-material";
 
 interface AppointmentType {
   id: string;
-  typeName: string;
+  title: string;
   description: string | null;
   icon: string;
+  accessType: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,6 +106,24 @@ const ErrorMessage = styled.div`
   margin-top: 32px;
 `;
 
+const StyledSectionTitle = styled.h2`
+  font-size: 24px;
+  font-weight: bold;
+  margin: 40px 0 24px;
+  color: #2d3748;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+`;
+
+const iconMap: { [key: string]: React.ReactElement } = {
+  Person: <Person fontSize="large" />,
+  Groups: <Groups fontSize="large" />,
+  Psychology: <Psychology fontSize="large" />,
+  Gavel: <Gavel fontSize="large" />,
+  Event: <Event fontSize="large" />,
+  School: <School fontSize="large" />,
+};
+
 export default function AppointmentTypeSelection() {
   const router = useRouter();
   const { isExpanded } = useSidebar();
@@ -130,6 +157,29 @@ export default function AppointmentTypeSelection() {
     router.push(`/scheduling/select-date?type=${typeId}`);
   };
 
+  const privateTypes = appointmentTypes.filter(
+    (type) => type.accessType === "private",
+  );
+  const publicTypes = appointmentTypes.filter(
+    (type) => type.accessType === "public",
+  );
+
+  const renderAppointmentTypes = (types: AppointmentType[]) => (
+    <StyledCardContainer>
+      {types.map((type) => (
+        <StyledCard key={type.id} onClick={() => handleSelectType(type.id)}>
+          <StyledIcon>
+            {iconMap[type.icon] || <Event fontSize="large" />}
+          </StyledIcon>
+          <StyledCardTitle>{type.title}</StyledCardTitle>
+          <StyledCardDescription>
+            {type.description || "No description available"}
+          </StyledCardDescription>
+        </StyledCard>
+      ))}
+    </StyledCardContainer>
+  );
+
   return (
     <StyledMainContent isExpanded={isExpanded}>
       <StyledContainer>
@@ -145,20 +195,20 @@ export default function AppointmentTypeSelection() {
         ) : error ? (
           <ErrorMessage>{error}</ErrorMessage>
         ) : (
-          <StyledCardContainer>
-            {appointmentTypes.map((type) => (
-              <StyledCard
-                key={type.id}
-                onClick={() => handleSelectType(type.id)}
-              >
-                <StyledIcon>{type.icon}</StyledIcon>
-                <StyledCardTitle>{type.typeName}</StyledCardTitle>
-                <StyledCardDescription>
-                  {type.description || "No description available"}
-                </StyledCardDescription>
-              </StyledCard>
-            ))}
-          </StyledCardContainer>
+          <>
+            {publicTypes.length > 0 && (
+              <>
+                <StyledSectionTitle>Public Sessions</StyledSectionTitle>
+                {renderAppointmentTypes(publicTypes)}
+              </>
+            )}
+            {privateTypes.length > 0 && (
+              <>
+                <StyledSectionTitle>Private Consultations</StyledSectionTitle>
+                {renderAppointmentTypes(privateTypes)}
+              </>
+            )}
+          </>
         )}
       </StyledContainer>
     </StyledMainContent>

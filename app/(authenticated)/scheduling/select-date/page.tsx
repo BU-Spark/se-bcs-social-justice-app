@@ -2,7 +2,7 @@
 import styled from "@emotion/styled";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSidebar } from "../../../components/SidebarContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -243,7 +243,6 @@ const StyledAttendeeForm = styled.div`
 `;
 
 interface Attendee {
-  name: string;
   email: string;
   touched: boolean;
 }
@@ -260,10 +259,136 @@ export default function SelectDateTime() {
   const [recurrencePattern, setRecurrencePattern] = useState<
     "daily" | "weekly" | "biweekly" | "monthly" | null
   >(null);
+  const [recurrenceEndType, setRecurrenceEndType] = useState<
+    "date" | "occurrences"
+  >("date");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | null>(null);
+  const [recurrenceOccurrences, setRecurrenceOccurrences] = useState<number>(1);
+  const [weeklyDays, setWeeklyDays] = useState<number[]>([]);
+  const [monthlyDay] = useState<number>(1);
   const [attendees, setAttendees] = useState<Attendee[]>([
-    { name: "", email: "", touched: false },
+    { email: "", touched: false },
   ]);
   const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // Load saved form data from localStorage
+  useEffect(() => {
+    // First check if we have data from the confirmation page
+    const confirmFormData = localStorage.getItem("confirmFormData");
+    if (confirmFormData) {
+      try {
+        const {
+          date: savedDate,
+          isRecurring: savedIsRecurring,
+          recurrencePattern: savedPattern,
+          attendees: savedAttendees,
+          weeklyDays: savedWeeklyDays,
+          recurrenceEndType: savedEndType,
+          recurrenceEndDate: savedEndDate,
+          recurrenceOccurrences: savedOccurrences,
+        } = JSON.parse(confirmFormData);
+
+        // Only set these values if they're compatible with our form structure
+        if (savedDate) setSelectedDate(new Date(savedDate));
+        if (savedIsRecurring !== undefined) setIsRecurring(savedIsRecurring);
+        if (savedPattern) setRecurrencePattern(savedPattern);
+
+        // Set recurrence specific details
+        if (savedWeeklyDays && Array.isArray(savedWeeklyDays)) {
+          setWeeklyDays(savedWeeklyDays);
+        }
+
+        if (savedEndType) {
+          setRecurrenceEndType(savedEndType);
+        }
+
+        if (savedEndDate) {
+          setRecurrenceEndDate(new Date(savedEndDate));
+        }
+
+        if (savedOccurrences && typeof savedOccurrences === "number") {
+          setRecurrenceOccurrences(savedOccurrences);
+        }
+
+        // Convert attendees format if necessary
+        if (savedAttendees && Array.isArray(savedAttendees)) {
+          const formattedAttendees = savedAttendees.map((attendee) => ({
+            email: attendee.email || "",
+            touched: true,
+          }));
+          if (formattedAttendees.length > 0) {
+            setAttendees(formattedAttendees);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading confirmation form data:", error);
+      }
+    } else {
+      // Fall back to the scheduling form data
+      const savedFormData = localStorage.getItem("schedulingFormData");
+      if (savedFormData) {
+        try {
+          const {
+            selectedDate: savedDate,
+            selectedTime: savedTime,
+            isRecurring: savedIsRecurring,
+            recurrencePattern: savedPattern,
+            recurrenceEndType: savedEndType,
+            recurrenceEndDate: savedEndDate,
+            recurrenceOccurrences: savedOccurrences,
+            weeklyDays: savedWeeklyDays,
+            attendees: savedAttendees,
+          } = JSON.parse(savedFormData);
+
+          if (savedDate) setSelectedDate(new Date(savedDate));
+          if (savedTime) setSelectedTime(dayjs(savedTime));
+          setIsRecurring(savedIsRecurring);
+          setRecurrencePattern(savedPattern);
+          setRecurrenceEndType(savedEndType);
+          if (savedEndDate) setRecurrenceEndDate(new Date(savedEndDate));
+          setRecurrenceOccurrences(savedOccurrences);
+          setWeeklyDays(savedWeeklyDays);
+          setAttendees(savedAttendees);
+        } catch (error) {
+          console.error("Error loading saved form data:", error);
+          // Clear invalid data
+          localStorage.removeItem("schedulingFormData");
+        }
+      }
+    }
+  }, []);
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const formData = {
+        selectedDate,
+        selectedTime: selectedTime.toISOString(),
+        isRecurring,
+        recurrencePattern,
+        recurrenceEndType,
+        recurrenceEndDate,
+        recurrenceOccurrences,
+        weeklyDays,
+        attendees,
+        appointmentType: appointmentType,
+      };
+      localStorage.setItem("schedulingFormData", JSON.stringify(formData));
+    } catch (error) {
+      console.error("Error saving form data:", error);
+    }
+  }, [
+    selectedDate,
+    selectedTime,
+    isRecurring,
+    recurrencePattern,
+    recurrenceEndType,
+    recurrenceEndDate,
+    recurrenceOccurrences,
+    weeklyDays,
+    attendees,
+    appointmentType,
+  ]);
 
   const handleAttendeeChange = (
     index: number,
@@ -280,7 +405,7 @@ export default function SelectDateTime() {
   };
 
   const addAttendee = () => {
-    setAttendees([...attendees, { name: "", email: "", touched: false }]);
+    setAttendees([...attendees, { email: "", touched: false }]);
   };
 
   const removeAttendee = (index: number) => {
@@ -288,6 +413,35 @@ export default function SelectDateTime() {
       const newAttendees = attendees.filter((_, i) => i !== index);
       setAttendees(newAttendees);
     }
+  };
+
+  const isFormValid = () => {
+    return (
+      selectedDate &&
+      selectedTime &&
+      (!isRecurring || recurrencePattern) &&
+      // Only validate attendees if they exist and have been touched
+      attendees.every(
+        (attendee) =>
+          !attendee.touched || // If not touched, it's valid
+          attendee.email.trim() === "" || // Empty is valid
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email), // Valid email format
+      )
+    );
+  };
+
+  const shouldShowError = (attendee: Attendee, field: "email") => {
+    if (!formSubmitted && !attendee.touched) return false;
+
+    if (field === "email") {
+      return (
+        attendee.touched && // Only show error if field was touched
+        attendee.email.trim() !== "" && // Don't show error for empty fields
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email) // Invalid email format
+      );
+    }
+
+    return false;
   };
 
   const handleNext = () => {
@@ -303,49 +457,67 @@ export default function SelectDateTime() {
     date.setHours(selectedTime.hour());
     date.setMinutes(selectedTime.minute());
 
-    const attendeesData = attendees.map(({ name, email }) => ({ name, email }));
+    // Only include attendees that have valid emails
+    const attendeesData = attendees
+      .filter((attendee) => attendee.email.trim() !== "")
+      .map(({ email }) => ({ email }));
+
+    const recurrenceData = isRecurring
+      ? {
+          type:
+            recurrencePattern === "daily"
+              ? 1
+              : recurrencePattern === "weekly"
+                ? 2
+                : recurrencePattern === "biweekly"
+                  ? 2
+                  : 3,
+          repeat_interval: recurrencePattern === "biweekly" ? 2 : 1,
+          end_date_time:
+            recurrenceEndType === "date"
+              ? recurrenceEndDate?.toISOString()
+              : undefined,
+          end_times:
+            recurrenceEndType === "occurrences"
+              ? recurrenceOccurrences
+              : undefined,
+          weekly_days:
+            recurrencePattern === "weekly" || recurrencePattern === "biweekly"
+              ? weeklyDays
+              : undefined,
+          monthly_day: recurrencePattern === "monthly" ? monthlyDay : undefined,
+        }
+      : null;
 
     const params = new URLSearchParams({
       type: appointmentType || "",
       date: date.toISOString(),
       isRecurring: isRecurring.toString(),
       ...(isRecurring && recurrencePattern ? { recurrencePattern } : {}),
-      attendees: JSON.stringify(attendeesData),
+      ...(isRecurring && recurrenceData
+        ? { recurrenceData: JSON.stringify(recurrenceData) }
+        : {}),
+      ...(attendeesData.length > 0
+        ? { attendees: JSON.stringify(attendeesData) }
+        : {}),
     });
 
+    // Save current form data before navigating
+    const formData = {
+      selectedDate,
+      selectedTime: selectedTime.toISOString(),
+      isRecurring,
+      recurrencePattern,
+      recurrenceEndType,
+      recurrenceEndDate,
+      recurrenceOccurrences,
+      weeklyDays,
+      attendees,
+      appointmentType: appointmentType,
+    };
+    localStorage.setItem("schedulingFormData", JSON.stringify(formData));
+
     router.push(`/scheduling/confirm?${params.toString()}`);
-  };
-
-  const isFormValid = () => {
-    return (
-      selectedDate &&
-      selectedTime &&
-      (!isRecurring || recurrencePattern) &&
-      attendees.every(
-        (attendee) =>
-          attendee.name.trim() !== "" &&
-          attendee.email.trim() !== "" &&
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email),
-      )
-    );
-  };
-
-  const shouldShowError = (attendee: Attendee, field: "name" | "email") => {
-    if (!formSubmitted && !attendee.touched) return false;
-
-    if (field === "name") {
-      return attendee.name.trim() === "";
-    }
-
-    if (field === "email") {
-      return (
-        attendee.email.trim() === "" ||
-        (attendee.email.trim() !== "" &&
-          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendee.email))
-      );
-    }
-
-    return false;
   };
 
   return (
@@ -353,9 +525,7 @@ export default function SelectDateTime() {
       <StyledContainer>
         <StyledTitle>Select Date and Time</StyledTitle>
         <StyledSubtitle>
-          Choose when you&apos;d like to schedule your{" "}
-          {appointmentType === "one-on-one" ? "one-on-one" : "group"}{" "}
-          consultation
+          Choose when you&apos;d like to schedule your meetings.
         </StyledSubtitle>
 
         <StyledCalendarContainer>
@@ -403,20 +573,6 @@ export default function SelectDateTime() {
             <StyledAttendeeForm key={index}>
               <div className="attendee-fields">
                 <TextField
-                  label="Name"
-                  value={attendee.name}
-                  onChange={(e) =>
-                    handleAttendeeChange(index, "name", e.target.value)
-                  }
-                  variant="outlined"
-                  fullWidth
-                  required
-                  error={shouldShowError(attendee, "name")}
-                  helperText={
-                    shouldShowError(attendee, "name") ? "Name is required" : ""
-                  }
-                />
-                <TextField
                   label="Email"
                   type="email"
                   value={attendee.email}
@@ -425,7 +581,6 @@ export default function SelectDateTime() {
                   }
                   variant="outlined"
                   fullWidth
-                  required
                   error={shouldShowError(attendee, "email")}
                   helperText={
                     shouldShowError(attendee, "email")
@@ -473,27 +628,114 @@ export default function SelectDateTime() {
           </div>
 
           {isRecurring && (
-            <div className="space-y-2">
-              <label className="block font-medium">Recurrence Pattern</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={recurrencePattern || ""}
-                onChange={(e) =>
-                  setRecurrencePattern(
-                    e.target.value as
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block font-medium">Recurrence Pattern</label>
+                <select
+                  className="w-full p-2 border rounded"
+                  value={recurrencePattern || ""}
+                  onChange={(e) => {
+                    const newPattern = e.target.value as
                       | "daily"
                       | "weekly"
                       | "biweekly"
-                      | "monthly",
-                  )
-                }
-              >
-                <option value="">Select pattern</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="biweekly">Bi-weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
+                      | "monthly";
+                    setRecurrencePattern(newPattern);
+
+                    // Auto-select the day of week if weekly/biweekly is selected
+                    if (
+                      (newPattern === "weekly" || newPattern === "biweekly") &&
+                      selectedDate
+                    ) {
+                      const dayOfWeek = selectedDate.getDay();
+                      setWeeklyDays([dayOfWeek]);
+                    }
+                  }}
+                >
+                  <option value="">Select pattern</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Bi-weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              {(recurrencePattern === "weekly" ||
+                recurrencePattern === "biweekly") && (
+                <div className="space-y-2">
+                  <label className="block font-medium">Days of Week</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (day, index) => (
+                        <label key={day} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={weeklyDays.includes(index)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setWeeklyDays([...weeklyDays, index]);
+                              } else {
+                                setWeeklyDays(
+                                  weeklyDays.filter((d) => d !== index),
+                                );
+                              }
+                            }}
+                            className="mr-1"
+                          />
+                          {day}
+                        </label>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="block font-medium">Recurrence End</label>
+                <select
+                  className="w-full p-2 border rounded"
+                  value={recurrenceEndType}
+                  onChange={(e) =>
+                    setRecurrenceEndType(
+                      e.target.value as "date" | "occurrences",
+                    )
+                  }
+                >
+                  <option value="date">End Date</option>
+                  <option value="occurrences">Number of Occurrences</option>
+                </select>
+
+                {recurrenceEndType === "date" && (
+                  <input
+                    type="date"
+                    value={
+                      recurrenceEndDate
+                        ? recurrenceEndDate.toISOString().split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setRecurrenceEndDate(new Date(e.target.value))
+                    }
+                    className="w-full p-2 border rounded mt-2"
+                    min={selectedDate?.toISOString().split("T")[0]}
+                  />
+                )}
+
+                {recurrenceEndType === "occurrences" && (
+                  <input
+                    type="number"
+                    value={recurrenceOccurrences || 1}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      setRecurrenceOccurrences(
+                        isNaN(value) ? 1 : Math.max(1, value),
+                      );
+                    }}
+                    className="w-full p-2 border rounded mt-2"
+                    min={1}
+                  />
+                )}
+              </div>
             </div>
           )}
         </StyledRecurringContainer>
