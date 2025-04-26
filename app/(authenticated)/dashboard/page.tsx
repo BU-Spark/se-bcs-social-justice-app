@@ -85,8 +85,10 @@ export default function DashboardPage() {
 
   const handleJoinCommunity = async (communityId: string) => {
     try {
-      const res = await fetch(`/api/communities/${communityId}/join`, {
+      const res = await fetch("/api/join-community", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communityId }),
       });
       if (!res.ok) throw new Error("Failed to join community");
       fetchCommunities();

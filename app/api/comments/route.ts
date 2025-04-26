@@ -1,4 +1,3 @@
-// app/api/comments/route.ts
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
@@ -15,7 +14,7 @@ export async function GET(request: Request) {
 
     const comments = await prisma.comment.findMany({
       where: { postId },
-      include: { user: true }, // so we can display the commenter’s name
+      include: { user: true },
       orderBy: { createdAt: "asc" },
     });
 
@@ -38,7 +37,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Expect a JSON body with postId and content
     const { postId, content } = await request.json();
     if (!postId || !content) {
       return NextResponse.json(
@@ -47,7 +45,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Lookup the user in your database using clerkUserId
     const userRecord = await prisma.user.findUnique({
       where: { clerkUserId: clerkUser.id },
     });
@@ -69,55 +66,6 @@ export async function POST(request: Request) {
     console.error("Error adding comment:", error);
     return NextResponse.json(
       { error: "Failed to add comment" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: { commentId: string } }
-) {
-  try {
-    // Require that the user is authenticated
-    const clerkUser = await currentUser();
-    if (!clerkUser) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const { commentId } = params;
-
-    // Fetch the comment including its related user.
-    const comment = await prisma.comment.findUnique({
-      where: { id: commentId },
-      include: { user: true },
-    });
-
-    if (!comment) {
-      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
-    }
-
-    // Only allow the comment's owner to delete it.
-    if (comment.user.clerkUserId !== clerkUser.id) {
-      return NextResponse.json(
-        { error: "Not authorized to delete this comment" },
-        { status: 403 }
-      );
-    }
-
-    // Delete the comment.
-    await prisma.comment.delete({
-      where: { id: commentId },
-    });
-
-    return NextResponse.json(
-      { message: "Comment deleted successfully" },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("Error deleting comment:", error);
-    return NextResponse.json(
-      { error: "Failed to delete comment" },
       { status: 500 }
     );
   }

@@ -1,22 +1,18 @@
-// app/api/communities/route.ts
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 
 export async function GET() {
   try {
-    // Get Clerk authenticated user
     const clerkUser = await currentUser();
     if (!clerkUser) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Fetch or create the local user based on Clerk's user id
     let localUser = await prisma.user.findUnique({
       where: { clerkUserId: clerkUser.id },
     });
 
-    // (Optional) If user record not found, you may decide to create one or return an error:
     if (!localUser) {
       localUser = await prisma.user.create({
         data: {
@@ -27,7 +23,6 @@ export async function GET() {
       });
     }
 
-    // Use the local user's id to query memberships
     const joinedCommunities = await prisma.community.findMany({
       where: {
         members: {

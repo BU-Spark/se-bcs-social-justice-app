@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { CommunitiesData, Community } from "@/types/community";
 import { useSidebar } from "../../components/SidebarContext";
+import Link from "next/link";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -148,6 +149,9 @@ const CommunitiesPage = () => {
                   >
                     Unjoin
                   </StyledButton>
+                  <Link href={`/communities/${community.id}`} passHref>
+                    <StyledButton>View</StyledButton>
+                  </Link>
                 </StyledDiv>
               ))
             )}

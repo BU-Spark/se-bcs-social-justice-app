@@ -37,7 +37,7 @@ async function seed() {
         content: post.content,
         score: post.score,
         communityId: community.id,
-        userId: "cm96wsslk001v2r0v8icz5xic",
+        userId: "cm9x8lm7x0000150w12jbi4p9",
       },
     });
   }

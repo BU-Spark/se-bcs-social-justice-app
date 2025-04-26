@@ -17,7 +17,6 @@ export default function CreatePostForm({
   return (
     <FormContainer>
       <form action={createPost}>
-        {/* Pass the communityId as a hidden input */}
         <input type="hidden" name="communityId" value={communityId} />
         <input
           type="text"

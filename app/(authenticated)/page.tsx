@@ -83,6 +83,20 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const handleJoinCommunity = async (communityId: string) => {
+    try {
+      const res = await fetch("/api/join-community", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communityId }),
+      });
+      if (!res.ok) throw new Error("Failed to join community");
+      fetchCommunities();
+    } catch (error) {
+      console.error("Error joining community:", error);
+    }
+  };
+
   useEffect(() => {
     fetchCommunities();
   }, [fetchCommunities]);
@@ -109,7 +123,7 @@ export default function DashboardPage() {
                 <strong>{community.name}</strong>
                 <p>{community.description}</p>
               </StyledText>
-              <Link href={`/communities/${community.id}`}>
+              <Link href={`/communities/${community.id}`} passHref>
                 <StyledButton>View</StyledButton>
               </Link>
             </StyledDiv>
@@ -133,9 +147,9 @@ export default function DashboardPage() {
                 <strong>{group.name}</strong>
                 <p>{group.description}</p>
               </StyledText>
-              <Link href={`/communities/${group.id}`}>
-                <StyledButton>View</StyledButton>
-              </Link>
+              <StyledButton onClick={() => handleJoinCommunity(group.id)}>
+                Join Community
+              </StyledButton>
             </StyledDiv>
           ))
         )}

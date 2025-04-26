@@ -6,14 +6,14 @@ import { useUser } from "@clerk/nextjs";
 
 const CommentsContainer = styled.div`
   margin-top: 16px;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid silver;
   padding-top: 8px;
 `;
 
 const CommentItem = styled.div`
   margin-bottom: 12px;
   padding: 8px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid light gray;
   display: flex;
   flex-direction: column;
 `;
@@ -39,12 +39,12 @@ const CommentUserName = styled.span`
 
 const CommentTime = styled.span`
   font-size: 12px;
-  color: #666;
+  color: gray;
 `;
 
 const CommentContent = styled.p`
   font-size: 14px;
-  color: #333;
+  color: charcoal;
   margin: 0;
 `;
 
@@ -57,7 +57,7 @@ const CommentInput = styled.input`
   flex: 1;
   padding: 8px;
   font-size: 14px;
-  border: 1px solid #ccc;
+  border: 1px solid gray;
   border-radius: 4px;
 `;
 
@@ -72,7 +72,6 @@ const CommentButton = styled.button`
   cursor: pointer;
 `;
 
-// A small delete button for comments.
 const DeleteCommentButton = styled.button`
   background-color: transparent;
   border: none;
@@ -89,7 +88,7 @@ type Comment = {
   user: {
     name: string | null;
     imageUrl?: string | null;
-    clerkUserId?: string; // ensure the clerkUserId is also returned if available
+    clerkUserId?: string;
   };
 };
 
@@ -119,7 +118,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
 
   const handleCommentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!commentInput.trim()) return; // prevent empty submission
+    if (!commentInput.trim()) return;
     try {
       const res = await fetch(`/api/comments`, {
         method: "POST",
@@ -134,14 +133,17 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
+  const handleDeleteComment = async (commentid: string) => {
     if (!confirm("Are you sure you want to delete this comment?")) return;
     try {
-      const res = await fetch(`/api/comments/${commentId}`, {
+      const res = await fetch(`/api/comments/${commentid}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete comment");
-      fetchComments();
+
+      setComments((prevComments) =>
+        prevComments.filter((c) => c.id !== commentid)
+      );
     } catch (error) {
       console.error("Error deleting comment:", error);
     }
@@ -171,7 +173,6 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
                 {comment.user?.name || "Anonymous"}
               </CommentUserName>
               <CommentTime>{formattedTime}</CommentTime>
-              {/* If current user is the author of the comment, show a delete button */}
               {clerkUser && comment.user?.clerkUserId === clerkUser.id && (
                 <DeleteCommentButton
                   onClick={() => handleDeleteComment(comment.id)}

@@ -6,10 +6,28 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const comments = await prisma.comment.findMany({
+      where: { postId: params.id },
+      select: { id: true },
+    });
+
+    if (comments.length > 0) {
+      await prisma.comment.deleteMany({
+        where: { postId: params.id },
+      });
+    }
+
     const deletedPost = await prisma.posting.delete({
       where: { id: params.id },
     });
-    return NextResponse.json(deletedPost, { status: 200 });
+
+    return NextResponse.json(
+      {
+        ...deletedPost,
+        deletedCommentsCount: comments.length,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error deleting post:", error);
     return NextResponse.json(

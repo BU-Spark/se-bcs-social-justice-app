@@ -12,17 +12,17 @@ const StyledContainer = styled.div`
 `;
 
 const StyledSectionHeader = styled.h1`
-  text-align: center;
-  font-size: 36px;
+  color: charcoal;
+  font-size: 39px;
   font-weight: bold;
+  text-align: center;
   margin-bottom: 24px;
-  color: #333;
 `;
 
 const StyledTopBar = styled.div`
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 16px;
 `;
 
@@ -35,11 +35,11 @@ const StyledPostFormContainer = styled.div`
 `;
 
 const StyledPostCard = styled.div`
+  background-color: white;
   border: 1px solid black;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  background-color: white;
   display: flex;
   flex-direction: column;
   text-align: left;
@@ -53,21 +53,19 @@ const StyledPostTitle = styled.h2`
 
 const StyledPostContent = styled.p`
   font-size: 16px;
-  color: #444;
+  color: dark gray
   line-height: 1.5;
   margin: 0;
 `;
 
-// Footer contains a single row where the vote controls and delete button reside.
 const StyledPostFooter = styled.div`
   margin-top: 12px;
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: #999;
+  color: silver;
 `;
 
-// This row displays the date/time with profile image.
 const StyledDateTime = styled.div`
   display: flex;
   align-items: center;
@@ -84,12 +82,11 @@ const StyledProfileImage = styled.img`
 
 const StyledLikes = styled.span`
   font-size: 14px;
-  color: #ff4500;
+  color: orange;
   margin-right: 16px;
   font-weight: bold;
 `;
 
-// Base button style.
 const StyledButton = styled.button`
   padding: 12px 20px;
   background-color: blue;
@@ -111,7 +108,6 @@ const StyledLikeButton = styled(StyledButton)`
   }
 `;
 
-// Delete button styling (exactly as originally provided).
 const StyledDeleteButton = styled(StyledButton)`
   background-color: darkred;
   &:hover {
@@ -134,14 +130,12 @@ const StyledTextarea = styled.textarea`
   resize: vertical;
 `;
 
-// Extend Post type to include currentUserVote.
 type Post = {
   id: string;
   title: string;
   content: string | null;
   createdAt: string;
   score: number;
-  // This property should be provided by your API for each post.
   currentUserVote?: "UPVOTE" | "DOWNVOTE" | null;
   user?: {
     id: string;
@@ -223,9 +217,6 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
     }
   };
 
-  // The vote button logic:
-  // - If currentUserVote is null or "DOWNVOTE", display "Like" (and send UPVOTE)
-  // - If currentUserVote is "UPVOTE", display "Dislike" (and send DOWNVOTE)
   const handleVote = async (postId: string, type: "UPVOTE" | "DOWNVOTE") => {
     console.log(
       `Attempting to ${type === "UPVOTE" ? "like" : "dislike"} post:`,
