@@ -166,7 +166,10 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
           <CommentItem key={comment.id}>
             <CommentHeader>
               <CommentProfileImage
-                src={comment.user?.imageUrl || "https://via.placeholder.com/30"}
+                src={
+                  comment.user?.imageUrl ||
+                  "https://as2.ftcdn.net/v2/jpg/03/31/69/91/1000_F_331699188_lRpvqxO5QRtwOM05gR50ImaaJgBx68vi.jpg"
+                }
                 alt={comment.user?.name || "Profile"}
               />
               <CommentUserName>

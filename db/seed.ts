@@ -18,11 +18,9 @@ async function seedcommunities() {
 }
 
 async function seed() {
-  // await prisma.posting.deleteMany();
-
   const community = await prisma.community.findFirst();
   const user = await prisma.user.findFirst();
-
+  await prisma.posting.deleteMany();
   if (!community || !user) {
     console.error(
       "No community or user found. Please seed communities/users first."
@@ -37,9 +35,10 @@ async function seed() {
         content: post.content,
         score: post.score,
         communityId: community.id,
-        userId: "cm9x8lm7x0000150w12jbi4p9",
+        userId: "cm9zjjklm0000030ure6hdaqv",
       },
     });
   }
 }
+
 seed();

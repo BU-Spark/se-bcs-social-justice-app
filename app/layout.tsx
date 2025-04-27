@@ -2,6 +2,7 @@ import { Roboto } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { SidebarProvider } from "./components/SidebarContext";
+import Script from "next/script";
 
 const roboto = Roboto({
   weight: ["400", "500", "700"],
@@ -23,6 +24,12 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <head>
+          <Script
+            src="https://widget.cloudinary.com/v2.0/global/all.js"
+            strategy="beforeInteractive"
+          />
+        </head>
         <body className={roboto.className}>
           <SidebarProvider>
             <div className="flex min-h-screen">
