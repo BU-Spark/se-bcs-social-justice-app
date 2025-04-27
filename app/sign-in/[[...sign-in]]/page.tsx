@@ -74,7 +74,7 @@ export default function Page() {
         <ContentContainer>
           <MicrophoneIcon>
             <Image
-              src="/mic.png"
+              src="/mic.jpeg"
               alt="Microphone Icon"
               width={120}
               height={120}

@@ -65,4 +65,9 @@ export const postings = [
       "Please take a moment to review the community guidelines to ensure a respectful and enjoyable environment for everyone.",
     score: 2,
   },
+  ...Array.from({ length: 100 }, (_, i) => ({
+    title: `Title ${i + 1}`,
+    content: `This is a placeholder content for posting number ${i + 1}. Feel free to modify it as needed.`,
+    score: Math.floor(Math.random() * 5) + 1,
+  })),
 ];

@@ -7,13 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-enum UserRole {
-  regMember
-  leader
-  admin
-}
-
 model User {
   id                     String                @id @default(cuid())
   clerkUserId            String                @unique
@@ -28,12 +21,11 @@ model User {
   referrer               String[]
   hostedAppointments     Appointment[]         @relation("hostRelation")
   appointmentAttendances AppointmentAttendee[]
-  memberships            CommunityMembers[]
-  interests              UserInterest[]
   comments               Comment[]
-  votes                  Vote[]
+  memberships            CommunityMembers[]
   posts                  Posting[]
-  role                   UserRole @default(regMember)
+  interests              UserInterest[]
+  votes                  Vote[]
 }
 
 model Interest {
@@ -61,17 +53,6 @@ model Community {
   updatedAt   DateTime           @updatedAt
   members     CommunityMembers[]
   posts       Posting[]
-  leaders     CommunityLeader[]
-}
-
-model CommunityLeader {
-  id          String    @id @default(cuid())
-  userId      String
-  communityId String
-  user        User      @relation(fields: [userId], references: [id])
-  community   Community @relation(fields: [communityId], references: [id])
-  
-  @@unique([userId, communityId])
 }
 
 model CommunityMembers {
@@ -130,6 +111,46 @@ model AppointmentAttendee {
   @@id([userId, appointmentId])
 }
 
+model Posting {
+  id          String    @id @default(cuid())
+  title       String
+  content     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  imageUrl    String?
+  pdfUrl      String?
+  communityId String
+  userId      String
+  score       Int       @default(0)
+  comments    Comment[]
+  community   Community @relation(fields: [communityId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  votes       Vote[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  postId    String
+  userId    String
+  post      Posting  @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  type      VoteType
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Posting  @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
 enum AppointmentStatus {
   scheduled
   completed
@@ -148,44 +169,6 @@ enum RecurrencePattern {
   biweekly
   monthly
   custom
-}
-
-model Posting {
-  id          String    @id @default(cuid())
-  title       String
-  content     String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  communityId String
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  community   Community @relation(fields: [communityId], references: [id])
-  comments    Comment[]
-  votes       Vote[]
-  score       Int       @default(0)
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  postId    String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  post      Posting     @relation(fields: [postId], references: [id])
-}
-
-model Vote {
-  id        String   @id @default(cuid())
-  type      VoteType
-  createdAt DateTime @default(now())
-  postId    String
-  userId    String
-  post      Posting     @relation(fields: [postId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
-
-  @@unique([postId, userId])
 }
 
 enum VoteType {

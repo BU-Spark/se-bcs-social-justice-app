@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import { useUser } from "@clerk/nextjs";
-import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaFilePdf } from "react-icons/fa";
 import CommentsSection from "./CommentsSection";
+import PostForm from "./PostForm";
 
 const StyledContainer = styled.div`
   margin-top: 28px;
@@ -20,18 +21,24 @@ const StyledSectionHeader = styled.h1`
 `;
 
 const StyledTopBar = styled.div`
-  align-items: center;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
 `;
 
-const StyledPostFormContainer = styled.div`
-  padding: 16px;
-  border: 1px solid black;
+const StyledButton = styled.button`
+  padding: 12px 20px;
+  background-color: blue;
+  color: white;
+  border: none;
   border-radius: 8px;
-  background-color: silver;
-  margin-bottom: 24px;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background-color 0.2s ease;
+  &:hover {
+    background-color: red;
+  }
 `;
 
 const StyledPostCard = styled.div`
@@ -53,7 +60,7 @@ const StyledPostTitle = styled.h2`
 
 const StyledPostContent = styled.p`
   font-size: 16px;
-  color: dark gray
+  color: black;
   line-height: 1.5;
   margin: 0;
 `;
@@ -81,24 +88,10 @@ const StyledProfileImage = styled.img`
 `;
 
 const StyledLikes = styled.span`
-  font-size: 14px;
+  font-size: 18px;
   color: orange;
   margin-right: 16px;
   font-weight: bold;
-`;
-
-const StyledButton = styled.button`
-  padding: 12px 20px;
-  background-color: blue;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-right: 8px;
-  transition: background-color 0.2s ease;
-  &:hover {
-    background-color: red;
-  }
 `;
 
 const StyledLikeButton = styled(StyledButton)`
@@ -115,19 +108,49 @@ const StyledDeleteButton = styled(StyledButton)`
   }
 `;
 
-const StyledInput = styled.input`
-  padding: 8px;
-  font-size: 16px;
-  width: 100%;
-  margin-bottom: 8px;
+const StyledAttachments = styled.div`
+  margin-top: 16px;
+  border-top: 1px solid lightgray;
+  padding-top: 12px;
 `;
 
-const StyledTextarea = styled.textarea`
-  padding: 8px;
+const StyledAttachmentHeader = styled.h4`
   font-size: 16px;
-  width: 100%;
   margin-bottom: 8px;
-  resize: vertical;
+  color: darkgray;
+`;
+
+const StyledPdfLink = styled.a`
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background-color: whitesmoke;
+  border-radius: 4px;
+  width: fit-content;
+  color: black;
+  text-decoration: none;
+  margin: 8px 0;
+  &:hover {
+    background-color: gainsboro;
+  }
+`;
+
+const StyledPdfIcon = styled.div`
+  width: 30px;
+  height: 36px;
+  background-color: red;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  margin-right: 8px;
+`;
+
+const StyledImageContainer = styled.div`
+  margin-top: 16px;
+  max-width: 100%;
+  overflow: hidden;
 `;
 
 type Post = {
@@ -136,6 +159,8 @@ type Post = {
   content: string | null;
   createdAt: string;
   score: number;
+  imageUrl: string | null;
+  pdfUrl: string | null;
   currentUserVote?: "UPVOTE" | "DOWNVOTE" | null;
   user?: {
     id: string;
@@ -152,21 +177,25 @@ interface BlogPostsSectionProps {
 const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
   const { user: clerkUser } = useUser();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [loading, setLoading] = useState<boolean>(true);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/posts?communityId=${communityId}`);
+      const res = await fetch(
+        `/api/posts?communityId=${communityId}&page=${page}&pageSize=10`
+      );
       if (!res.ok) throw new Error("Failed to fetch posts");
-      const data: Post[] = await res.json();
-      setPosts(data);
+      const data = await res.json();
+      setPosts(data.posts);
+      setTotalPages(data.totalPages);
     } catch (error) {
       console.error("Error fetching posts:", error);
+      setError("Error fetching posts. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -174,43 +203,15 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
 
   useEffect(() => {
     fetchPosts();
-  }, [communityId]);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const res = await fetch(`/api/posts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ communityId, title, content }),
-      });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to create post");
-      }
-      setTitle("");
-      setContent("");
-      setIsFormVisible(false);
-      fetchPosts();
-    } catch (error: any) {
-      console.error("Error creating post:", error);
-      setError(error.message);
-    }
-  };
+  }, [communityId, page]);
 
   const handleDelete = async (postId: string) => {
-    console.log("Attempting to delete post:", postId);
     if (!confirm("Are you sure you want to delete this post?")) return;
     try {
       const res = await fetch(`/api/posts/${postId}`, {
         method: "DELETE",
       });
-      if (!res.ok) {
-        console.error("Delete request failed with status", res.status);
-        throw new Error("Failed to delete post");
-      }
-      console.log("Post deleted successfully");
+      if (!res.ok) throw new Error("Failed to delete post");
       fetchPosts();
     } catch (error: any) {
       console.error("Error deleting post:", error);
@@ -218,25 +219,26 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
   };
 
   const handleVote = async (postId: string, type: "UPVOTE" | "DOWNVOTE") => {
-    console.log(
-      `Attempting to ${type === "UPVOTE" ? "like" : "dislike"} post:`,
-      postId
-    );
     try {
       const res = await fetch(`/api/posts/${postId}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type }),
       });
-      if (!res.ok) {
-        console.error("Vote request failed with status", res.status);
-        throw new Error("Failed to vote on post");
-      }
-      console.log("Vote successful");
+      if (!res.ok) throw new Error("Failed to vote on post");
       fetchPosts();
     } catch (error: any) {
       console.error("Error voting on post:", error);
     }
+  };
+
+  const getFilenameFromUrl = (url: string) => {
+    const parts = url.split("/");
+    let filename = parts[parts.length - 1];
+    if (filename.includes("?")) {
+      filename = filename.split("?")[0];
+    }
+    return filename.length > 25 ? filename.substring(0, 22) + "..." : filename;
   };
 
   return (
@@ -249,26 +251,14 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
         </StyledButton>
       </StyledTopBar>
       {isFormVisible && (
-        <StyledPostFormContainer>
-          <form onSubmit={handleSubmit}>
-            <StyledInput
-              type="text"
-              placeholder="Enter post title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-            <StyledTextarea
-              placeholder="Write your post content here..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={4}
-              required
-            />
-            <StyledButton type="submit">Post</StyledButton>
-            {error && <p style={{ color: "red" }}>{error}</p>}
-          </form>
-        </StyledPostFormContainer>
+        <PostForm
+          communityId={communityId}
+          onPostCreated={() => {
+            fetchPosts();
+            setIsFormVisible(false);
+          }}
+          onCancel={() => setIsFormVisible(false)}
+        />
       )}
       {loading ? (
         <p>Loading posts...</p>
@@ -278,20 +268,12 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
         posts.map((post) => {
           const formattedDate = new Date(post.createdAt).toLocaleDateString(
             "en-US",
-            {
-              month: "long",
-              day: "numeric",
-            }
+            { month: "long", day: "numeric" }
           );
           const formattedTime = new Date(post.createdAt).toLocaleTimeString(
             "en-US",
-            {
-              hour: "numeric",
-              minute: "numeric",
-              hour12: true,
-            }
+            { hour: "numeric", minute: "numeric", hour12: true }
           );
-
           const currentVote = post.currentUserVote;
           const newVoteType: "UPVOTE" | "DOWNVOTE" =
             !currentVote || currentVote === "DOWNVOTE" ? "UPVOTE" : "DOWNVOTE";
@@ -301,15 +283,13 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
           return (
             <StyledPostCard key={post.id}>
               <StyledDateTime>
-                {post.user?.imageUrl && (
-                  <StyledProfileImage
-                    src={
-                      post.user.imageUrl ||
-                      "https://as2.ftcdn.net/v2/jpg/03/31/69/91/1000_F_331699188_lRpvqxO5QRtwOM05gR50ImaaJgBx68vi.jpg"
-                    }
-                    alt={post.user.name || "Profile"}
-                  />
-                )}
+                <StyledProfileImage
+                  src={
+                    post.user?.imageUrl ||
+                    "https://as2.ftcdn.net/v2/jpg/03/31/69/91/1000_F_331699188_lRpvqxO5QRtwOM05gR50ImaaJgBx68vi.jpg"
+                  }
+                  alt={post.user?.name || "Profile"}
+                />
                 <span>
                   {formattedDate} at {formattedTime} -{" "}
                   {post.user?.name || "Unknown"}
@@ -319,6 +299,37 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
               <hr />
               <StyledPostTitle>{post.title}</StyledPostTitle>
               <StyledPostContent>{post.content}</StyledPostContent>
+
+              {/* Display Image if exists */}
+              {post.imageUrl && (
+                <StyledImageContainer>
+                  <img
+                    src={post.imageUrl}
+                    alt="Post attachment"
+                    style={{ maxWidth: "100%", borderRadius: "4px" }}
+                  />
+                </StyledImageContainer>
+              )}
+
+              {/* Display PDF if exists */}
+              {post.pdfUrl && (
+                <StyledAttachments>
+                  <StyledAttachmentHeader>
+                    Attached Document:
+                  </StyledAttachmentHeader>
+                  <StyledPdfLink
+                    href={post.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <StyledPdfIcon>
+                      <FaFilePdf />
+                    </StyledPdfIcon>
+                    <span>{getFilenameFromUrl(post.pdfUrl)}</span>
+                  </StyledPdfLink>
+                </StyledAttachments>
+              )}
+
               <StyledPostFooter>
                 <div
                   style={{
@@ -353,6 +364,30 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
           );
         })
       )}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "16px",
+          marginTop: "20px",
+        }}
+      >
+        <StyledButton
+          onClick={() => setPage(Math.max(page - 1, 1))}
+          disabled={page === 1}
+        >
+          Previous Page
+        </StyledButton>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <StyledButton
+          onClick={() => setPage(page + 1)}
+          disabled={page >= totalPages}
+        >
+          Next Page
+        </StyledButton>
+      </div>
     </StyledContainer>
   );
 };
