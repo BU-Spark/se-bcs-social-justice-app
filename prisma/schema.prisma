@@ -8,18 +8,21 @@ datasource db {
 }
 
 model User {
-  id                     String                @id @default(cuid())
-  clerkUserId            String                @unique
-  email                  String                @unique
-  name                   String?
-  imageUrl               String?
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
-  ethnicity              String?
-  phoneNumber            String?
-  username               String?               @unique
-  referrer               String[]
-  hostedAppointments     Appointment[]         @relation("hostRelation")
+  id          String         @id @default(cuid())
+  clerkUserId String         @unique
+  email       String         @unique
+  name        String?
+  imageUrl    String?
+  username    String?        @unique
+  ethnicity   String?
+  phoneNumber String?
+  role        UserRole       @default(member)
+  referrer    String[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  interests   UserInterest[]
+  memberships CommunityMembers[]
+  hostedAppointments Appointment[] @relation("hostRelation")
   appointmentAttendances AppointmentAttendee[]
   comments               Comment[]
   memberships            CommunityMembers[]
@@ -32,6 +35,7 @@ model Interest {
   id    String         @id @default(cuid())
   name  String         @unique
   users UserInterest[]
+  communities CommunityInterest[]
 }
 
 model UserInterest {
@@ -54,6 +58,8 @@ model Community {
   members     CommunityMembers[]
   posts       Posting[]
 }
+  interests   CommunityInterest[]
+}
 
 model CommunityMembers {
   userId      String
@@ -64,29 +70,38 @@ model CommunityMembers {
   @@id([userId, communityId])
 }
 
+model CommunityInterest {
+  communityId String
+  interestId  String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  interest    Interest  @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([communityId, interestId])
+}
+
 model AppointmentType {
   id           String        @id @default(cuid())
-  typeName     String        @db.VarChar(100)
-  description  String?
+  title        String        @db.VarChar(100)
+  description  String?       @db.Text
+  icon         String        @db.VarChar(50)
+  accessType   AppointmentAccessType @default(private)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
 }
 
 model Appointment {
-  id                  String                @id @default(cuid())
-  appointmentTypeId   String
-  hostId              String
-  startTime           DateTime
-  endTime             DateTime
-  timeZone            String                @default("UTC") @db.VarChar(50)
-  locationOrLink      String?               @db.VarChar(255)
-  status              AppointmentStatus     @default(scheduled)
-  google_event_id     String?               @db.VarChar(255)
-  google_synced_at    DateTime?
-  isRecurring         Boolean               @default(false)
-  recurrencePattern   RecurrencePattern?
-  recurrenceEndDate   DateTime?
+  id                String               @id @default(cuid())
+  appointmentTypeId String
+  hostId            String
+  startTime         DateTime
+  endTime           DateTime
+  timeZone          String               @default("UTC") @db.VarChar(50)
+  locationOrLink    String?              @db.VarChar(255)
+  status            AppointmentStatus    @default(scheduled)
+  isRecurring       Boolean              @default(false)
+  recurrencePattern RecurrencePattern?
+  recurrenceEndDate DateTime?
   parentAppointmentId String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
@@ -100,15 +115,16 @@ model Appointment {
 model AppointmentAttendee {
   id                 String       @default(cuid())
   appointmentId      String
-  userId             String
+  userId             String?
+  email              String
   role               AttendeeRole @default(client)
   additionalComments String?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   appointment        Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([userId, appointmentId])
+  @@id([appointmentId, email])
 }
 
 model Posting {
@@ -175,3 +191,15 @@ enum VoteType {
   UPVOTE
   DOWNVOTE
 }
+
+enum UserRole {
+  member
+  leader
+  admin
+}
+
+enum AppointmentAccessType {
+  private
+  public
+}
+
