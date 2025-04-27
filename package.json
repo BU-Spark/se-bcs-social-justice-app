@@ -13,16 +13,26 @@
     "@clerk/nextjs": "^6.12.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@headlessui/react": "^2.2.2",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.1",
+    "@mui/x-date-pickers": "^7.28.3",
     "@prisma/client": "^6.5.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
+    "axios": "^1.9.0",
+    "date-fns": "^2.30.0",
+    "dayjs": "^1.11.13",
     "emotion": "^11.0.0",
     "next": "^15.2.4",
     "react": "^19.0.0",
+    "react-calendar": "^5.1.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
     "styled-components": "^6.1.15",
     "zod": "^3.24.2"
+    "react-time-picker": "^7.0.0",
+    "styled-components": "^6.1.15"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -45,6 +55,7 @@
     "prettier": "3.4.2",
     "prisma": "^6.5.0",
     "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
     "typescript": "^5",
     "typescript-eslint": "^8.22.0"
   },
@@ -70,5 +81,8 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   }
 }
