@@ -1,10 +1,11 @@
 "use client";
 
 import styled from "@emotion/styled";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { CommunitiesData, Community } from "@/types/community";
 import { useSidebar } from "../../components/SidebarContext";
+import Link from "next/link";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -68,50 +69,50 @@ const CommunitiesPage = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCommunities = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch("/api/communities");
-        if (!response.ok) throw new Error("Failed to fetch communities");
-        const jsonData: CommunitiesData = await response.json();
-        setData(jsonData);
-      } catch (error) {
-        console.error("Error fetching communities:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCommunities();
+  const fetchCommunities = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/communities");
+      if (!response.ok) throw new Error("Failed to fetch communities");
+      const jsonData: CommunitiesData = await response.json();
+      setData(jsonData);
+    } catch (error) {
+      console.error("Error fetching communities:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleJoinCommunity = (communityId: string) => {
-    const communityToJoin = data.recommendedCommunities.find(
-      (community) => community.id === communityId,
-    );
-    if (!communityToJoin) return;
-    setData((prev) => ({
-      joinedCommunities: [...prev.joinedCommunities, communityToJoin],
-      recommendedCommunities: prev.recommendedCommunities.filter(
-        (community) => community.id !== communityId,
-      ),
-    }));
+  useEffect(() => {
+    fetchCommunities();
+  }, [fetchCommunities]);
+
+  const handleJoinCommunity = async (communityId: string) => {
+    try {
+      const res = await fetch("/api/join-community", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communityId }),
+      });
+      if (!res.ok) throw new Error("Failed to join community");
+      fetchCommunities();
+    } catch (error) {
+      console.error("Error joining community:", error);
+    }
   };
 
-  const handleUnjoinCommunity = (communityId: string) => {
-    const communityToUnjoin = data.joinedCommunities.find(
-      (community) => community.id === communityId,
-    );
-    if (!communityToUnjoin) return;
-    setData((prev) => ({
-      joinedCommunities: prev.joinedCommunities.filter(
-        (community) => community.id !== communityId,
-      ),
-      recommendedCommunities: [
-        ...prev.recommendedCommunities,
-        communityToUnjoin,
-      ],
-    }));
+  const handleUnjoinCommunity = async (communityId: string) => {
+    try {
+      const res = await fetch("/api/unjoin-community", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communityId }),
+      });
+      if (!res.ok) throw new Error("Failed to unjoin community");
+      fetchCommunities();
+    } catch (error) {
+      console.error("Error unjoining community:", error);
+    }
   };
 
   return (
@@ -148,6 +149,9 @@ const CommunitiesPage = () => {
                   >
                     Unjoin
                   </StyledButton>
+                  <Link href={`/communities/${community.id}`} passHref>
+                    <StyledButton>View</StyledButton>
+                  </Link>
                 </StyledDiv>
               ))
             )}

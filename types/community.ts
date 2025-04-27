@@ -1,9 +1,8 @@
 export type Community = {
   id: string;
-  imageUrl: string;
   name: string;
   description: string;
-  type: string;
+  imageUrl?: string;
 };
 
 export type CommunitiesData = {

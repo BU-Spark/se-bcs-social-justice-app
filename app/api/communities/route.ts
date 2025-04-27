@@ -4,15 +4,29 @@ import prisma from "@/lib/db";
 
 export async function GET() {
   try {
-    const user = await currentUser();
-    if (!user) {
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    let localUser = await prisma.user.findUnique({
+      where: { clerkUserId: clerkUser.id },
+    });
+
+    if (!localUser) {
+      localUser = await prisma.user.create({
+        data: {
+          clerkUserId: clerkUser.id,
+          email: clerkUser.emailAddresses?.[0]?.emailAddress || "",
+          name: clerkUser.fullName || "",
+        },
+      });
     }
 
     const joinedCommunities = await prisma.community.findMany({
       where: {
         members: {
-          some: { userId: user.id },
+          some: { userId: localUser.id },
         },
       },
       select: {
@@ -28,7 +42,7 @@ export async function GET() {
       where: {
         NOT: {
           members: {
-            some: { userId: user.id },
+            some: { userId: localUser.id },
           },
         },
       },
@@ -43,13 +57,13 @@ export async function GET() {
 
     return NextResponse.json(
       { joinedCommunities, recommendedCommunities },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error fetching communities:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
