@@ -3,35 +3,9 @@
 import React, { useEffect, useRef } from "react";
 import styled from "@emotion/styled";
 
-interface CloudinaryOptions {
-  cloudName: string;
-  uploadPreset: string;
-  multiple: boolean;
-  resourceType?: string;
-  sources?: string[];
-  maxFileSize?: number;
-  acceptedFiles?: string;
-}
-
-interface CloudinaryResult {
-  event: string;
-  info: {
-    secure_url: string;
-  };
-}
-
-interface CloudinaryWidget {
-  open: () => void;
-}
-
 declare global {
   interface Window {
-    cloudinary: {
-      createUploadWidget: (
-        options: CloudinaryOptions,
-        callback: (error: Error | null, result: CloudinaryResult) => void,
-      ) => CloudinaryWidget;
-    };
+    cloudinary: any;
   }
 }
 
@@ -87,13 +61,13 @@ const CloudinaryUploadWidget: React.FC<CloudinaryUploadWidgetProps> = ({
   fileType = "any",
   currentUrl,
 }) => {
-  const widgetRef = useRef<CloudinaryWidget | null>(null);
+  const widgetRef = useRef<any>(null);
 
   useEffect(() => {
     if (window.cloudinary) {
-      const options: CloudinaryOptions = {
-        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "",
-        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "",
+      const options: any = {
+        cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+        uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
         multiple: false,
       };
 
@@ -111,13 +85,13 @@ const CloudinaryUploadWidget: React.FC<CloudinaryUploadWidgetProps> = ({
 
       widgetRef.current = window.cloudinary.createUploadWidget(
         options,
-        (error, result) => {
+        (error: any, result: any) => {
           if (!error && result && result.event === "success") {
             onUpload(result.info.secure_url);
           } else if (error) {
             console.error("Cloudinary upload error:", error);
           }
-        },
+        }
       );
     }
   }, [onUpload, fileType]);

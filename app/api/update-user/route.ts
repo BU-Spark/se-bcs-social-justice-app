@@ -11,36 +11,16 @@ export async function POST(req: Request) {
     const { username, ethnicity, phoneNumber, referrer, interests } =
       await req.json();
 
-    // First check if user exists, if not create it
-    let dbUser = await prisma.user.findUnique({
+    // Update the user details in Prisma
+    const updatedUser = await prisma.user.update({
       where: { clerkUserId: user.id },
+      data: {
+        username,
+        ethnicity,
+        phoneNumber,
+        referrer,
+      },
     });
-
-    if (!dbUser) {
-      dbUser = await prisma.user.create({
-        data: {
-          clerkUserId: user.id,
-          email: user.emailAddresses[0]?.emailAddress || "",
-          name: user.firstName + " " + user.lastName,
-          imageUrl: user.imageUrl,
-          username,
-          ethnicity,
-          phoneNumber,
-          referrer,
-        },
-      });
-    } else {
-      // Update existing user
-      dbUser = await prisma.user.update({
-        where: { clerkUserId: user.id },
-        data: {
-          username,
-          ethnicity,
-          phoneNumber,
-          referrer,
-        },
-      });
-    }
 
     // Process interests separately (many-to-many relationship)
     if (interests.length > 0) {
@@ -51,9 +31,7 @@ export async function POST(req: Request) {
       const newInterests = interests
         .filter(
           (i: string) =>
-            !existingInterests
-              .map((e: { name: unknown }) => e.name)
-              .includes(i),
+            !existingInterests.map((e: { name: unknown }) => e.name).includes(i)
         )
         .map((name: string) => ({ name }));
 
@@ -66,12 +44,12 @@ export async function POST(req: Request) {
       });
 
       await prisma.userInterest.deleteMany({
-        where: { userId: dbUser.id },
+        where: { userId: updatedUser.id },
       });
 
       await prisma.userInterest.createMany({
         data: allInterests.map((i) => ({
-          userId: dbUser.id,
+          userId: updatedUser.id,
           interestId: i.id,
         })),
       });
@@ -79,13 +57,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { message: "User updated successfully" },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error updating user:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

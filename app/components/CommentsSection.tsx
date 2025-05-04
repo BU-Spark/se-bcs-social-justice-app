@@ -142,7 +142,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
       if (!res.ok) throw new Error("Failed to delete comment");
 
       setComments((prevComments) =>
-        prevComments.filter((c) => c.id !== commentid),
+        prevComments.filter((c) => c.id !== commentid)
       );
     } catch (error) {
       console.error("Error deleting comment:", error);
@@ -160,7 +160,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
             hour: "numeric",
             minute: "numeric",
             hour12: true,
-          },
+          }
         );
         return (
           <CommentItem key={comment.id}>

@@ -1,7 +1,21 @@
 import { PrismaClient } from "@prisma/client";
-import { postings } from "./mock-data";
+import { communities, postings } from "./mock-data";
 
 const prisma = new PrismaClient();
+
+async function seedcommunities() {
+  await prisma.community.deleteMany();
+  for (const community of communities) {
+    await prisma.community.create({
+      data: {
+        name: community.name,
+        description: community.description,
+        imageUrl: community.imageUrl,
+        type: community.type,
+      },
+    });
+  }
+}
 
 async function seed() {
   const community = await prisma.community.findFirst();
@@ -9,7 +23,7 @@ async function seed() {
   await prisma.posting.deleteMany();
   if (!community || !user) {
     console.error(
-      "No community or user found. Please seed communities/users first.",
+      "No community or user found. Please seed communities/users first."
     );
     process.exit(1);
   }

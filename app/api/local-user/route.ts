@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const clerkUser = await currentUser();
     if (!clerkUser) {
@@ -24,11 +24,11 @@ export async function GET() {
     }
 
     return NextResponse.json(localUser, { status: 200 });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error fetching local user:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

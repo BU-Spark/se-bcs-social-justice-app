@@ -140,13 +140,9 @@ const PostForm: React.FC<PostFormProps> = ({
       setImageUrl("");
       setPdfUrl("");
       onPostCreated();
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error creating post:", error);
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("An unexpected error occurred");
-      }
+      setError(error.message);
     } finally {
       setIsSubmitting(false);
     }

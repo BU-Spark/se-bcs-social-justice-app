@@ -24,11 +24,11 @@ model User {
   memberships CommunityMembers[]
   hostedAppointments Appointment[] @relation("hostRelation")
   appointmentAttendances AppointmentAttendee[]
-  comments    Comment[]
-  votes       Vote[]
-  posts       Posting[]
-  communityLeaders CommunityLeader[]
-  onboardingComplete Boolean @default(false)
+  comments               Comment[]
+  memberships            CommunityMembers[]
+  posts                  Posting[]
+  interests              UserInterest[]
+  votes                  Vote[]
 }
 
 model Interest {
@@ -57,18 +57,8 @@ model Community {
   updatedAt   DateTime           @updatedAt
   members     CommunityMembers[]
   posts       Posting[]
-  leaders     CommunityLeader[]
-  interests   CommunityInterest[]
 }
-
-model CommunityLeader {
-  id          String    @id @default(cuid())
-  userId      String
-  communityId String
-  user        User      @relation(fields: [userId], references: [id])
-  community   Community @relation(fields: [communityId], references: [id])
-  
-  @@unique([userId, communityId])
+  interests   CommunityInterest[]
 }
 
 model CommunityMembers {

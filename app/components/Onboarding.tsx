@@ -3,12 +3,9 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { completeOnboarding } from "@/lib/completeOnboarding";
 
 const Onboarding = () => {
   const { user } = useUser();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
   const [step, setStep] = useState<number>(1);
   const [interestOptions, setInterestOptions] = useState<string[]>([]);
@@ -118,8 +115,7 @@ const Onboarding = () => {
 
       if (response.ok) {
         console.log("User data updated successfully.");
-        await completeOnboarding(user?.id || "");
-        router.push("/dashboard");
+        setIsOpen(false);
       } else {
         console.error("Failed to update user.");
       }
@@ -139,7 +135,7 @@ const Onboarding = () => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-lg w-[600px] h-[500px] md:w-[700px] md:h-[550px] lg:w-[700px] lg:h-[550px] flex flex-col relative">
         <div className="absolute top-4 w-full px-6 flex justify-between items-center">
           {/* Step Indicator - Only visible for steps 2, 3, and 4 */}
