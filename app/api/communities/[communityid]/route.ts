@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function GET(
   req: Request,
-  { params }: { params: { communityid: string } }
+  { params }: { params: { communityid: string } },
 ) {
   try {
     const community = await prisma.community.findUnique({
@@ -21,7 +21,7 @@ export async function GET(
     if (!community) {
       return NextResponse.json(
         { message: "Community not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 

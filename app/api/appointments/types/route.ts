@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
     const appointmentType = await prisma.$transaction(async (tx) => {
       return tx.appointmentType.create({
         data: {
-          typeName,
+          title: typeName,
           description,
+          icon: "Person", // Default icon
         },
       });
     });
@@ -57,7 +58,7 @@ export async function GET() {
   try {
     const appointmentTypes = await prisma.appointmentType.findMany({
       orderBy: {
-        typeName: "asc",
+        title: "asc",
       },
     });
 
@@ -70,4 +71,3 @@ export async function GET() {
     );
   }
 }
- 

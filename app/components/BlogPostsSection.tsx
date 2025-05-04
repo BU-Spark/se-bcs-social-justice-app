@@ -179,7 +179,7 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -187,7 +187,7 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/posts?communityId=${communityId}&page=${page}&pageSize=10`
+        `/api/posts?communityId=${communityId}&page=${page}&pageSize=10`,
       );
       if (!res.ok) throw new Error("Failed to fetch posts");
       const data = await res.json();
@@ -213,7 +213,7 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
       });
       if (!res.ok) throw new Error("Failed to delete post");
       fetchPosts();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting post:", error);
     }
   };
@@ -227,7 +227,7 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
       });
       if (!res.ok) throw new Error("Failed to vote on post");
       fetchPosts();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error voting on post:", error);
     }
   };
@@ -268,11 +268,11 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
         posts.map((post) => {
           const formattedDate = new Date(post.createdAt).toLocaleDateString(
             "en-US",
-            { month: "long", day: "numeric" }
+            { month: "long", day: "numeric" },
           );
           const formattedTime = new Date(post.createdAt).toLocaleTimeString(
             "en-US",
-            { hour: "numeric", minute: "numeric", hour12: true }
+            { hour: "numeric", minute: "numeric", hour12: true },
           );
           const currentVote = post.currentUserVote;
           const newVoteType: "UPVOTE" | "DOWNVOTE" =

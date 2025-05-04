@@ -6,7 +6,9 @@ import { useSidebar } from "../../components/SidebarContext";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { CommunitiesData, Community } from "@/types/community";
-
+import { format } from "date-fns";
+import { useSearchParams } from "next/navigation";
+import Onboarding from "@/app/components/Onboarding";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -61,7 +63,6 @@ const StyledButton = styled.button`
   }
 `;
 
-
 // Interface for appointment data
 interface Appointment {
   id: string;
@@ -89,11 +90,20 @@ interface Appointment {
 export default function DashboardPage() {
   const { user } = useUser();
   const { isExpanded } = useSidebar();
+  const searchParams = useSearchParams();
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [data, setData] = useState<CommunitiesData>({
     joinedCommunities: [],
     recommendedCommunities: [],
   });
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fromSignup = searchParams.get("from") === "signup";
+    if (fromSignup) {
+      setShowOnboarding(true);
+    }
+  }, [searchParams]);
 
   const fetchCommunities = useCallback(async () => {
     setLoading(true);
@@ -154,120 +164,123 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <StyledMainContent isExpanded={isExpanded}>
-      <StyledHeader>Welcome, {user?.fullName}</StyledHeader>
-      <p>Here are your communities and recommendations.</p>
-      <br />
+    <>
+      <StyledMainContent isExpanded={isExpanded}>
+        <StyledHeader>Welcome, {user?.fullName}</StyledHeader>
+        <p>Here are your communities and recommendations.</p>
+        <br />
 
-      <StyledSection>
-        <StyledHeader>Public Events & Seminars</StyledHeader>
-        {isLoading ? (
-          <p>Loading events...</p>
-        ) : error ? (
-          <p style={{ color: "red" }}>{error}</p>
-        ) : publicAppointments.length === 0 ? (
-          <p>No public events available at the moment.</p>
-        ) : (
-          publicAppointments.map((appointment) => (
-            <StyledDiv key={appointment.id}>
-              {appointment.host.imageUrl ? (
-                <StyledImage
-                  src={appointment.host.imageUrl}
-                  alt={`${appointment.appointmentType.title} event`}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 100,
-                    height: 100,
-                    backgroundColor: "#e2e8f0",
-                    borderRadius: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "24px",
-                  }}
-                >
-                  {appointment.appointmentType.icon}
-                </div>
-              )}
-              <StyledText>
-                <strong>{appointment.appointmentType.title}</strong>
-                <p>{appointment.appointmentType.description}</p>
-                <div
-                  style={{
-                    fontSize: "14px",
-                    color: "#718096",
-                    marginTop: "4px",
-                  }}
-                >
-                  <div>Host: {appointment.host.name}</div>
-                  <div>
-                    When:{" "}
-                    {format(
-                      new Date(appointment.startTime),
-                      "MMM d, yyyy 'at' h:mm a",
-                    )}
+        <StyledSection>
+          <StyledHeader>Public Events & Seminars</StyledHeader>
+          {isLoading ? (
+            <p>Loading events...</p>
+          ) : error ? (
+            <p style={{ color: "red" }}>{error}</p>
+          ) : publicAppointments.length === 0 ? (
+            <p>No public events available at the moment.</p>
+          ) : (
+            publicAppointments.map((appointment) => (
+              <StyledDiv key={appointment.id}>
+                {appointment.host.imageUrl ? (
+                  <StyledImage
+                    src={appointment.host.imageUrl}
+                    alt={`${appointment.appointmentType.title} event`}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 100,
+                      height: 100,
+                      backgroundColor: "#e2e8f0",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "24px",
+                    }}
+                  >
+                    {appointment.appointmentType.icon}
                   </div>
-                  <div>Attendees: {appointment.attendees.length}</div>
-                </div>
-              </StyledText>
-              <Link href={`/appointments/${appointment.id}`} passHref>
-                <StyledButton>View Details</StyledButton>
-              </Link>
-            </StyledDiv>
-          ))
-        )}
-      </StyledSection>
+                )}
+                <StyledText>
+                  <strong>{appointment.appointmentType.title}</strong>
+                  <p>{appointment.appointmentType.description}</p>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#718096",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <div>Host: {appointment.host.name}</div>
+                    <div>
+                      When:{" "}
+                      {format(
+                        new Date(appointment.startTime),
+                        "MMM d, yyyy 'at' h:mm a",
+                      )}
+                    </div>
+                    <div>Attendees: {appointment.attendees.length}</div>
+                  </div>
+                </StyledText>
+                <Link href={`/appointments/${appointment.id}`} passHref>
+                  <StyledButton>View Details</StyledButton>
+                </Link>
+              </StyledDiv>
+            ))
+          )}
+        </StyledSection>
 
-      <StyledSection>
-        <StyledHeader>My Communities</StyledHeader>
-        {loading ? (
-          <p>Loading...</p>
-        ) : data.joinedCommunities.length === 0 ? (
-          <p>You are not in any communities currently!</p>
-        ) : (
-          data.joinedCommunities.map((community: Community) => (
-            <StyledDiv key={community.id}>
-              <StyledImage
-                src={community.imageUrl || "/default-image.jpg"}
-                alt={community.name}
-              />
-              <StyledText>
-                <strong>{community.name}</strong>
-                <p>{community.description}</p>
-              </StyledText>
-              <Link href={`/communities/${community.id}`} passHref>
-                <StyledButton>View</StyledButton>
-              </Link>
-            </StyledDiv>
-          ))
-        )}
-      </StyledSection>
-      <StyledSection>
-        <StyledHeader>Recommended Communities</StyledHeader>
-        {loading ? (
-          <p>Loading...</p>
-        ) : data.recommendedCommunities.length === 0 ? (
-          <p>There are no groups available currently!</p>
-        ) : (
-          data.recommendedCommunities.map((group: Community) => (
-            <StyledDiv key={group.id}>
-              <StyledImage
-                src={group.imageUrl || "/default-image.jpg"}
-                alt={group.name}
-              />
-              <StyledText>
-                <strong>{group.name}</strong>
-                <p>{group.description}</p>
-              </StyledText>
-              <StyledButton onClick={() => handleJoinCommunity(group.id)}>
-                Join Community
-              </StyledButton>
-            </StyledDiv>
-          ))
-        )}
-      </StyledSection>
-    </StyledMainContent>
+        <StyledSection>
+          <StyledHeader>My Communities</StyledHeader>
+          {loading ? (
+            <p>Loading...</p>
+          ) : data.joinedCommunities.length === 0 ? (
+            <p>You are not in any communities currently!</p>
+          ) : (
+            data.joinedCommunities.map((community: Community) => (
+              <StyledDiv key={community.id}>
+                <StyledImage
+                  src={community.imageUrl || "/default-image.jpg"}
+                  alt={community.name}
+                />
+                <StyledText>
+                  <strong>{community.name}</strong>
+                  <p>{community.description}</p>
+                </StyledText>
+                <Link href={`/communities/${community.id}`} passHref>
+                  <StyledButton>View</StyledButton>
+                </Link>
+              </StyledDiv>
+            ))
+          )}
+        </StyledSection>
+        <StyledSection>
+          <StyledHeader>Recommended Communities</StyledHeader>
+          {loading ? (
+            <p>Loading...</p>
+          ) : data.recommendedCommunities.length === 0 ? (
+            <p>There are no groups available currently!</p>
+          ) : (
+            data.recommendedCommunities.map((group: Community) => (
+              <StyledDiv key={group.id}>
+                <StyledImage
+                  src={group.imageUrl || "/default-image.jpg"}
+                  alt={group.name}
+                />
+                <StyledText>
+                  <strong>{group.name}</strong>
+                  <p>{group.description}</p>
+                </StyledText>
+                <StyledButton onClick={() => handleJoinCommunity(group.id)}>
+                  Join Community
+                </StyledButton>
+              </StyledDiv>
+            ))
+          )}
+        </StyledSection>
+      </StyledMainContent>
+      {showOnboarding && <Onboarding />}
+    </>
   );
 }

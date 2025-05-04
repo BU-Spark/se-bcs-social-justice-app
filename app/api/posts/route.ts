@@ -48,13 +48,13 @@ export async function GET(request: Request) {
         totalPosts,
         hasMore: page < totalPages,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching posts:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -84,8 +84,6 @@ export async function POST(request: Request) {
         communityId: parsedData.communityId,
         title: parsedData.title,
         content: parsedData.content,
-        imageUrl: parsedData.imageUrl || null,
-        pdfUrl: parsedData.pdfUrl || null,
         userId: localUser.id,
       },
       include: {
@@ -95,14 +93,16 @@ export async function POST(request: Request) {
       },
     });
     return NextResponse.json(newPost, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating post:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });
     }
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : "Internal Server Error",
+      },
+      { status: 500 },
     );
   }
 }
