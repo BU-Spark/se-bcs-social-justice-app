@@ -8,34 +8,34 @@ datasource db {
 }
 
 model User {
-  id          String         @id @default(cuid())
-  clerkUserId String         @unique
-  email       String         @unique
-  name        String?
-  imageUrl    String?
-  username    String?        @unique
-  ethnicity   String?
-  phoneNumber String?
-  role        UserRole       @default(member)
-  referrer    String[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  interests   UserInterest[]
-  memberships CommunityMembers[]
-  hostedAppointments Appointment[] @relation("hostRelation")
+  id                     String                @id @default(cuid())
+  clerkUserId            String                @unique
+  email                  String                @unique
+  name                   String?
+  imageUrl               String?
+  username               String?               @unique
+  ethnicity              String?
+  phoneNumber            String?
+  role                   UserRole              @default(member)
+  referrer               String[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  hostedAppointments     Appointment[]         @relation("hostRelation")
   appointmentAttendances AppointmentAttendee[]
   comments               Comment[]
+  CommunityLeader        CommunityLeader[]
   memberships            CommunityMembers[]
   posts                  Posting[]
   interests              UserInterest[]
   votes                  Vote[]
+  leaderApplication      LeaderApplication?   
 }
 
 model Interest {
-  id    String         @id @default(cuid())
-  name  String         @unique
-  users UserInterest[]
+  id          String              @id @default(cuid())
+  name        String              @unique
   communities CommunityInterest[]
+  users       UserInterest[]
 }
 
 model UserInterest {
@@ -48,17 +48,17 @@ model UserInterest {
 }
 
 model Community {
-  id          String             @id @default(cuid())
-  name        String             @unique
-  imageUrl    String?
-  type        String
-  description String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  members     CommunityMembers[]
-  posts       Posting[]
-}
-  interests   CommunityInterest[]
+  id              String              @id @default(cuid())
+  name            String              @unique
+  imageUrl        String?
+  type            String
+  description     String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  interests       CommunityInterest[]
+  CommunityLeader CommunityLeader[]
+  members         CommunityMembers[]
+  posts           Posting[]
 }
 
 model CommunityMembers {
@@ -80,28 +80,28 @@ model CommunityInterest {
 }
 
 model AppointmentType {
-  id           String        @id @default(cuid())
-  title        String        @db.VarChar(100)
-  description  String?       @db.Text
-  icon         String        @db.VarChar(50)
+  id           String                @id @default(cuid())
+  title        String                @db.VarChar(100)
+  description  String?
+  icon         String                @db.VarChar(50)
   accessType   AppointmentAccessType @default(private)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
   appointments Appointment[]
 }
 
 model Appointment {
-  id                String               @id @default(cuid())
-  appointmentTypeId String
-  hostId            String
-  startTime         DateTime
-  endTime           DateTime
-  timeZone          String               @default("UTC") @db.VarChar(50)
-  locationOrLink    String?              @db.VarChar(255)
-  status            AppointmentStatus    @default(scheduled)
-  isRecurring       Boolean              @default(false)
-  recurrencePattern RecurrencePattern?
-  recurrenceEndDate DateTime?
+  id                  String                @id @default(cuid())
+  appointmentTypeId   String
+  hostId              String
+  startTime           DateTime
+  endTime             DateTime
+  timeZone            String                @default("UTC") @db.VarChar(50)
+  locationOrLink      String?               @db.VarChar(255)
+  status              AppointmentStatus     @default(scheduled)
+  isRecurring         Boolean               @default(false)
+  recurrencePattern   RecurrencePattern?
+  recurrenceEndDate   DateTime?
   parentAppointmentId String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
@@ -133,10 +133,10 @@ model Posting {
   content     String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  imageUrl    String?
-  pdfUrl      String?
   communityId String
   userId      String
+  imageUrl    String?
+  pdfUrl      String?
   score       Int       @default(0)
   comments    Comment[]
   community   Community @relation(fields: [communityId], references: [id])
@@ -165,6 +165,16 @@ model Vote {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([postId, userId])
+}
+
+model CommunityLeader {
+  id          String    @id
+  userId      String
+  communityId String
+  Community   Community @relation(fields: [communityId], references: [id])
+  User        User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, communityId])
 }
 
 enum AppointmentStatus {
@@ -203,3 +213,46 @@ enum AppointmentAccessType {
   public
 }
 
+enum LeaderApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaderApplication {
+  id                    String                  @id @default(cuid())
+  userId                String                  @unique
+  user                  User                    @relation(fields: [userId], references: [id])
+  
+  fullName              String
+  email                 String
+  phone                 String
+  location              String
+
+  currentlyInvolved     Boolean
+  background            String
+  hasLedGroup           Boolean
+  previousRole          String
+  focusTopics           String
+  motivation            String
+  
+  leadershipStyle       String
+  inclusiveEnvironment  String
+  conflictHandling      String
+  comfortableWithTopics Boolean
+  engagementStrategies  String
+  
+  meetingFrequency      String  
+  availableForOnboarding Boolean
+  willFollowGuidelines  Boolean
+  questions             String?
+  
+  referenceName         String
+  referenceContact      String
+  referenceRelationship String
+  videoUrl              String?
+
+  status                LeaderApplicationStatus @default(PENDING)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+}

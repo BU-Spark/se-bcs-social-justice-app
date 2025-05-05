@@ -66,8 +66,8 @@ export const postings = [
     score: 2,
   },
   ...Array.from({ length: 100 }, (_, i) => ({
-    title: `Title ${i + 1}`,
-    content: `This is a placeholder content for posting number ${i + 1}. Feel free to modify it as needed.`,
+    title: `Post # ${i + 1}`,
+    content: `This is a placeholder content for post number ${i + 1}`,
     score: Math.floor(Math.random() * 5) + 1,
   })),
 ];

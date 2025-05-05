@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import { useSidebar } from "../../components/SidebarContext";
 import LeaderApplicationModal from "./LeaderApplicationModal";
+import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
   padding: 16px;
-  margin-left: ${(props) => (props.isExpanded ? "256px" : "64px")};
+  margin-left: ${({ isExpanded }) => (isExpanded ? "256px" : "64px")};
   transition: margin-left 0.3s ease-in-out;
-  width: calc(100% - ${(props) => (props.isExpanded ? "256px" : "64px")});
+  width: ${({ isExpanded }) => `calc(100% - ${isExpanded ? "256px" : "64px"})`};
 `;
 
 const StyledContainer = styled.div`
@@ -83,15 +85,93 @@ const StyledButton = styled.button`
   }
 `;
 
+const StyledStatusBadge = styled.span<{ status: string }>`
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  background-color: ${({ status }) => {
+    switch (status) {
+      case "PENDING":
+        return "amber";
+      case "APPROVED":
+        return "green";
+      case "REJECTED":
+        return "red";
+      default:
+        return "gray";
+    }
+  }};
+`;
+
 export default function Settings() {
   const { isExpanded } = useSidebar();
+  const { user } = useUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [affiliation, setAffiliation] = useState("");
   const [biography, setBiography] = useState("");
+  const [leaderApplicationStatus, setLeaderApplicationStatus] = useState(null);
+  const [userRole, setUserRole] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
 
-  const handleSaveProfile = () => {
-    // TODO: Implement profile saving logic
+  const handleSaveProfile = async () => {
     console.log("Saving profile...");
+  };
+
+  const refreshLeaderApplication = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch("/api/leader-applications/status");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.leaderApplication) {
+          setLeaderApplicationStatus(data.leaderApplication.status);
+        } else {
+          setLeaderApplicationStatus(null);
+        }
+        if (data.userRole) {
+          setUserRole(data.userRole);
+        }
+      } else {
+        setLeaderApplicationStatus(null);
+      }
+    } catch (error) {
+      console.error("Error fetching leader application:", error);
+      setLeaderApplicationStatus(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchPendingApplicationsCount = async () => {
+    if (userRole !== "admin") return;
+
+    try {
+      const res = await fetch("/api/leader-applications/pending-count");
+      if (res.ok) {
+        const data = await res.json();
+        setPendingApplicationsCount(data.count);
+      }
+    } catch (error) {
+      console.error("Error fetching pending applications count:", error);
+    }
+  };
+
+  useEffect(() => {
+    refreshLeaderApplication();
+  }, []);
+
+  useEffect(() => {
+    if (userRole === "admin") {
+      fetchPendingApplicationsCount();
+    }
+  }, [userRole]);
+
+  const formatStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
   return (
@@ -100,7 +180,15 @@ export default function Settings() {
         <StyledTitle>Settings</StyledTitle>
 
         <StyledSection>
-          <StyledSubtitle>Profile Information</StyledSubtitle>
+          <div className="flex justify-between items-center mb-4">
+            <StyledSubtitle>Profile Information</StyledSubtitle>
+            {userRole && (
+              <div className="text-gray-600 font-medium">
+                Role: <span className="font-bold capitalize">{userRole}</span>
+              </div>
+            )}
+          </div>
+
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2">
               Affiliation
@@ -127,23 +215,91 @@ export default function Settings() {
           <StyledButton onClick={handleSaveProfile}>Save Profile</StyledButton>
         </StyledSection>
 
+        {userRole === "admin" && (
+          <StyledSection>
+            <StyledSubtitle>Admin Tools</StyledSubtitle>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-700 font-medium">
+                    Leader Applications
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Review and manage pending leader applications
+                  </p>
+                </div>
+                <Link href="/admin/leader-applications" passHref>
+                  <StyledButton className="flex items-center">
+                    <span>Review Applications</span>
+                    {pendingApplicationsCount > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-s rounded-full px-2 py-1">
+                        {pendingApplicationsCount}
+                      </span>
+                    )}
+                  </StyledButton>
+                </Link>
+              </div>
+            </div>
+          </StyledSection>
+        )}
+
         <StyledSection>
           <StyledSubtitle>Leadership Application</StyledSubtitle>
-          <p className="text-gray-600 mb-4">
-            Want to make a bigger impact? Apply to become a community leader and
-            help guide meaningful discussions.
-          </p>
-          <StyledButton
-            onClick={() => setIsModalOpen(true)}
-            className="bg-green-500 hover:bg-green-600"
-          >
-            Request to Become a Leader
-          </StyledButton>
+          {isLoading ? (
+            <p>Loading application status...</p>
+          ) : userRole === "leader" || userRole === "admin" ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <p className="text-blue-700 font-medium">
+                You already have leadership privileges in the community.
+              </p>
+            </div>
+          ) : leaderApplicationStatus === null ? (
+            <>
+              <p className="text-gray-600 mb-4">
+                Want to make a bigger impact? Apply to become a community leader
+                and help guide meaningful discussions.
+              </p>
+              <StyledButton
+                onClick={() => setIsModalOpen(true)}
+                className="bg-green-500 hover:bg-green-600"
+              >
+                Request to Become a Leader
+              </StyledButton>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <p className="text-lg font-medium">Application Status:</p>
+                <StyledStatusBadge status={leaderApplicationStatus}>
+                  {formatStatus(leaderApplicationStatus)}
+                </StyledStatusBadge>
+              </div>
+              {leaderApplicationStatus === "REJECTED" && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                  <p className="text-red-700">
+                    Sorry, unfortunately your application was not approved. For
+                    more information, feel free to contact us.
+                  </p>
+                </div>
+              )}
+              {leaderApplicationStatus === "PENDING" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                  <p className="text-amber-700">
+                    Your application is currently under review. Check back
+                    later.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </StyledSection>
 
         <LeaderApplicationModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            refreshLeaderApplication();
+          }}
         />
       </StyledContainer>
     </StyledMainContent>

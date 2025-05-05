@@ -11,6 +11,17 @@ export async function DELETE(
       select: { id: true },
     });
 
+    const likes = await prisma.vote.findMany({
+      where: { postId: params.id },
+      select: { id: true },
+    });
+
+    if (likes.length > 0) {
+      await prisma.vote.deleteMany({
+        where: { postId: params.id },
+      });
+    }
+
     if (comments.length > 0) {
       await prisma.comment.deleteMany({
         where: { postId: params.id },
