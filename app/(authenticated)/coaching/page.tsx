@@ -174,7 +174,7 @@ export default function CoachingPage() {
   const { isExpanded } = useSidebar();
   const [activeTab, setActiveTab] = useState("Coaching");
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>(
-    [],
+    []
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -195,7 +195,7 @@ export default function CoachingPage() {
         setError(
           err instanceof Error
             ? err.message
-            : "Failed to load appointment types",
+            : "Failed to load appointment types"
         );
       } finally {
         setLoading(false);

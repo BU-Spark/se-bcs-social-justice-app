@@ -300,7 +300,6 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
               <StyledPostTitle>{post.title}</StyledPostTitle>
               <StyledPostContent>{post.content}</StyledPostContent>
 
-              {/* Display Image if exists */}
               {post.imageUrl && (
                 <StyledImageContainer>
                   <img
@@ -311,7 +310,6 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
                 </StyledImageContainer>
               )}
 
-              {/* Display PDF if exists */}
               {post.pdfUrl && (
                 <StyledAttachments>
                   <StyledAttachmentHeader>

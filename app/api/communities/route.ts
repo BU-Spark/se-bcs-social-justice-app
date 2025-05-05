@@ -67,3 +67,64 @@ export async function GET() {
     );
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const localUser = await prisma.user.findUnique({
+      where: { clerkUserId: clerkUser.id },
+    });
+
+    if (!localUser) {
+      return NextResponse.json(
+        { error: "User not found in the database" },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json();
+    const { name, description, imageUrl, category } = body;
+
+    const existingCommunity = await prisma.community.findUnique({
+      where: { name },
+    });
+
+    if (existingCommunity) {
+      return NextResponse.json(
+        { error: "A community with this name already exists" },
+        { status: 409 }
+      );
+    }
+
+    const newCommunity = await prisma.community.create({
+      data: {
+        name,
+        description: description || null,
+        imageUrl: imageUrl || null,
+        type: category,
+        members: {
+          create: {
+            userId: localUser.id,
+          },
+        },
+      },
+    });
+
+    await prisma.user.update({
+      where: { id: localUser.id },
+      data: { role: "leader" },
+    });
+
+    return NextResponse.json(newCommunity, { status: 201 });
+  } catch (error) {
+    console.error("Error creating community:", error);
+    return NextResponse.json(
+      { error: "Failed to create community" },
+      { status: 500 }
+    );
+  }
+}

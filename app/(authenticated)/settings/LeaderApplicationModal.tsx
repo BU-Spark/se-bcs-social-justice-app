@@ -480,9 +480,47 @@ export default function LeaderApplicationModal({ isOpen, onClose }: Props) {
   };
 
   const handleSubmit = async () => {
+    const payload = {
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      location: formData.location,
+      currentlyInvolved: formData.currentlyInvolved === "yes",
+      background: formData.background,
+      hasLedGroup: formData.hasLedGroup === "yes",
+      previousRole: formData.previousRole,
+      focusTopics: formData.focusTopics,
+      motivation: formData.motivation,
+      leadershipStyle: formData.leadershipStyle,
+      inclusiveEnvironment: formData.inclusiveEnvironment,
+      conflictHandling: formData.conflictHandling,
+      comfortableWithTopics: formData.comfortableWithTopics === "yes",
+      engagementStrategies: formData.engagementStrategies,
+      meetingFrequency: formData.meetingFrequency,
+      availableForOnboarding: formData.availableForOnboarding === "yes",
+      willFollowGuidelines: formData.willFollowGuidelines === "yes",
+      questions: formData.questions,
+      referenceName: formData.referenceName,
+      referenceContact: formData.referenceContact,
+      referenceRelationship: formData.referenceRelationship,
+      videoUrl: formData.videoUrl,
+    };
+
     try {
-      // TODO: Implement the API call to submit the application
-      console.log("Submitting application:", formData);
+      const res = await fetch("/api/leader-applications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        console.error("Error submitting application:", await res.text());
+        return;
+      }
+
+      console.log("Application submitted successfully!");
       onClose();
     } catch (error) {
       console.error("Error submitting application:", error);

@@ -6,6 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import { CommunitiesData, Community } from "@/types/community";
 import { useSidebar } from "../../components/SidebarContext";
 import Link from "next/link";
+import CommunityForm from "@/app/components/CommunityForm";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -68,6 +69,8 @@ const CommunitiesPage = () => {
     recommendedCommunities: [],
   });
   const [loading, setLoading] = useState(true);
+  const [canCreateCommunity, setCanCreateCommunity] = useState<boolean>(false);
+  const [isFormVisible, setIsFormVisible] = useState(false);
 
   const fetchCommunities = useCallback(async () => {
     setLoading(true);
@@ -115,76 +118,109 @@ const CommunitiesPage = () => {
     }
   };
 
+  useEffect(() => {
+    const checkCreatePermission = async () => {
+      try {
+        const res = await fetch("/api/not-regmember");
+        if (res.ok) {
+          const data = await res.json();
+          setCanCreateCommunity(data.canCreateCommunity);
+        } else {
+          setCanCreateCommunity(false);
+        }
+      } catch (error) {
+        console.error("Error checking community creation permission:", error);
+        setCanCreateCommunity(false);
+      }
+    };
+    checkCreatePermission();
+  }, []);
+
+  const handleCommunityCreated = () => {
+    fetchCommunities();
+    setIsFormVisible(false);
+  };
+
   return (
     <StyledMainContent isExpanded={isExpanded}>
-      {loading ? (
-        <div className="flex items-center justify-center h-full">
-          <p>Loading your communities...</p>
-        </div>
-      ) : (
+      <StyledHeader>Welcome back, {user?.fullName}</StyledHeader>
+      <p>Here are your communities and recommendations.</p>
+      <br />
+
+      {canCreateCommunity && (
         <>
-          <StyledHeader>Welcome back, {user?.fullName}</StyledHeader>
-          <p>Here are your communities and recommendations.</p>
-          <br />
-          <StyledSection>
-            <StyledHeader>My Communities</StyledHeader>
-            {data.joinedCommunities.length === 0 ? (
-              <p>You are not in any communities currently!</p>
-            ) : (
-              data.joinedCommunities.map((community: Community) => (
-                <StyledDiv key={community.id}>
-                  <StyledImage
-                    src={
-                      community.imageUrl ||
-                      "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg"
-                    }
-                    alt={community.name}
-                  />
-                  <StyledText>
-                    <strong>{community.name}</strong>
-                    <p>{community.description}</p>
-                  </StyledText>
-                  <StyledButton
-                    onClick={() => handleUnjoinCommunity(community.id)}
-                  >
-                    Unjoin
-                  </StyledButton>
-                  <Link href={`/communities/${community.id}`} passHref>
-                    <StyledButton>View</StyledButton>
-                  </Link>
-                </StyledDiv>
-              ))
-            )}
-          </StyledSection>
-          <StyledSection>
-            <StyledHeader>Recommended Communities</StyledHeader>
-            {data.recommendedCommunities.length === 0 ? (
-              <p>There are no groups available currently!</p>
-            ) : (
-              data.recommendedCommunities.map((community: Community) => (
-                <StyledDiv key={community.id}>
-                  <StyledImage
-                    src={
-                      community.imageUrl ||
-                      "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg"
-                    }
-                    alt={community.name}
-                  />
-                  <StyledText>
-                    <strong>{community.name}</strong>
-                    <p>{community.description}</p>
-                  </StyledText>
-                  <StyledButton
-                    onClick={() => handleJoinCommunity(community.id)}
-                  >
-                    Join
-                  </StyledButton>
-                </StyledDiv>
-              ))
-            )}
-          </StyledSection>
+          <StyledButton onClick={() => setIsFormVisible(!isFormVisible)}>
+            {isFormVisible ? "Cancel" : "Create Community"}
+          </StyledButton>
+          {isFormVisible && (
+            <CommunityForm
+              onCommunityCreated={handleCommunityCreated}
+              onCancel={() => setIsFormVisible(false)}
+            />
+          )}
         </>
       )}
+      <br />
+      <br />
+      <StyledSection>
+        <StyledHeader>My Communities</StyledHeader>
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <p>Loading your communities...</p>
+          </div>
+        ) : data.joinedCommunities.length === 0 ? (
+          <p>You are not in any communities currently!</p>
+        ) : (
+          data.joinedCommunities.map((community: Community) => (
+            <StyledDiv key={community.id}>
+              <StyledImage
+                src={
+                  community.imageUrl ||
+                  "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg"
+                }
+                alt={community.name}
+              />
+              <StyledText>
+                <strong>{community.name}</strong>
+                <p>{community.description}</p>
+              </StyledText>
+              <StyledButton onClick={() => handleUnjoinCommunity(community.id)}>
+                Unjoin
+              </StyledButton>
+              <Link href={`/communities/${community.id}`} passHref>
+                <StyledButton>View</StyledButton>
+              </Link>
+            </StyledDiv>
+          ))
+        )}
+      </StyledSection>
+      <StyledSection>
+        <StyledHeader>Recommended Communities</StyledHeader>
+        {loading ? (
+          <p>Loading...</p>
+        ) : data.recommendedCommunities.length === 0 ? (
+          <p>There are no groups available currently!</p>
+        ) : (
+          data.recommendedCommunities.map((group: Community) => (
+            <StyledDiv key={group.id}>
+              <StyledImage
+                src={
+                  group.imageUrl ||
+                  "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg"
+                }
+                alt={group.name}
+              />
+              <StyledText>
+                <strong>{group.name}</strong>
+                <p>{group.description}</p>
+              </StyledText>
+              <StyledButton onClick={() => handleJoinCommunity(group.id)}>
+                Join
+              </StyledButton>
+            </StyledDiv>
+          ))
+        )}
+      </StyledSection>
     </StyledMainContent>
   );
 };

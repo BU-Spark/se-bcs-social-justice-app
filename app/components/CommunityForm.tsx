@@ -1,10 +1,9 @@
 "use client";
-
 import React, { useState } from "react";
 import styled from "@emotion/styled";
-import CloudinaryUploadWidget from "./CloudinaryUploadWidget";
+import CloudinaryImageWidget from "./CloudinaryImageWidget";
 
-const StyledPostFormContainer = styled.div`
+const StyledFormContainer = styled.div`
   padding: 16px;
   border: 1px solid black;
   border-radius: 8px;
@@ -38,6 +37,15 @@ const StyledTextarea = styled.textarea`
   width: 100%;
   margin-bottom: 8px;
   resize: vertical;
+  border: 1px solid gray;
+  border-radius: 4px;
+`;
+
+const StyledSelect = styled.select`
+  padding: 8px;
+  font-size: 16px;
+  width: 100%;
+  margin-bottom: 8px;
   border: 1px solid gray;
   border-radius: 4px;
 `;
@@ -83,21 +91,19 @@ const StyledAttachmentNote = styled.p`
   font-style: italic;
 `;
 
-interface PostFormProps {
-  communityId: string;
-  onPostCreated: () => void;
+interface CommunityFormProps {
+  onCommunityCreated: () => void;
   onCancel?: () => void;
 }
 
-const PostForm: React.FC<PostFormProps> = ({
-  communityId,
-  onPostCreated,
+const CommunityForm: React.FC<CommunityFormProps> = ({
+  onCommunityCreated,
   onCancel,
 }) => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [pdfUrl, setPdfUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,43 +111,47 @@ const PostForm: React.FC<PostFormProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!title.trim()) {
-      setError("Please enter a title for your post");
+    if (!name.trim()) {
+      setError("Please enter a name for your community");
       return;
     }
 
-    if (!content.trim()) {
-      setError("Please enter content for your post");
+    if (!description.trim()) {
+      setError("Please enter a description for your community");
+      return;
+    }
+
+    if (!category.trim()) {
+      setError("Please select a category for your community");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`/api/posts`, {
+      const res = await fetch(`/api/communities`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          communityId,
-          title,
-          content,
+          name,
+          description,
+          category,
           imageUrl: imageUrl || null,
-          pdfUrl: pdfUrl || null,
         }),
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to create post");
+        throw new Error(errorData.error || "Failed to create community");
       }
 
-      setTitle("");
-      setContent("");
+      setName("");
+      setDescription("");
+      setCategory("");
       setImageUrl("");
-      setPdfUrl("");
-      onPostCreated();
+      onCommunityCreated();
     } catch (error: any) {
-      console.error("Error creating post:", error);
+      console.error("Error creating community:", error);
       setError(error.message);
     } finally {
       setIsSubmitting(false);
@@ -149,55 +159,54 @@ const PostForm: React.FC<PostFormProps> = ({
   };
 
   return (
-    <StyledPostFormContainer>
+    <StyledFormContainer>
       <form onSubmit={handleSubmit}>
         <StyledFormField>
-          <StyledLabel htmlFor="title">Title</StyledLabel>
+          <StyledLabel htmlFor="name">Community Name</StyledLabel>
           <StyledInput
-            id="title"
+            id="name"
             type="text"
-            placeholder="Enter post title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter community name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
           />
         </StyledFormField>
 
         <StyledFormField>
-          <StyledLabel htmlFor="content">Content</StyledLabel>
+          <StyledLabel htmlFor="description">Description</StyledLabel>
           <StyledTextarea
-            id="content"
-            placeholder="Write your post content here..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            id="description"
+            placeholder="Write a description for your community..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             rows={4}
             required
           />
         </StyledFormField>
 
-        <StyledUploadSection>
-          <StyledLabel>Add an Image (Optional)</StyledLabel>
-          <CloudinaryUploadWidget
-            onUpload={(url) => setImageUrl(url)}
-            fileType="image"
-            currentUrl={imageUrl}
-            label="Upload Image"
+        <StyledFormField>
+          <StyledLabel htmlFor="category">Category</StyledLabel>
+          <StyledInput
+            id="category"
+            type="text"
+            placeholder="Enter a category for your community"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
           />
-          <StyledAttachmentNote>
-            Attach an image: JPG, PNG, GIF (max 5MB)
-          </StyledAttachmentNote>
-        </StyledUploadSection>
+        </StyledFormField>
 
         <StyledUploadSection>
-          <StyledLabel>Add a PDF Document (Optional)</StyledLabel>
-          <CloudinaryUploadWidget
-            onUpload={(url) => setPdfUrl(url)}
-            fileType="pdf"
-            currentUrl={pdfUrl}
-            label="Upload PDF"
+          <StyledLabel>Add a Community Logo (Optional)</StyledLabel>
+          <CloudinaryImageWidget
+            onUpload={(url) => setImageUrl(url)}
+            currentUrl={imageUrl}
+            label="Upload Logo"
           />
           <StyledAttachmentNote>
-            Attach a PDF: (max 10MB) available for download
+            Attach your image using the button above. The image will be used as
+            the community logo.
           </StyledAttachmentNote>
         </StyledUploadSection>
 
@@ -205,7 +214,7 @@ const PostForm: React.FC<PostFormProps> = ({
 
         <StyledButtonContainer>
           <StyledButton type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Posting..." : "Post"}
+            {isSubmitting ? "Creating..." : "Create Community"}
           </StyledButton>
 
           {onCancel && (
@@ -215,8 +224,8 @@ const PostForm: React.FC<PostFormProps> = ({
           )}
         </StyledButtonContainer>
       </form>
-    </StyledPostFormContainer>
+    </StyledFormContainer>
   );
 };
 
-export default PostForm;
+export default CommunityForm;

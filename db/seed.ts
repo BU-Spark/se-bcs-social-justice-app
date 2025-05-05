@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+
 import { communities, postings } from "./mock-data";
 
 const prisma = new PrismaClient();
@@ -35,10 +36,9 @@ async function seed() {
         content: post.content,
         score: post.score,
         communityId: community.id,
-        userId: "cm9zjjklm0000030ure6hdaqv",
+        userId: user.id,
       },
     });
   }
 }
-
-seed();
+seedcommunities();
