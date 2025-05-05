@@ -35,13 +35,11 @@ export async function POST(
 
     if (existingVote) {
       if (existingVote.type === voteType) {
-        // Remove the vote
         postScoreDelta = voteType === "UPVOTE" ? -1 : 1;
         await prisma.vote.delete({
           where: { id: existingVote.id },
         });
       } else {
-        // Update the vote type
         postScoreDelta = voteType === "UPVOTE" ? 2 : -2;
         await prisma.vote.update({
           where: { id: existingVote.id },
@@ -49,7 +47,6 @@ export async function POST(
         });
       }
     } else {
-      // Create a new vote
       postScoreDelta = voteType === "UPVOTE" ? 1 : -1;
       await prisma.vote.create({
         data: {
@@ -60,23 +57,19 @@ export async function POST(
       });
     }
 
-    // Update the post score
     const updatedPost = await prisma.posting.update({
       where: { id: postId },
       data: { score: { increment: postScoreDelta } },
     });
 
-    // Determine the current user's vote
-    const currentUserVote = existingVote
-      ? existingVote.type === voteType
-        ? null // Vote was removed
-        : voteType // Vote type was updated
-      : voteType; // New vote was created
+    const currentUserVote = await prisma.vote.findUnique({
+      where: { postId_userId: { postId, userId: userRecord.id } },
+    });
 
     return NextResponse.json(
       {
         ...updatedPost,
-        currentUserVote, // Return the updated vote type
+        currentUserVote: currentUserVote?.type || null,
       },
       { status: 200 }
     );
