@@ -26,6 +26,17 @@ This is a Next.js-based social justice application that facilitates community bu
 
 ### Environment Setup
 1. Clone the repository
+   ```bash
+   git clone git@github.com:BU-Spark/se-bcs-social-justice-app.git
+   ```
+2. cd into the repository
+   ```bash
+   cd se-bcs-social-justice-app
+   ```
+3. Checkout to dev branch
+   ```bash
+   git checkout dev
+   ```
 2. Install dependencies:
    ```bash
    npm install
@@ -56,9 +67,13 @@ This is a Next.js-based social justice application that facilitates community bu
    ```
 
 ### Running the Application
-- Development mode:
+- Development mode (Frontend):
   ```bash
   npm run dev
+  ```
+- Development mode (Backend):
+  ```bash
+  npx prisma studio
   ```
 
 ## Core Features
