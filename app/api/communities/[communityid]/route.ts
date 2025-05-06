@@ -4,12 +4,14 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function GET(
-  req: Request,
+  request: Request,
   { params }: { params: { communityid: string } }
 ) {
   try {
+    const { communityid } = await params;
+    
     const community = await prisma.community.findUnique({
-      where: { id: params.communityid },
+      where: { id: communityid },
       select: {
         id: true,
         name: true,
