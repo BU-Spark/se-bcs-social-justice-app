@@ -1,66 +1,12 @@
 "use client";
+
 import styled from "@emotion/styled";
 import { useUser } from "@clerk/nextjs";
 import { useSidebar } from "../../components/SidebarContext";
 import Link from "next/link";
-
-const mockData = {
-  communities: [
-    {
-      id: 1,
-      imageUrl: "https://i.postimg.cc/Kv7VQGHs/bwia.png",
-      name: "Black Women in Academia",
-      type: "Affinity Group",
-      description:
-        "Connect with other professionals on navigating being a WOC in academic spaces.",
-      members: 0,
-    },
-    {
-      id: 2,
-      imageUrl: "https://i.postimg.cc/YqBZ1GbW/btm.png",
-      name: "Be The Messenger",
-      type: "Book Club",
-      description:
-        "Conversation on the Be the Messenger Framework established by Dr. Chad Starks.",
-      members: 0,
-    },
-    {
-      id: 3,
-      imageUrl: "https://i.postimg.cc/264Fm6vs/image-4.png",
-      name: "Encouraging Black Youth",
-      type: "K-12",
-      description:
-        "Learn how to empower Black youth to embrace their potential and shape a future of limitless possibilities.",
-      members: 0,
-    },
-  ],
-  recommendedGroups: [
-    {
-      id: 4,
-      name: "Courageous Hearts",
-      description:
-        "Courageous Hearts and informed by Dr.Chad personal journey from overcoming systemic oppression to finding spiritual fulfilment, this package offers a transformative experience that integrates self-reflection, social justice, and personal empowerment.",
-      imageUrl:
-        "https://media-hosting.imagekit.io//6a8d11890fce436b/ch.png?Expires=1837332054&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=mEpDoVjDF8~A4QhzA5HKNHXsCE6iPa~pIRBEQtLYTC0-kAhul1jSCBOhZXEuuYFdQwr10-9igxRPCSHo0DIL0uCyPfkkDzWsfBZE6mVOrgb9iwSZK1anywCqdHOSUoZ~INidZMiXIz6cxeoKvNZ3-xPMIqi6UwUQD71gp2sMIqIcJUp~AhqWeODAd5XXQgvo2qZBs6hGC231qsj9wo0b-~S8SihA1JShG1mi0vFYqnJSVQgrgZxz5QbsERyU0WQer~plcbxXYWXpxdS-Ox9sNgGGqHbftj9aYK8sZ~Lgtl2FazXAzJB9cNEZU7aMIebN1sol34G9WmJIhc-GkgJQFg__",
-    },
-    {
-      id: 5,
-      name: "Healthcare Justice",
-      description:
-        "Our mission is to create a healthcare system that serves everyone fairly and compassionately, regardless of their background or circumstances. Join us in our efforts to build a healthier, more just community where everyone has the opportunity to thrive.",
-      imageUrl:
-        "https://media-hosting.imagekit.io//5beaa53cd5434945/hj.png?Expires=1837332054&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=gdiV0Fott~RoEYL1ADqqhR7uhDRM7cH1naBPqgowi9Cv5cCO00ua6rLC2THwxegorRi67AHsO1acEi68yt0KlOLRPyJzwYsxeVK1XA-apOfWCQ-54hKajSbZBOdBQPSElJLTCGF8SmgqCXMpxvFpcZ14c5csl310YKhamLhktitrigrbqanm6X6ZU7Q5~hitgj687JChb~WJhoyBekdbX2OEYxkfqOX~iV8IkeIfb3eA7M0NAdlYCRv559zTxI1I~SsrlQsYJKrwZeLXcKNGjqfnokj8o2JxbR2f83cxiC3XfvkNEDZDO2Bc6Nh58Q19zXgptCaN3FJiBvWDIMFq3w__",
-    },
-    {
-      id: 6,
-      name: "Boston Grassroots",
-      description:
-        "We tackle pressing issues in our neighborhood through collective action, fostering a sense of belonging and shared responsibility. By harnessing the power of local knowledge and passion, we're building a more resilient, inclusive, and vibrant community for all.",
-      imageUrl:
-        "https://media-hosting.imagekit.io//3d91312ec1704eae/bg.png?Expires=1837332054&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=uXHbbhVJCIsI92OY7Zafx5qSgm1HRIX--Cv5rqVMtYovYBaS6G67blNUdC-n9Z0kwYvbaw1ot6GRrT546lotatnmyv-5RMJxfzOSmlT1iK6d5xfnvrZnqpeEgyR5YnbQT-OoA7vgcTdfbgy1jEWAn155oM7KhrsAUVU7Gpdak8kRSn5la0Ym8U~Do0Rfi4aL5FG7suBsUk7B5dDP~EFZNkWcuji5pWM-lw1tsFN-34Zgz3u~bY17eWy3mU41frda9ve9-bxuZe0tk85Ryp7uoBcoct2Nw4R0Iob9h2AU1BdjvpT3vvSh51TJCuHHr7-C5pJ-RCVIDh5leiW8aWmYrQ__",
-    },
-  ],
-};
+import { useState, useEffect, useCallback } from "react";
+import { format } from "date-fns";
+import { CommunitiesData, Community } from "@/types/community";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -115,47 +61,345 @@ const StyledButton = styled.button`
   }
 `;
 
-const DashboardPage = () => {
+interface Appointment {
+  id: string;
+  startTime: string;
+  endTime: string;
+  locationOrLink?: string;
+  appointmentType: {
+    id: string;
+    title: string;
+    description?: string;
+    icon: string;
+  };
+  host: {
+    id: string;
+    name: string;
+    email: string;
+    imageUrl?: string;
+  };
+  attendees: Array<{
+    id: string;
+    email: string;
+  }>;
+}
+
+const isValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export default function DashboardPage() {
   const { user } = useUser();
   const { isExpanded } = useSidebar();
+  const [data, setData] = useState<CommunitiesData>({
+    joinedCommunities: [],
+    recommendedCommunities: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchCommunities = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/communities");
+      if (!res.ok) throw new Error("Failed to fetch communities");
+      const json: CommunitiesData = await res.json();
+      setData(json);
+    } catch (e) {
+      console.error("Error fetching communities:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleJoinCommunity = async (communityId: string) => {
+    try {
+      const res = await fetch("/api/join-community", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communityId }),
+      });
+      if (!res.ok) throw new Error("Failed to join community");
+      fetchCommunities();
+    } catch (error) {
+      console.error("Error joining community:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCommunities();
+  }, [fetchCommunities]);
+
+  const [publicAppointments, setPublicAppointments] = useState<Appointment[]>(
+    []
+  );
+  const [privateAppointments, setPrivateAppointments] = useState<Appointment[]>(
+    []
+  );
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+  const [appointmentError, setAppointmentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setIsLoadingAppointments(true);
+        const [publicRes, privateRes] = await Promise.all([
+          fetch("/api/appointments/public"),
+          fetch("/api/appointments/private"),
+        ]);
+        if (!publicRes.ok)
+          throw new Error("Failed to fetch public appointments");
+        if (!privateRes.ok)
+          throw new Error("Failed to fetch private appointments");
+
+        const publicData: Appointment[] = await publicRes.json();
+        const privateData: Appointment[] = await privateRes.json();
+
+        setPublicAppointments(publicData);
+        setPrivateAppointments(privateData);
+        setAppointmentError(null);
+      } catch (err) {
+        setAppointmentError(
+          err instanceof Error ? err.message : "An error occurred"
+        );
+      } finally {
+        setIsLoadingAppointments(false);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
 
   return (
     <StyledMainContent isExpanded={isExpanded}>
       <StyledHeader>Welcome, {user?.fullName}</StyledHeader>
       <p>Here are your communities and recommendations.</p>
       <br />
+
+      <StyledSection>
+        <StyledHeader>Public Events & Seminars</StyledHeader>
+        {isLoadingAppointments ? (
+          <p>Loading public events...</p>
+        ) : appointmentError ? (
+          <p style={{ color: "red" }}>{appointmentError}</p>
+        ) : publicAppointments.length === 0 ? (
+          <p>No public events available at the moment.</p>
+        ) : (
+          publicAppointments.map((appointment) => {
+            const formattedDate = new Date(
+              appointment.startTime
+            ).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+            const formattedTime = format(
+              new Date(appointment.startTime),
+              "MMM d, yyyy 'at' h:mm a"
+            );
+            return (
+              <StyledDiv key={appointment.id}>
+                {appointment.host.imageUrl ? (
+                  <StyledImage
+                    src={appointment.host.imageUrl}
+                    alt={`${appointment.appointmentType.title} event`}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 100,
+                      height: 100,
+                      backgroundColor: "#e2e8f0",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "24px",
+                    }}
+                  >
+                    {appointment.appointmentType.icon}
+                  </div>
+                )}
+                <StyledText>
+                  <strong>{appointment.appointmentType.title}</strong>
+                  <p>{appointment.appointmentType.description}</p>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#718096",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <div>Host: {appointment.host.name}</div>
+                    <div>
+                      When: {formattedDate} at {formattedTime}
+                    </div>
+                    <div>Attendees: {appointment.attendees.length}</div>
+                    <div>
+                      Location/Link:{" "}
+                      {appointment.locationOrLink ? (
+                        isValidUrl(appointment.locationOrLink) ? (
+                          <a
+                            href={appointment.locationOrLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {appointment.locationOrLink}
+                          </a>
+                        ) : (
+                          appointment.locationOrLink
+                        )
+                      ) : (
+                        "N/A"
+                      )}
+                    </div>
+                  </div>
+                </StyledText>
+                <Link href={`/appointments/${appointment.id}`} passHref>
+                  <StyledButton>View Details</StyledButton>
+                </Link>
+              </StyledDiv>
+            );
+          })
+        )}
+      </StyledSection>
+
+      <StyledSection>
+        <StyledHeader>My Private Consultations</StyledHeader>
+        {isLoadingAppointments ? (
+          <p>Loading private events...</p>
+        ) : appointmentError ? (
+          <p style={{ color: "red" }}>{appointmentError}</p>
+        ) : privateAppointments.length === 0 ? (
+          <p>
+            No private consultations currently. Sign up for one in the
+            scheduling tab.
+          </p>
+        ) : (
+          privateAppointments.map((appointment) => {
+            const formattedDate = new Date(
+              appointment.startTime
+            ).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+            const formattedTime = format(
+              new Date(appointment.startTime),
+              "MMM d, yyyy 'at' h:mm a"
+            );
+            return (
+              <StyledDiv key={appointment.id}>
+                {appointment.host.imageUrl ? (
+                  <StyledImage
+                    src={appointment.host.imageUrl}
+                    alt={`${appointment.appointmentType.title} event`}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 100,
+                      height: 100,
+                      backgroundColor: "#e2e8f0",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "24px",
+                    }}
+                  >
+                    {appointment.appointmentType.icon}
+                  </div>
+                )}
+                <StyledText>
+                  <strong>{appointment.appointmentType.title}</strong>
+                  <p>{appointment.appointmentType.description}</p>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#718096",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <div>Host: {appointment.host.name}</div>
+                    <div>
+                      When: {formattedDate} at {formattedTime}
+                    </div>
+                    <div>Attendees: {appointment.attendees.length}</div>
+                    <div>
+                      Location/Link:{" "}
+                      {appointment.locationOrLink ? (
+                        isValidUrl(appointment.locationOrLink) ? (
+                          <a
+                            href={appointment.locationOrLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {appointment.locationOrLink}
+                          </a>
+                        ) : (
+                          appointment.locationOrLink
+                        )
+                      ) : (
+                        "N/A"
+                      )}
+                    </div>
+                  </div>
+                </StyledText>
+                <Link href={`/appointments/${appointment.id}`} passHref>
+                  <StyledButton>View Details</StyledButton>
+                </Link>
+              </StyledDiv>
+            );
+          })
+        )}
+      </StyledSection>
+
       <StyledSection>
         <StyledHeader>My Communities</StyledHeader>
-        {mockData.communities.map((community) => (
-          <StyledDiv key={community.id}>
-            <StyledImage src={community.imageUrl} alt={community.name} />
-            <StyledText>
-              <strong>{community.name}</strong>
-              <p>{community.description}</p>
-            </StyledText>
-            <Link href={`/communities/${community.id}`} passHref>
-              <StyledButton>View</StyledButton>
-            </Link>
-          </StyledDiv>
-        ))}
+        {loading ? (
+          <p>Loading...</p>
+        ) : data.joinedCommunities.length === 0 ? (
+          <p>You are not in any communities currently!</p>
+        ) : (
+          data.joinedCommunities.map((community: Community) => (
+            <StyledDiv key={community.id}>
+              <StyledImage
+                src={community.imageUrl || "/default-image.jpg"}
+                alt={community.name}
+              />
+              <StyledText>
+                <strong>{community.name}</strong>
+                <p>{community.description}</p>
+              </StyledText>
+              <Link href={`/communities/${community.id}`} passHref>
+                <StyledButton>View</StyledButton>
+              </Link>
+            </StyledDiv>
+          ))
+        )}
       </StyledSection>
+
       <StyledSection>
         <StyledHeader>Recommended Communities</StyledHeader>
-        {mockData.recommendedGroups.map((group) => (
-          <StyledDiv key={group.id}>
-            <StyledImage src={group.imageUrl} alt={group.name} />
-            <StyledText>
-              <strong>{group.name}</strong>
-              <p>{group.description}</p>
-            </StyledText>
-            <Link href={`/communities/${group.id}`} passHref>
-              <StyledButton>View</StyledButton>
-            </Link>
-          </StyledDiv>
-        ))}
+        {loading ? (
+          <p>Loading...</p>
+        ) : data.recommendedCommunities.length === 0 ? (
+          <p>There are no groups available currently!</p>
+        ) : (
+          data.recommendedCommunities.map((group: Community) => (
+            <StyledDiv key={group.id}>
+              <StyledImage
+                src={group.imageUrl || "/default-image.jpg"}
+                alt={group.name}
+              />
+              <StyledText>
+                <strong>{group.name}</strong>
+                <p>{group.description}</p>
+              </StyledText>
+              <StyledButton onClick={() => handleJoinCommunity(group.id)}>
+                Join Community
+              </StyledButton>
+            </StyledDiv>
+          ))
+        )}
       </StyledSection>
     </StyledMainContent>
   );
-};
-
-export default DashboardPage;
+}

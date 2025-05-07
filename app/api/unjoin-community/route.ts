@@ -1,47 +1,19 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import prisma from "@/lib/db";
+import { unjoinCommunity } from "@/lib/actions/community.actions";
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const user = await currentUser();
-    if (!user)
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
-    const { communityId } = await req.json();
-
-    if (!communityId)
+    const body = await request.json();
+    const { communityId } = body;
+    if (!communityId) {
       return NextResponse.json(
-        { error: "Community ID is required" },
+        { error: "Missing communityId" },
         { status: 400 }
       );
-
-    const existingMembership = await prisma.communityMembers.findUnique({
-      where: {
-        userId_communityId: {
-          userId: user.id,
-          communityId,
-        },
-      },
-    });
-
-    if (!existingMembership)
-      return NextResponse.json(
-        { error: "User is not a member of this community" },
-        { status: 400 }
-      );
-
-    await prisma.communityMembers.delete({
-      where: {
-        userId_communityId: {
-          userId: user.id,
-          communityId,
-        },
-      },
-    });
-
+    }
+    await unjoinCommunity(communityId);
     return NextResponse.json(
-      { message: "Successfully unjoined the community" },
+      { message: "Community unjoined successfully" },
       { status: 200 }
     );
   } catch (error) {
