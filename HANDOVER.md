@@ -97,11 +97,10 @@ This is a Next.js-based social justice application that facilitates community bu
 - Quick tutorial for key features
 - Guide for joining communities and scheduling sessions
 
-### 3. Community Management
-- Create and join communities
+### 3. Community Management and Dashboard Views
+- Create (only for leaders and amdmins) and join communities (everyone)
 - Community-specific discussion boards
-- Interest-based community categorization
-- Member management within communities
+- Dashboard views of communities and public events and private sessions
 
 ### 4. Scheduling Sessions
 - Schedule different types of sessions that comes from the API
@@ -110,9 +109,13 @@ This is a Next.js-based social justice application that facilitates community bu
 - Session status tracking (scheduled, completed, canceled)
 - Feature to have private sessions with multiple invitees and public session which are open to all.
 
-### 4. Discussion Forums
+### 5. Leader Application Management with Admin Dashboard
+- Members can submit a leader application through settings page
+- Admins can navigate to the admin dashboard through settings page where they can approve or deny leadership applications or revert back to pending.
+
+### 6. Discussion Forums
 - Create and participate in discussions
-- Post content with text, images, and PDFs
+- Post/delete content with text, images, and PDFs
 - Comment system
 - Voting mechanism (upvote/downvote)
 
