@@ -54,6 +54,10 @@ This is a Next.js-based social justice application that facilitates community bu
     ZOOM_ACCOUNT_ID="..."
     ZOOM_CLIENT_ID="..."
     ZOOM_CLIENT_SECRET="..."
+    # CLOUDINARY SECRET KEYS
+    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..."
+    NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="..."
+   
    ```
 
 ### Database Setup
@@ -64,6 +68,7 @@ This is a Next.js-based social justice application that facilitates community bu
 2. Seed the database:
    ```bash
    npx prisma db seed
+   npx tsx ./db/seed
    ```
 
 ### Running the Application
@@ -81,7 +86,8 @@ This is a Next.js-based social justice application that facilitates community bu
 ### 1. User Authentication and Profiles
 - User registration and login through Clerk
 - Profile management with customizable information
-- Role-based access control (member, leader, admin)
+- Role-based access control/views (member, leader, admin)
+- Admin Dashboard 
 
 ### 2. Onboarding after Signup
 - User profile completion (name, username, profile picture)
@@ -125,6 +131,7 @@ This is a Next.js-based social justice application that facilitates community bu
      - Comments
      - Posts
      - Votes
+     - LeaderApplication
 
 2. **Interest**
    - id, name (unique)
@@ -167,6 +174,10 @@ This is a Next.js-based social justice application that facilitates community bu
 8. **Vote**
    - Type: UPVOTE/DOWNVOTE
    - Associated with Post and User
+  
+9. **LeaderApplication**
+   - Contains all fields of the questionnaire
+   - Associated with a User
 
 ### Enums
 - AppointmentStatus: scheduled, completed, canceled
@@ -175,6 +186,7 @@ This is a Next.js-based social justice application that facilitates community bu
 - VoteType: UPVOTE, DOWNVOTE
 - UserRole: member, leader, admin
 - AppointmentAccessType: private, public
+- LeaderApplicationStatus: PENDING, APPROVED, REJECTED
 
 ## Completed User Stories
 1. ✅ Authentication (MVP): User authentication and profile management.
@@ -196,6 +208,7 @@ This is a Next.js-based social justice application that facilitates community bu
 
 ## API Structure
 The application follows a RESTful API structure with the following main endpoints:
+- `/api/admin` - Admin management of leader applications
 - `/api/users` - User management
 - `/api/communities` - Community operations
 - `/api/appointments` - Session management
@@ -203,7 +216,7 @@ The application follows a RESTful API structure with the following main endpoint
 
 ## Security Considerations
 - Authentication handled by Clerk
-- Role-based access control
+- Role-based access control, protected admin view for leader applications
 - Secure database connections
 - Environment variable protection
 
