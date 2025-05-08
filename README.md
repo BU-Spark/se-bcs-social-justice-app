@@ -49,3 +49,84 @@ Most projects will require the use of other technologies. Below are a few guides
 - [Clerk Setup w/ Next.js](https://clerk.com/docs/quickstarts/nextjs) - Clerk will be the default user authentication software for all new Spark! projects. Please reach out to Omar for creating and retrieving API keys for your project. Do NOT use firebase/auth even if your project uses Firestore.
 - #### Component Libraries
   - All new projects will be required to use a [design system](https://www.figma.com/blog/design-systems-101-what-is-a-design-system/) You will receive designs from your DS488 design team which will utilize a design kit. Use the corresponding component library to implement those designs on the front end of your project.
+ 
+## Project Overview
+This is a Next.js-based social justice application which is an all in one platform that facilitates community building, coaching sessions, and discussions around social justice topics. The application is built using modern web technologies and follows best practices for scalability and maintainability.
+
+## Technology Stack
+- **Frontend Framework**: Next.js 15.2.4
+- **UI Libraries**: 
+  - Material-UI (MUI) v7
+  - Headless UI
+  - Tailwind CSS
+- **Authentication**: Clerk
+- **Database**: PostgreSQL with Prisma ORM
+- **Development Tools**:
+  - TypeScript
+  - ESLint
+  - Prettier
+  - Husky (for pre-commit hooks)
+
+## Project Setup and Installation
+
+### Prerequisites
+- Node.js (Latest LTS version)
+- PostgreSQL database
+- Clerk account for authentication
+
+### Environment Setup
+1. Clone the repository
+   ```bash
+   git clone git@github.com:BU-Spark/se-bcs-social-justice-app.git
+   ```
+2. cd into the repository
+   ```bash
+   cd se-bcs-social-justice-app
+   ```
+3. Checkout to dev branch
+   ```bash
+   git checkout dev
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up environment variables in `.env`:
+   ```
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="..."
+    CLERK_SECRET_KEY="..."
+    NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+    NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/?from=signup
+    DATABASE_URL="prisma+postgres://..."
+    # ZOOM SECRET KEYS
+    ZOOM_ACCOUNT_ID="..."
+    ZOOM_CLIENT_ID="..."
+    ZOOM_CLIENT_SECRET="..."
+    # CLOUDINARY SECRET KEYS
+    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..."
+    NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="..."
+   
+   ```
+
+### Database Setup
+1. Initialize the database:
+   ```bash
+   npx prisma migrate dev
+   ```
+2. Seed the database:
+   ```bash
+   npx prisma db seed
+   npx tsx ./db/seed
+   ```
+
+### Running the Application
+- Development mode (Frontend):
+  ```bash
+  npm run dev
+  ```
+- Development mode (Backend / Accessing databse):
+  ```bash
+  npx prisma studio
+  ```
