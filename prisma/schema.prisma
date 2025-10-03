@@ -29,6 +29,7 @@ model User {
   interests              UserInterest[]
   votes                  Vote[]
   leaderApplication      LeaderApplication?   
+  onboardingComplete     Boolean               @default(false)
 }
 
 model Interest {

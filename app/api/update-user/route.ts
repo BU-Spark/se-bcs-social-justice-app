@@ -19,6 +19,7 @@ export async function POST(req: Request) {
         ethnicity,
         phoneNumber,
         referrer,
+        onboardingComplete: true,
       },
     });
 

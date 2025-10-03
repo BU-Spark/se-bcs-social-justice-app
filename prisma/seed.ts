@@ -3,8 +3,24 @@ import { AppointmentAccessType, PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Delete existing appointment types
+  // Delete existing data
   await prisma.appointmentType.deleteMany();
+  await prisma.interest.deleteMany();
+
+  // Create interests
+  const interests = [
+    "Community",
+    "Chat",
+    "Coaching",
+  ];
+
+  for (const interestName of interests) {
+    await prisma.interest.create({
+      data: { name: interestName },
+    });
+  }
+
+  console.log("Sample interests have been created");
 
   // Create sample appointment types
   const appointmentTypes = [
@@ -60,6 +76,7 @@ async function main() {
   }
 
   console.log("Sample appointment types have been created");
+  console.log("Database seeding completed successfully!");
 }
 
 main()

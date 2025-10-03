@@ -9,6 +9,7 @@ const Onboarding = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [step, setStep] = useState<number>(1);
   const [interestOptions, setInterestOptions] = useState<string[]>([]);
+  const [isLoadingInterests, setIsLoadingInterests] = useState(true);
   const [formData, setFormData] = useState<{
     username: string;
     phoneNumber: string;
@@ -57,6 +58,7 @@ const Onboarding = () => {
     // Fetch interests from API
     async function fetchInterests() {
       try {
+        setIsLoadingInterests(true);
         const response = await fetch("/api/interests");
         if (response.ok) {
           const data = await response.json();
@@ -66,6 +68,8 @@ const Onboarding = () => {
         }
       } catch (error) {
         console.error("Error fetching interests:", error);
+      } finally {
+        setIsLoadingInterests(false);
       }
     }
 
@@ -116,6 +120,7 @@ const Onboarding = () => {
       if (response.ok) {
         console.log("User data updated successfully.");
         setIsOpen(false);
+        window.location.href='/dashboard';
       } else {
         console.error("Failed to update user.");
       }
@@ -302,7 +307,9 @@ const Onboarding = () => {
                 Select your preferred topics.
               </p>
               <div className="mt-12 flex flex-wrap gap-2">
-                {interestOptions.length > 0 ? (
+                {isLoadingInterests ? (
+                  <p className="text-gray-500">Loading interests...</p>
+                ) : interestOptions.length > 0 ? (
                   interestOptions.map((interest) => (
                     <button
                       key={interest}
@@ -326,7 +333,7 @@ const Onboarding = () => {
                     </button>
                   ))
                 ) : (
-                  <p className="text-gray-500">Loading interests...</p>
+                  <p className="text-gray-500">No interests available. Please contact support.</p>
                 )}
               </div>
             </div>
