@@ -122,7 +122,6 @@ This is a Next.js-based social justice application which is an all in one platfo
    ```
 ### Create and run a migration
   npx prisma migrate dev --name add_onboarding_complete
-   ```
   npx prisma generate
 
 ### Running the Application
