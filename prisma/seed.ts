@@ -12,6 +12,8 @@ async function main() {
     "Community",
     "Chat",
     "Coaching",
+    "Events",
+    "Courses",
   ];
 
   for (const interestName of interests) {

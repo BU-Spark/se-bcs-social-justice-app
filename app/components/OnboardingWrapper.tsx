@@ -27,6 +27,14 @@ export default function OnboardingWrapper({ children }: { children: React.ReactN
     }
 
     fetchLocalUser();
+
+    // Optional: Periodically check user status (every 5 minutes)
+    // This ensures if an admin changes onboardingComplete, user will see it
+    const interval = setInterval(() => {
+      fetchLocalUser();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
   }, [user, isLoaded]);
 
   // Show loading state while checking
@@ -35,7 +43,7 @@ export default function OnboardingWrapper({ children }: { children: React.ReactN
   }
 
   // Show onboarding if user hasn't completed it
-  if (localUser && !localUser.onboardingComplete && !localUser.username) {
+  if (localUser && !localUser.onboardingComplete) {
     return <Onboarding />;
   }
 
