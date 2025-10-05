@@ -240,6 +240,24 @@ export default function Settings() {
                 </Link>
               </div>
             </div>
+            <div className="space-y-4" style={{ marginTop: "32px" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-700 font-medium"> User Interests</p>
+                  <p className="text-sm text-gray-600">
+                      View user interests
+                  </p>
+                </div>
+                {/* TODO: Add link to user interests page */}
+                {/* TODO: Make the button functioning */}
+                <Link href="" passHref>
+                  <StyledButton className="flex items-center">
+                    <span>View Interests</span>
+                  </StyledButton>
+                </Link>      
+              </div>
+                 
+            </div>
           </StyledSection>
         )}
 
