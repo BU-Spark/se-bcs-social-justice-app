@@ -120,6 +120,11 @@ This is a Next.js-based social justice application which is an all in one platfo
    npx prisma db seed
    npx tsx ./db/seed
    ```
+### Create and run a migration (Optional)
+   ```bash
+  npx prisma migrate dev --name add_onboarding_complete
+  npx prisma generate
+  ```
 
 ### Running the Application
 - Development mode (Frontend):
