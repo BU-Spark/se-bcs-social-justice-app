@@ -250,7 +250,7 @@ export default function Settings() {
                 </div>
                 {/* TODO: Add link to user interests page */}
                 {/* TODO: Make the button functioning */}
-                <Link href="" passHref>
+                <Link href="/admin/user-interest" passHref>
                   <StyledButton className="flex items-center">
                     <span>View Interests</span>
                   </StyledButton>
