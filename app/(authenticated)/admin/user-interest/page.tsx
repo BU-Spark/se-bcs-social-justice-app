@@ -196,7 +196,38 @@ export default function AdminUserInterest() {
                 <p style={{ color: "firebrick" }}>{error}</p>
               </div>
             )}
-
+            {allInterests.length > 0 && (
+              <div style={{ marginTop: "32px" }}>
+                <h2 style={{ fontSize: "24px", marginBottom: "12px" }}>
+                  All Interests in System
+                </h2>
+                <div style={{ display: "flex", flexWrap: "wrap" }}>
+                  {allInterests.map((interest) => {
+                    const count = users.filter((u) =>
+                      u.interests.some((ui) => ui.interest.name === interest)
+                    ).length;
+                    return (
+                      <div
+                        key={interest}
+                        style={{
+                          padding: "8px 16px",
+                          background: "aliceblue",
+                          borderRadius: "8px",
+                          margin: "4px",
+                          fontSize: "14px",
+                        }}
+                      >
+                        <strong>{interest}</strong>
+                        <span style={{ color: "slategray", marginLeft: "8px" }}>
+                          ({count}  / {users.length} total users)
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
             <div style={{ marginBottom: "16px" }}>
               <p style={{ color: "darkslategray", marginBottom: "8px" }}>
                 Total Users: <strong>{users.length}</strong> | All Interests:{" "}
@@ -252,7 +283,7 @@ export default function AdminUserInterest() {
                             color: "darkslategray",
                           }}
                         >
-                          {user.email}
+                          Email:{user.email}
                         </p>
                         {user.username && (
                           <p
@@ -262,7 +293,7 @@ export default function AdminUserInterest() {
                               color: "slategray",
                             }}
                           >
-                            @{user.username}
+                            Username: @{user.username}
                           </p>
                         )}
                       </div>
@@ -309,37 +340,7 @@ export default function AdminUserInterest() {
               ))
             )}
 
-            {allInterests.length > 0 && (
-              <div style={{ marginTop: "32px" }}>
-                <h2 style={{ fontSize: "24px", marginBottom: "12px" }}>
-                  All Interests in System
-                </h2>
-                <div style={{ display: "flex", flexWrap: "wrap" }}>
-                  {allInterests.map((interest) => {
-                    const count = users.filter((u) =>
-                      u.interests.some((ui) => ui.interest.name === interest)
-                    ).length;
-                    return (
-                      <div
-                        key={interest}
-                        style={{
-                          padding: "8px 16px",
-                          background: "aliceblue",
-                          borderRadius: "8px",
-                          margin: "4px",
-                          fontSize: "14px",
-                        }}
-                      >
-                        <strong>{interest}</strong>
-                        <span style={{ color: "slategray", marginLeft: "8px" }}>
-                          ({count} {count === 1 ? "user" : "users"})
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            
           </>
         )}
       </StyledContainer>
