@@ -244,19 +244,14 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-700 font-medium"> User Interests</p>
-                  <p className="text-sm text-gray-600">
-                      View user interests
-                  </p>
+                  <p className="text-sm text-gray-600"> View user interests</p>
                 </div>
-                {/* TODO: Add link to user interests page */}
-                {/* TODO: Make the button functioning */}
                 <Link href="/admin/user-interest" passHref>
                   <StyledButton className="flex items-center">
                     <span>View Interests</span>
                   </StyledButton>
-                </Link>      
+                </Link>
               </div>
-                 
             </div>
           </StyledSection>
         )}

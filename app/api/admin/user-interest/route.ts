@@ -40,10 +40,44 @@ export async function GET(request: Request) {
             interest: true,
           },
         },
+        memberships: {
+          include: {
+            community: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json({ users });
+    // Fetch all available interests
+    const allInterests = await prisma.interest.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    // Transform data to include communities array
+    const usersWithCommunityStatus = users.map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      imageUrl: user.imageUrl,
+      phoneNumber: user.phoneNumber,
+      createdAt: user.createdAt,
+      interests: user.interests,
+      communities: user.memberships.map((m) => ({
+        id: m.community.id,
+        name: m.community.name,
+        type: m.community.type,
+        imageUrl: m.community.imageUrl,
+        description: m.community.description,
+      })),
+    }));
+
+    return NextResponse.json({
+      users: usersWithCommunityStatus,
+      allInterests,
+    });
   } catch (error) {
     console.error("Error fetching users by interest:", error);
     return NextResponse.json(
