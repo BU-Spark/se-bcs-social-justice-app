@@ -530,6 +530,7 @@ export default function AdminUserInterest() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [users, setUsers] = useState<UserWithInterests[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserWithInterests[]>([]);
+  const [allInterests, setAllInterests] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -570,13 +571,19 @@ export default function AdminUserInterest() {
         throw new Error(res.statusText);
       }
       const data = await res.json();
-      setUsers(data.users);
-      setFilteredUsers(data.users);
+      setUsers(data.users || []);
+      setFilteredUsers(data.users || []);
+      // Extract and set all interests from the API response
+      if (data.allInterests && Array.isArray(data.allInterests)) {
+        setAllInterests(data.allInterests.map((interest: { name: string }) => interest.name).sort());
+      }
       setError(null);
     } catch (err) {
+      console.error("Failed to fetch users:", err);
       setError(err instanceof Error ? err.message : "Failed to load users");
       setUsers([]);
       setFilteredUsers([]);
+      setAllInterests([]);
     } finally {
       setIsLoading(false);
     }
@@ -589,6 +596,11 @@ export default function AdminUserInterest() {
   }, [isAdmin]);
 
   useEffect(() => {
+    if (!users) {
+      setFilteredUsers([]);
+      return;
+    }
+
     let filtered = users;
 
     // Filter by interest first
@@ -634,13 +646,6 @@ export default function AdminUserInterest() {
     });
   };
 
-  // Calculate statistics
-  const allInterests = Array.from(
-    new Set(
-      users.flatMap((user) => user.interests.map((ui) => ui.interest.name)),
-    ),
-  ).sort();
-
   const usersWithInterests = users.filter((u) => u.interests.length > 0).length;
   const usersInCommunity = users.filter(
     (u) => u.communities && u.communities.length > 0,
@@ -673,11 +678,13 @@ export default function AdminUserInterest() {
   };
 
   const getUsersByInterest = (interest: string) => {
+    if (!users || users.length === 0) return [];
     return users.filter((user) =>
       user.interests.some((ui) => ui.interest.name === interest)
     );
   };
 
+  // Create interest stats for ALL interests, showing 0 for unused ones
   const interestStats = allInterests.map((interest) => ({
     name: interest,
     userCount: getUsersByInterest(interest).length,
@@ -752,7 +759,7 @@ export default function AdminUserInterest() {
                   <Tbody>
                     {filteredUsers.length === 0 ? (
                       <Tr>
-                        <Td colSpan={6}>
+                        <Td colSpan={7}>
                           <EmptyState>No users found</EmptyState>
                         </Td>
                       </Tr>
@@ -913,52 +920,56 @@ export default function AdminUserInterest() {
 
                   {selectedInterest && (
                     <div>
-                      {getUsersByInterest(selectedInterest).map((user) => (
-                        <UserListItem key={user.id}>
-                          <UserListHeader>
-                            {user.imageUrl ? (
-                              <Avatar
-                                src={user.imageUrl}
-                                alt={user.name || "User"}
-                              />
-                            ) : (
-                              <AvatarPlaceholder>
-                                {getInitials(user.name)}
-                              </AvatarPlaceholder>
-                            )}
-                            <div>
-                              <UserName>
-                                {user.name || "Anonymous User"}
-                              </UserName>
-                              <UserEmail>{user.email}</UserEmail>
-                            </div>
-                          </UserListHeader>
-                          <UserDetails>
-                            <DetailItem>
-                              <DetailLabel>Phone</DetailLabel>
-                              <DetailValue>
-                                {user.phoneNumber || "Not provided"}
-                              </DetailValue>
-                            </DetailItem>
-                            <DetailItem>
-                              <DetailLabel>Username</DetailLabel>
-                              <DetailValue>
-                                {user.username || "Not set"}
-                              </DetailValue>
-                            </DetailItem>
-                            <DetailItem>
-                              <DetailLabel>Communities</DetailLabel>
-                              <DetailValue>
-                                {user.communities?.length || 0}
-                              </DetailValue>
-                            </DetailItem>
-                            <DetailItem>
-                              <DetailLabel>Total Interests</DetailLabel>
-                              <DetailValue>{user.interests.length}</DetailValue>
-                            </DetailItem>
-                          </UserDetails>
-                        </UserListItem>
-                      ))}
+                      {getUsersByInterest(selectedInterest).length === 0 ? (
+                        <EmptyState>No users have selected this interest yet</EmptyState>
+                      ) : (
+                        getUsersByInterest(selectedInterest).map((user) => (
+                          <UserListItem key={user.id}>
+                            <UserListHeader>
+                              {user.imageUrl ? (
+                                <Avatar
+                                  src={user.imageUrl}
+                                  alt={user.name || "User"}
+                                />
+                              ) : (
+                                <AvatarPlaceholder>
+                                  {getInitials(user.name)}
+                                </AvatarPlaceholder>
+                              )}
+                              <div>
+                                <UserName>
+                                  {user.name || "Anonymous User"}
+                                </UserName>
+                                <UserEmail>{user.email}</UserEmail>
+                              </div>
+                            </UserListHeader>
+                            <UserDetails>
+                              <DetailItem>
+                                <DetailLabel>Phone</DetailLabel>
+                                <DetailValue>
+                                  {user.phoneNumber || "Not provided"}
+                                </DetailValue>
+                              </DetailItem>
+                              <DetailItem>
+                                <DetailLabel>Username</DetailLabel>
+                                <DetailValue>
+                                  {user.username || "Not set"}
+                                </DetailValue>
+                              </DetailItem>
+                              <DetailItem>
+                                <DetailLabel>Communities</DetailLabel>
+                                <DetailValue>
+                                  {user.communities?.length || 0}
+                                </DetailValue>
+                              </DetailItem>
+                              <DetailItem>
+                                <DetailLabel>Total Interests</DetailLabel>
+                                <DetailValue>{user.interests.length}</DetailValue>
+                              </DetailItem>
+                            </UserDetails>
+                          </UserListItem>
+                        ))
+                      )}
                     </div>
                   )}
                 </ModalBody>
