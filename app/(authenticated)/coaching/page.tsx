@@ -287,77 +287,52 @@ export default function CoachingPage() {
   // Render coaching grid with real data
   const renderCoachingGrid = () => (
     <CoachingGrid>
-      {appointmentTypes.map((type) => {
-        const isPrivate = type.accessType === 'private';
-        
-        return (
-          <CoachingCard 
-            key={type.id}
-            onClick={!isPrivate ? () => router.push(`/coaching/${type.id}`) : undefined}
-            style={{ 
-              cursor: isPrivate ? 'default' : 'pointer',
-              opacity: isPrivate ? 0.6 : 1
-            }}
-          >
-            <CardImageContainer>
-              {!imageErrors[type.id] ? (
-                <Image
-                  src={`/images/coaching/${type.id}.jpg`}
-                  alt={type.title}
-                  fill
-                  style={{ objectFit: "cover" }}
-                  onError={() => {
-                    setImageErrors((prev) => ({ ...prev, [type.id]: true }));
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                  <DynamicIcon iconName={type.icon} />
-                </div>
-              )}
-              {isPrivate && (
-                <div 
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}
-                >
-                  Private
-                </div>
-              )}
-              <ActionButtons>
-                <IconButton onClick={(e) => e.stopPropagation()}>
-                  <FavoriteIcon />
-                </IconButton >
-                <IconButton onClick={(e) => e.stopPropagation()}>
-                  <ShareIcon />
-                </IconButton>
-              </ActionButtons>
-            </CardImageContainer>
-            <CardContent>
-              <CardLabel>Coaching Package</CardLabel>
-              <CardTitle>{type.title}</CardTitle>
-              <CardDetails>
-                <DetailItem>
-                  <DynamicIcon iconName={type.icon} />
-                  Weekly meetings
-                </DetailItem>
-                <DetailItem>
-                  <AccessTimeIcon />1 hr
-                </DetailItem>
-              </CardDetails>
-            </CardContent>
-          </CoachingCard>
-        );
-      })}
+      {appointmentTypes.map((type) => (
+        <CoachingCard 
+          key={type.id}
+          onClick={() => router.push(`/coaching/${type.id}`)}
+          style={{ cursor: 'pointer' }}
+        >
+          <CardImageContainer>
+            {!imageErrors[type.id] ? (
+              <Image
+                src={`/images/coaching/${type.id}.jpg`}
+                alt={type.title}
+                fill
+                style={{ objectFit: "cover" }}
+                onError={() => {
+                  setImageErrors((prev) => ({ ...prev, [type.id]: true }));
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <DynamicIcon iconName={type.icon} />
+              </div>
+            )}
+            <ActionButtons>
+              <IconButton onClick={(e) => e.stopPropagation()}>
+                <FavoriteIcon />
+              </IconButton >
+              <IconButton onClick={(e) => e.stopPropagation()}>
+                <ShareIcon />
+              </IconButton>
+            </ActionButtons>
+          </CardImageContainer>
+          <CardContent>
+            <CardLabel>Coaching Package</CardLabel>
+            <CardTitle>{type.title}</CardTitle>
+            <CardDetails>
+              <DetailItem>
+                <DynamicIcon iconName={type.icon} />
+                Weekly meetings
+              </DetailItem>
+              <DetailItem>
+                <AccessTimeIcon />1 hr
+              </DetailItem>
+            </CardDetails>
+          </CardContent>
+        </CoachingCard>
+      ))}
     </CoachingGrid>
   );
 
