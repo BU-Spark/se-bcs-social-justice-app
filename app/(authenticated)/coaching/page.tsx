@@ -14,8 +14,7 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import ShareIcon from "@mui/icons-material/Share";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import { useRouter } from "next/navigation";
-
-//const router = useRouter();
+import CoachingWorkshops from "../../components/CoachingWorkshops";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -158,6 +157,14 @@ interface AppointmentType {
   updatedAt: string;
 }
 
+interface Workshop {
+  id: string;
+  typeName: string;
+  description: string;
+  icon: string;
+  longDescription?: string;
+}
+
 const IconMap: { [key: string]: React.ComponentType } = {
   Person: PersonIcon,
   Groups: GroupsIcon,
@@ -175,24 +182,30 @@ const DynamicIcon = ({ iconName }: { iconName: string }) => {
 };
 
 // Placeholder data for other tabs
-const placeholderWorkshops = [
+const placeholderWorkshops: Workshop[] = [
   {
     id: "workshop-1",
     typeName: "Group Leadership Workshop",
     description: "Learn leadership skills in a group setting",
     icon: "Groups",
+    longDescription:
+      "Group Leadership Workshop is designed to help individuals develop essential leadership skills through interactive group activities and discussions.",
   },
   {
     id: "workshop-2",
     typeName: "Community Building Seminar",
     description: "Build stronger communities together",
     icon: "Groups",
+    longDescription:
+      "This intensive seminar focuses on building and strengthening community bonds through collaborative exercises and shared experiences. ",
   },
   {
     id: "workshop-3",
     typeName: "Social Justice Training",
     description: "Intensive training on social justice topics",
     icon: "Work",
+    longDescription:
+      " This workshop provides frameworks for taking meaningful action toward equity and justice.",
   },
 ];
 
@@ -240,6 +253,7 @@ export default function CoachingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
+  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
 
   useEffect(() => {
     const fetchAppointmentTypes = async () => {
@@ -288,15 +302,17 @@ export default function CoachingPage() {
   const renderCoachingGrid = () => (
     <CoachingGrid>
       {appointmentTypes.map((type) => {
-        const isPrivate = type.accessType === 'private';
-        
+        const isPrivate = type.accessType === "private";
+
         return (
-          <CoachingCard 
+          <CoachingCard
             key={type.id}
-            onClick={!isPrivate ? () => router.push(`/coaching/${type.id}`) : undefined}
-            style={{ 
-              cursor: isPrivate ? 'default' : 'pointer',
-              opacity: isPrivate ? 0.6 : 1
+            onClick={
+              !isPrivate ? () => router.push(`/coaching/${type.id}`) : undefined
+            }
+            style={{
+              cursor: isPrivate ? "default" : "pointer",
+              opacity: isPrivate ? 0.6 : 1,
             }}
           >
             <CardImageContainer>
@@ -316,18 +332,18 @@ export default function CoachingPage() {
                 </div>
               )}
               {isPrivate && (
-                <div 
+                <div
                   style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: '600'
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    background: "rgba(0, 0, 0, 0.7)",
+                    color: "white",
+                    padding: "8px 16px",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontWeight: "600",
                   }}
                 >
                   Private
@@ -336,7 +352,7 @@ export default function CoachingPage() {
               <ActionButtons>
                 <IconButton onClick={(e) => e.stopPropagation()}>
                   <FavoriteIcon />
-                </IconButton >
+                </IconButton>
                 <IconButton onClick={(e) => e.stopPropagation()}>
                   <ShareIcon />
                 </IconButton>
@@ -362,40 +378,72 @@ export default function CoachingPage() {
   );
 
   // Workshops grid with placeholder cards
-  const renderWorkshopsGrid = () => (
-    <CoachingGrid>
-      {placeholderWorkshops.map((workshop) => (
-        <CoachingCard key={workshop.id}>
-          <CardImageContainer>
-            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-              <DynamicIcon iconName={workshop.icon} />
-            </div>
-            <ActionButtons>
-              <IconButton>
-                <FavoriteIcon />
-              </IconButton>
-              <IconButton>
-                <ShareIcon />
-              </IconButton>
-            </ActionButtons>
-          </CardImageContainer>
-          <CardContent>
-            <CardLabel>Workshop</CardLabel>
-            <CardTitle>{workshop.typeName}</CardTitle>
-            <CardDetails>
-              <DetailItem>
-                <DynamicIcon iconName={workshop.icon} />
-                Group Session
-              </DetailItem>
-              <DetailItem>
-                <AccessTimeIcon />2 hrs
-              </DetailItem>
-            </CardDetails>
-          </CardContent>
-        </CoachingCard>
-      ))}
-    </CoachingGrid>
-  );
+  const renderWorkshopsGrid = () => {
+    // Show detail view if a workshop is selected
+    if (selectedWorkshop) {
+      return (
+        <CoachingWorkshops
+          workshop={selectedWorkshop}
+          onBack={() => setSelectedWorkshop(null)}
+        />
+      );
+    }
+
+    // Show grid of workshops
+    return (
+      <CoachingGrid>
+        {placeholderWorkshops.map((workshop) => (
+          <CoachingCard
+            key={workshop.id}
+            onClick={() => setSelectedWorkshop(workshop)}
+            style={{ cursor: "pointer" }}
+          >
+            <CardImageContainer>
+              {!imageErrors[workshop.id] ? (
+                <Image
+                  src={`/images/workshops/${workshop.id}.jpg`}
+                  alt={workshop.typeName}
+                  fill
+                  style={{ objectFit: "cover" }}
+                  onError={() => {
+                    setImageErrors((prev) => ({
+                      ...prev,
+                      [workshop.id]: true,
+                    }));
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                  <DynamicIcon iconName={workshop.icon} />
+                </div>
+              )}
+              <ActionButtons>
+                <IconButton onClick={(e) => e.stopPropagation()}>
+                  <FavoriteIcon />
+                </IconButton>
+                <IconButton onClick={(e) => e.stopPropagation()}>
+                  <ShareIcon />
+                </IconButton>
+              </ActionButtons>
+            </CardImageContainer>
+            <CardContent>
+              <CardLabel>Workshop</CardLabel>
+              <CardTitle>{workshop.typeName}</CardTitle>
+              <CardDetails>
+                <DetailItem>
+                  <DynamicIcon iconName={workshop.icon} />
+                  Group Session
+                </DetailItem>
+                <DetailItem>
+                  <AccessTimeIcon />2 hrs
+                </DetailItem>
+              </CardDetails>
+            </CardContent>
+          </CoachingCard>
+        ))}
+      </CoachingGrid>
+    );
+  };
 
   // Download grid with placeholder cards
   const renderDownloadGrid = () => (
@@ -424,7 +472,8 @@ export default function CoachingPage() {
                 PDF Download
               </DetailItem>
               <DetailItem>
-                <AccessTimeIcon />Instant Access
+                <AccessTimeIcon />
+                Instant Access
               </DetailItem>
             </CardDetails>
           </CardContent>
@@ -460,7 +509,8 @@ export default function CoachingPage() {
                 Completed
               </DetailItem>
               <DetailItem>
-                <AccessTimeIcon />View Receipt
+                <AccessTimeIcon />
+                View Receipt
               </DetailItem>
             </CardDetails>
           </CardContent>
@@ -476,25 +526,37 @@ export default function CoachingPage() {
         <TabContainer>
           <Tab
             active={activeTab === "Coaching"}
-            onClick={() => setActiveTab("Coaching")}
+            onClick={() => {
+              setActiveTab("Coaching");
+              setSelectedWorkshop(null);
+            }}
           >
             Coaching
           </Tab>
           <Tab
             active={activeTab === "Workshops"}
-            onClick={() => setActiveTab("Workshops")}
+            onClick={() => {
+              setActiveTab("Workshops");
+              setSelectedWorkshop(null);
+            }}
           >
             Workshops
           </Tab>
           <Tab
             active={activeTab === "Download"}
-            onClick={() => setActiveTab("Download")}
+            onClick={() => {
+              setActiveTab("Download");
+              setSelectedWorkshop(null);
+            }}
           >
             Download
           </Tab>
           <Tab
             active={activeTab === "My Purchases"}
-            onClick={() => setActiveTab("My Purchases")}
+            onClick={() => {
+              setActiveTab("My Purchases");
+              setSelectedWorkshop(null);
+            }}
           >
             My Purchases
           </Tab>
