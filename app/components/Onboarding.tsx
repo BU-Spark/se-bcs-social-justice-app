@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Community } from "@/types/community";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const Onboarding = () => {
   const { user } = useUser();
@@ -10,6 +11,9 @@ const Onboarding = () => {
   const [step, setStep] = useState<number>(1);
   const [interestOptions, setInterestOptions] = useState<string[]>([]);
   const [isLoadingInterests, setIsLoadingInterests] = useState(true);
+  const [availableCommunities, setAvailableCommunities] = useState<Array<Community>>([]);
+  const [isLoadingCommunities, setIsLoadingCommunities] = useState(false);
+  const [selectedCommunities, setSelectedCommunities] = useState<string[]>([]);
   const [formData, setFormData] = useState<{
     username: string;
     phoneNumber: string;
@@ -73,11 +77,43 @@ const Onboarding = () => {
       }
     }
 
+    // Fetch Communities from API
+    async function fetchCommunities() {
+      try {
+        const response = await fetch("/api/communities");
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableCommunities(data.recommendedCommunities || []);
+        }
+      } catch (error) {
+        console.error("Error fetching communities:", error);
+      } finally {
+        setIsLoadingCommunities(false);
+      }
+    }
+
     fetchInterests();
+    fetchCommunities();
   }, [user]);
+
 
   const validatePhoneNumber = (phone: string): boolean => {
     return /^\d{10}$/.test(phone);
+  };
+
+  // const handleInterestClick = async(interest: string) => {
+  //   const updatedInterests = formData.interests.includes(interest)
+  //     ? formData.interests.filter((item) => item !== interest)
+  //     : [...formData.interests,interest];
+  //   handleChange("interests",updatedInterests);
+  // };
+
+  const handleCommunityToggle = (communityId: string) => {
+    setSelectedCommunities((prev)=>
+      prev.includes(communityId)
+        ? prev.filter((id) => id !== communityId)
+        : [...prev,communityId]
+    );
   };
 
   const handleNext = () => {
@@ -119,6 +155,19 @@ const Onboarding = () => {
 
       if (response.ok) {
         console.log("User data updated successfully.");
+
+        if (selectedCommunities.length) {
+          await Promise.all(
+            selectedCommunities.map((communityId) =>
+              fetch("/api/join-community", {
+                method: "POST",
+                body: JSON.stringify({ communityId }),
+                headers: { "Content-Type": "application/json" },
+              }),
+            ),
+          );
+        }
+
         setIsOpen(false);
         window.location.href='/dashboard';
       } else {
@@ -336,6 +385,52 @@ const Onboarding = () => {
                   <p className="text-gray-500">No interests available. Please contact support.</p>
                 )}
               </div>
+
+              {formData.interests.includes("Community") && (
+                <div className="mt-6 border-t pt-6">
+                  <h3 className="text-lg font-bold mb-4">Available Communities</h3>
+                  {isLoadingCommunities ? (
+                    <p className="text-gray-500">Loading communities...</p>
+                  ) : availableCommunities.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {availableCommunities.map((community) => (
+                        <label
+                          key={community.id}
+                          className="flex items-start gap-3 p-3 bg-gray-200 hover:bg-gray-300 border rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 peer"
+                            checked={selectedCommunities.includes(community.id)}
+                            onChange={() => handleCommunityToggle(community.id)}
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              {community.imageUrl && (
+                                <img
+                                  src={community.imageUrl}
+                                  alt={community.name}
+                                  className="w-8 h-8 rounded object-cover"
+                                />
+                              )}
+                              <span className="font-medium text-sm">
+                                {community.name}
+                              </span>
+                            </div>
+                            {community.description && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {community.description}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No communities available yet.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
