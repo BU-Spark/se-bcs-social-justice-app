@@ -115,6 +115,21 @@ const Description = styled.p`
   margin-bottom: 32px;
 `;
 
+const ContentRow = styled.div`
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  margin-bottom: 32px;
+`;
+
+const DescriptionColumn = styled.div`
+  flex: 0 0 75%;
+`;
+
+const ButtonColumn = styled.div`
+  flex: 0 0 calc(25% - 32px);
+`;
+
 const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -143,8 +158,9 @@ const InfoValue = styled.div`
 
 const ActionButtons = styled.div`
   display: flex;
+  flex-direction: column;  /* Changed from row to column */
   gap: 16px;
-  margin-top: 32px;
+  margin-top: 0;  /* Changed from 32px to 0 */
 `;
 
 const IconMap: { [key: string]: React.ComponentType } = {
@@ -280,73 +296,122 @@ export default function CoachingDetailPage() {
 
       <DetailContainer>
         <Header>
-          <IconContainer>
-            <DynamicIcon iconName={appointmentType.icon} />
-          </IconContainer>
+          
           <TitleSection>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 8px 0' }}> Coaching Package</p>
             <Title>{appointmentType.title}</Title>
-            <p> Coaching Package</p>
+            {isPrivate ? 
+            (<p style={{ fontSize: '14px', color: 'red', margin: '0 0 8px 0' }}> Private</p>):
+            (<p style={{ fontSize: '14px', color: 'green', margin: '0 0 8px 0' }}> Public</p>)
+            }
           </TitleSection>
         </Header>
 
 
-        <Description>
-        {appointmentType.description || "No description available."}
-        </Description>
+        <ContentRow>
+          <DescriptionColumn>
+            <Description>
+              {appointmentType.description || "No description available."}
+            </Description>
+          </DescriptionColumn>
 
-        {!isPrivate && (
-          <ActionButtons>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<CalendarTodayIcon />}
-              onClick={() => router.push(`/scheduling?typeId=${appointmentType.id}`)}
-              sx={{
-                background: "#1e3a8a",  /* Changed to match sidebar */
-                "&:hover": {
-                  background: "#1e40af",  /* bg-blue-800 for hover */
-                },
-                textTransform: "none",
-                fontSize: "16px",
-                padding: "12px 32px",
-              }}
-            >
-              Schedule Appointment
-            </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              sx={{
-                borderColor: "#1e3a8a",  /* Sidebar blue */
-                color: "#1e3a8a",
-                "&:hover": {
-                  borderColor: "#1e40af",
-                  background: "rgba(30, 58, 138, 0.04)",  /* Light blue tint on hover */
-                },
-                textTransform: "none",
-                fontSize: "16px",
-                padding: "12px 32px",
-              }}
-            >
-              Learn More
-            </Button>
-          </ActionButtons>
-        )}
-
-        {isPrivate && (
-          <div
-            style={{
-              padding: "20px",
-              background: "#fef3c7",
-              borderRadius: "8px",
-              color: "#92400e",
-              marginTop: "24px",
-            }}
-          >
-            <strong>Private Access Only:</strong> This coaching package requires
-            special permissions. Please contact an administrator for access.
-          </div>
-        )}
+          <ButtonColumn>
+            <ActionButtons>
+              {isPrivate ? (
+                // Private access - show Purchase button
+                
+                <>
+                  <div>
+                  <ul>
+                    <li>1.</li>
+                    <li>2.</li>
+                    <li>3.</li>
+                  </ul>
+                </div>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<CalendarTodayIcon />}
+                    onClick={() => {
+                      // Add your purchase logic here
+                      console.log("Purchase clicked for:", appointmentType.id);
+                    }}
+                    sx={{
+                      background: "#1e3a8a",
+                      "&:hover": {
+                        background: "#1e40af",
+                      },
+                      textTransform: "none",
+                      fontSize: "16px",
+                      padding: "12px 32px",
+                      width: "100%",
+                    }}
+                  >
+                    Purchase Package
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    sx={{
+                      borderColor: "#1e3a8a",
+                      color: "#1e3a8a",
+                      "&:hover": {
+                        borderColor: "#1e40af",
+                        background: "rgba(30, 58, 138, 0.04)",
+                      },
+                      textTransform: "none",
+                      fontSize: "16px",
+                      padding: "12px 32px",
+                      width: "100%",
+                    }}
+                  >
+                    Learn More
+                  </Button>
+                </>
+              ) : (
+                // Public access - show Schedule Appointment button
+                <>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<CalendarTodayIcon />}
+                    onClick={() => router.push(`/scheduling?typeId=${appointmentType.id}`)}
+                    sx={{
+                      background: "#1e3a8a",
+                      "&:hover": {
+                        background: "#1e40af",
+                      },
+                      textTransform: "none",
+                      fontSize: "16px",
+                      padding: "12px 32px",
+                      width: "100%",
+                    }}
+                  >
+                    Schedule Appointment
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    sx={{
+                      borderColor: "#1e3a8a",
+                      color: "#1e3a8a",
+                      "&:hover": {
+                        borderColor: "#1e40af",
+                        background: "rgba(30, 58, 138, 0.04)",
+                      },
+                      textTransform: "none",
+                      fontSize: "16px",
+                      padding: "12px 32px",
+                      width: "100%",
+                    }}
+                  >
+                    Learn More
+                  </Button>
+                </>
+              )}
+            </ActionButtons>
+          </ButtonColumn>
+        </ContentRow>
       </DetailContainer>
     </StyledMainContent>
   );
