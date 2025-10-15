@@ -4,7 +4,6 @@ import { useSidebar } from "@/app/components/SidebarContext";
 import styled from "@emotion/styled";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { CircularProgress } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupsIcon from "@mui/icons-material/Groups";
 import WorkIcon from "@mui/icons-material/Work";
@@ -189,7 +188,7 @@ const placeholderWorkshops: Workshop[] = [
     description: "Learn leadership skills in a group setting",
     icon: "Groups",
     longDescription:
-      "Group Leadership Workshop is designed to help individuals develop essential leadership skills through interactive group activities and discussions.",
+      "Multi-session programs built around the 4 Phases of BTM — Find Your Voice, Live Your Message, Share Your Message, Multiply Messengers. These programs help leaders align their values with their actions and create cultures of trust and accountability.",
   },
   {
     id: "workshop-2",
@@ -197,7 +196,7 @@ const placeholderWorkshops: Workshop[] = [
     description: "Build stronger communities together",
     icon: "Groups",
     longDescription:
-      "This intensive seminar focuses on building and strengthening community bonds through collaborative exercises and shared experiences. ",
+      "A standalone program designed for executives, corporations, universities, and law firms. Participants learn how to lead with fairness, build trust, and strengthen resilience within teams and organizations.",
   },
   {
     id: "workshop-3",
@@ -205,7 +204,7 @@ const placeholderWorkshops: Workshop[] = [
     description: "Intensive training on social justice topics",
     icon: "Work",
     longDescription:
-      " This workshop provides frameworks for taking meaningful action toward equity and justice.",
+      "This program builds a hub for justice-focused research and advocacy inside universities. Includes faculty workshops, mentoring, grant support, and community partnerships.",
   },
 ];
 
@@ -217,7 +216,12 @@ const placeholderCourses = [
     description: "Learn how to become an effective messenger for social justice",
     icon: "Person",
     accessType: "private",
-    image: "/Media.png",  // Add this line
+    image: "/Media.png",
+    keyOutcomes: [
+      "Courageous leadership",
+      "Improved workplace culture",
+      "Stronger institutional accountability"
+    ]
   },
   {
     id: "course-2",
@@ -225,7 +229,13 @@ const placeholderCourses = [
     description: "Develop leadership skills for community organizing",
     icon: "Groups",
     accessType: "public",
-    image: "/Media(1).png",  // Add this line
+    image: "/Media(1).png",
+    keyOutcomes: [
+      "Strategic planning and goal setting",
+      "Effective team building and collaboration",
+      "Conflict resolution and mediation skills",
+      "Community engagement strategies"
+    ]
   },
   {
     id: "course-3",
@@ -233,7 +243,13 @@ const placeholderCourses = [
     description: "Transform your workplace culture through inclusive practices",
     icon: "Work",
     accessType: "private",
-    image: "/Media(2).png",  // Add this line
+    image: "/Media(2).png",
+    keyOutcomes: [
+      "Identify and dismantle systemic barriers",
+      "Implement inclusive policies and practices",
+      "Foster psychological safety",
+      "Measure and sustain cultural change"
+    ]
   },
 ];
 

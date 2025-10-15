@@ -4,7 +4,7 @@ import { useSidebar } from "@/app/components/SidebarContext";
 import styled from "@emotion/styled";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CircularProgress, Button } from "@mui/material";
+import { Button } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupsIcon from "@mui/icons-material/Groups";
 import WorkIcon from "@mui/icons-material/Work";
@@ -188,7 +188,12 @@ const placeholderCourses = [
     icon: "Person",
     accessType: "private",
     createdAt: new Date().toISOString(),
-    image: "/Media.png",  // Add this line
+    image: "/Media.png",
+    keyOutcomes: [
+      "Leadership clarity",
+      "Stronger decision-making",
+      "Susstainable culture change"
+    ]
   },
   {
     id: "course-2",
@@ -197,7 +202,12 @@ const placeholderCourses = [
     icon: "Groups",
     accessType: "public",
     createdAt: new Date().toISOString(),
-    image: "/Media(1).png",  // Add this line
+    image: "/Media(1).png",
+    keyOutcomes: [
+      "Courageous leadership",
+      "Improved workplace culture",
+      "Stronger institutional accountability"
+    ]
   },
   {
     id: "course-3",
@@ -206,7 +216,12 @@ const placeholderCourses = [
     icon: "Work",
     accessType: "private",
     createdAt: new Date().toISOString(),
-    image: "/Media(2).png",  // Add this line
+    image: "/Media(2).png",
+    keyOutcomes: [
+      "Facultry development",,
+      "Strengthened research capacity",
+      "Institutional transformation"
+    ]
   },
 ];
 
@@ -217,7 +232,8 @@ interface CourseType {
   icon: string;
   accessType: string;
   createdAt: string;
-  image: string;  // Add this line
+  image: string;
+  keyOutcomes: string[];
 }
 
 export default function CoachingDetailPage() {
@@ -262,21 +278,21 @@ export default function CoachingDetailPage() {
 
   return (
     <StyledMainContent isExpanded={isExpanded}>
-      <div style={{ 
+        <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'flex-start',
         gap: '100px',
         marginBottom: '24px' 
       }}>
-        <BackButton
-          startIcon={<ArrowBackIcon />}
-          onClick={() => router.push("/coaching")}
-          color="black"
-          style={{marginBottom: '0'}}
-        >
-        </BackButton>
-        <h2 style={{ 
+            <BackButton
+            startIcon={<ArrowBackIcon />}
+            onClick={() => router.push("/coaching")}
+            color="black"
+            style={{marginBottom: '0'}}
+            >
+            </BackButton>
+            <h2 style={{ 
           fontSize: '24px', 
           fontWeight: '600', 
           color: '#1a1a1a',
@@ -284,7 +300,7 @@ export default function CoachingDetailPage() {
         }}>
           {course.title}
         </h2>
-      </div>
+        </div>
 
       <ImagePlaceholder>
         {!imageErrors[course.id] ? (
@@ -298,15 +314,15 @@ export default function CoachingDetailPage() {
             }}
           />
         ) : (
-          <PlaceholderText>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+        <PlaceholderText>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>
               <DynamicIcon iconName={course.icon} />
-            </div>
+          </div>
             <div>{course.title}</div>
-            <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.7 }}>
-              Featured Image
-            </div>
-          </PlaceholderText>
+          <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.7 }}>
+            Featured Image
+          </div>
+        </PlaceholderText>
         )}
       </ImagePlaceholder>
 
@@ -345,9 +361,9 @@ export default function CoachingDetailPage() {
                 paddingLeft: '24px',
                 margin: 0
               }}>
-                <li>Courageous leadership</li>
-                <li>Improved workplace culture</li>
-                <li>Stronger institutional accountability</li>
+                {course.keyOutcomes.map((outcome, index) => (
+                  <li key={index}>{outcome}</li>
+                ))}
               </ul>
             </div>
           </DescriptionColumn>
@@ -494,7 +510,7 @@ export default function CoachingDetailPage() {
                         }}>$1.34/week</span>
                       </div>
                     </div>
-                  </div>
+                </div>
 
                   <Button
                     variant="contained"
