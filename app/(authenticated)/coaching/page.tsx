@@ -278,6 +278,14 @@ export default function CoachingPage() {
     fetchAppointmentTypes();
   }, []);
 
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      setSelectedWorkshop(null);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   if (loading) {
     return (
       <StyledMainContent isExpanded={isExpanded}>
@@ -395,7 +403,14 @@ export default function CoachingPage() {
         {placeholderWorkshops.map((workshop) => (
           <CoachingCard
             key={workshop.id}
-            onClick={() => setSelectedWorkshop(workshop)}
+            onClick={() => {
+              setSelectedWorkshop(workshop);
+              window.history.pushState(
+                { workshopId: workshop.id },
+                "",
+                `?workshop=${workshop.id}`,
+              );
+            }}
             style={{ cursor: "pointer" }}
           >
             <CardImageContainer>
