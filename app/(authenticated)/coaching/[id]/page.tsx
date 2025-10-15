@@ -30,7 +30,7 @@ const BackButton = styled(Button)`
 const ImagePlaceholder = styled.div`
   max-width: 1200px;
   margin: 0 auto 32px auto;
-  height: 400px;
+  height: 600px;
   background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
   border-radius: 12px;
   display: flex;
@@ -179,162 +179,329 @@ const DynamicIcon = ({ iconName }: { iconName: string }) => {
   return <IconComponent />;
 };
 
-interface AppointmentType {
+// Add placeholder courses data (same as in page.tsx)
+const placeholderCourses = [
+  {
+    id: "course-1",
+    title: "Be The Messenger Framework",
+    description: "This comprehensive course teaches you how to become an effective messenger for social justice. Through interactive sessions and real-world examples, you'll learn the art of communication, advocacy, and leadership in promoting social change.",
+    icon: "Person",
+    accessType: "private",
+    createdAt: new Date().toISOString(),
+    image: "/Media.png",  // Add this line
+  },
+  {
+    id: "course-2",
+    title: "Community Leadership Course",
+    description: "Develop essential leadership skills for community organizing and grassroots movements. This course covers strategic planning, team building, conflict resolution, and sustainable community engagement practices.",
+    icon: "Groups",
+    accessType: "public",
+    createdAt: new Date().toISOString(),
+    image: "/Media(1).png",  // Add this line
+  },
+  {
+    id: "course-3",
+    title: "Workplace Culture Transformation",
+    description: "Transform your workplace culture through inclusive practices and equity-focused strategies. Learn how to identify systemic barriers, implement inclusive policies, and create lasting organizational change.",
+    icon: "Work",
+    accessType: "private",
+    createdAt: new Date().toISOString(),
+    image: "/Media(2).png",  // Add this line
+  },
+];
+
+interface CourseType {
   id: string;
   title: string;
-  description: string | null;
+  description: string;
   icon: string;
   accessType: string;
   createdAt: string;
-  updatedAt: string;
+  image: string;  // Add this line
 }
 
 export default function CoachingDetailPage() {
   const { isExpanded } = useSidebar();
   const params = useParams();
   const router = useRouter();
-  const [appointmentType, setAppointmentType] = useState<AppointmentType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [course, setCourse] = useState<CourseType | null>(null);
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
 
   const id = params?.id as string;
 
   useEffect(() => {
-    const fetchAppointmentType = async () => {
-      try {
-        const response = await fetch(`/api/appointment-types/${id}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch appointment type");
-        }
-        const data = await response.json();
-        setAppointmentType(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load appointment type"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchAppointmentType();
+    // Find course from placeholder data instead of API
+    const foundCourse = placeholderCourses.find(c => c.id === id);
+    if (foundCourse) {
+      setCourse(foundCourse);
     }
   }, [id]);
 
-  if (loading) {
-    return (
-      <StyledMainContent isExpanded={isExpanded}>
-        <div className="flex justify-center items-center h-screen">
-          <CircularProgress />
-        </div>
-      </StyledMainContent>
-    );
-  }
-
-  if (error || !appointmentType) {
+  // Remove loading state since we're using local data
+  if (!course) {
     return (
       <StyledMainContent isExpanded={isExpanded}>
         <BackButton
           startIcon={<ArrowBackIcon />}
           onClick={() => router.push("/coaching")}
         >
-          Back to Coaching
+          Back to Courses
         </BackButton>
         <div className="flex justify-center items-center h-screen text-red-500">
-          {error || "Appointment type not found"}
+          Course not found
         </div>
       </StyledMainContent>
     );
   }
 
-  const isPrivate = appointmentType.accessType === "private";
-  const formattedDate = new Date(appointmentType.createdAt).toLocaleDateString(
+  const isPrivate = course.accessType === "private";
+  const formattedDate = new Date(course.createdAt).toLocaleDateString(
     "en-US",
     { year: "numeric", month: "long", day: "numeric" }
   );
 
   return (
     <StyledMainContent isExpanded={isExpanded}>
-        <div style={{ 
+      <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'flex-start',
         gap: '100px',
         marginBottom: '24px' 
       }}>
-            <BackButton
-            startIcon={<ArrowBackIcon />}
-            onClick={() => router.push("/coaching")}
-            color="black"
-            style={{marginBottom: '0'}}
-            >
-            </BackButton>
-            <h2 style={{ 
+        <BackButton
+          startIcon={<ArrowBackIcon />}
+          onClick={() => router.push("/coaching")}
+          color="black"
+          style={{marginBottom: '0'}}
+        >
+        </BackButton>
+        <h2 style={{ 
           fontSize: '24px', 
           fontWeight: '600', 
           color: '#1a1a1a',
           margin: 0 
         }}>
-         Be The Messenger Framework
+          {course.title}
         </h2>
-        </div>
+      </div>
 
-      {/* Add this image placeholder */}
       <ImagePlaceholder>
-        <PlaceholderText>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>
-            <DynamicIcon iconName={appointmentType.icon} />
-          </div>
-          <div>{appointmentType.title}</div>
-          <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.7 }}>
-            Featured Image
-          </div>
-        </PlaceholderText>
+        {!imageErrors[course.id] ? (
+          <Image
+            src={course.image}
+            alt={course.title}
+            fill
+            style={{ objectFit: "cover" }}
+            onError={() => {
+              setImageErrors((prev) => ({ ...prev, [course.id]: true }));
+            }}
+          />
+        ) : (
+          <PlaceholderText>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+              <DynamicIcon iconName={course.icon} />
+            </div>
+            <div>{course.title}</div>
+            <div style={{ fontSize: '14px', marginTop: '8px', opacity: 0.7 }}>
+              Featured Image
+            </div>
+          </PlaceholderText>
+        )}
       </ImagePlaceholder>
 
       <DetailContainer>
         <Header>
-          
           <TitleSection>
-            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 8px 0' }}> Coaching Package</p>
-            <Title>{appointmentType.title}</Title>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 8px 0' }}>Course Package</p>
+            <Title>{course.title}</Title>
             {isPrivate ? 
-            (<p style={{ fontSize: '14px', color: 'red', margin: '0 0 8px 0' }}> Private</p>):
-            (<p style={{ fontSize: '14px', color: 'green', margin: '0 0 8px 0' }}> Public</p>)
+              (<p style={{ fontSize: '14px', color: 'red', margin: '0 0 8px 0' }}>Private</p>) :
+              (<p style={{ fontSize: '14px', color: 'green', margin: '0 0 8px 0' }}>Public</p>)
             }
           </TitleSection>
         </Header>
 
-
         <ContentRow>
           <DescriptionColumn>
             <Description>
-              {appointmentType.description || "No description available."}
+              {course.description}
             </Description>
+            
+            {/* Key Outcomes section */}
+            <div style={{ marginTop: '24px' }}>
+              <h3 style={{ 
+                fontSize: '20px', 
+                fontWeight: '600', 
+                color: '#1a1a1a',
+                marginBottom: '16px'
+              }}>
+                Key Outcomes
+              </h3>
+              <ul style={{
+                fontSize: '16px',
+                lineHeight: '1.8',
+                color: '#64748b',
+                paddingLeft: '24px',
+                margin: 0
+              }}>
+                <li>Courageous leadership</li>
+                <li>Improved workplace culture</li>
+                <li>Stronger institutional accountability</li>
+              </ul>
+            </div>
           </DescriptionColumn>
 
           <ButtonColumn>
             <ActionButtons>
               {isPrivate ? (
-                // Private access - show Purchase button
-                
                 <>
-                  <div>
-                  <ul>
-                    <li>1.</li>
-                    <li>2.</li>
-                    <li>3.</li>
-                  </ul>
-                </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    {/* Package Card 1 */}
+                    <div style={{
+                      padding: '16px 20px',
+                      marginBottom: '12px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1e3a8a'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                    >
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '4px'
+                      }}>
+                        <span style={{ 
+                          fontSize: '18px', 
+                          fontWeight: '700', 
+                          color: '#1a1a1a',
+                          letterSpacing: '0.5px'
+                        }}>12 MONTHS</span>
+                        <span style={{ 
+                          fontSize: '20px', 
+                          fontWeight: '700', 
+                          color: '#1a1a1a' 
+                        }}>$68.99</span>
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ 
+                          fontSize: '13px', 
+                          color: '#64748b' 
+                        }}>7 day free trial</span>
+                        <span style={{ 
+                          fontSize: '13px', 
+                          color: '#64748b' 
+                        }}>$1.34/week</span>
+                      </div>
+                    </div>
+
+                    {/* Package Card 2 */}
+                    <div style={{
+                      padding: '16px 20px',
+                      marginBottom: '12px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1e3a8a'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                    >
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ 
+                          fontSize: '18px', 
+                          fontWeight: '700', 
+                          color: '#1a1a1a',
+                          letterSpacing: '0.5px'
+                        }}>1 MONTH</span>
+                        <span style={{ 
+                          fontSize: '20px', 
+                          fontWeight: '700', 
+                          color: '#1a1a1a' 
+                        }}>$15.99</span>
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ 
+                          fontSize: '13px', 
+                          color: '#64748b' 
+                        }}>7 day free trial</span>
+                        <span style={{ 
+                          fontSize: '13px', 
+                          color: '#64748b' 
+                        }}>$1.34/week</span>
+                      </div>
+                    </div>
+
+                    {/* Package Card 3 */}
+                    <div style={{
+                      padding: '16px 20px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1e3a8a'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                    >
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ 
+                          fontSize: '18px', 
+                          fontWeight: '700', 
+                          color: '#1a1a1a',
+                          letterSpacing: '0.5px'
+                        }}>1 WEEK</span>
+                        <span style={{ 
+                          fontSize: '20px', 
+                          fontWeight: '700', 
+                          color: '#1a1a1a' 
+                        }}>$10.99</span>
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ 
+                          fontSize: '13px', 
+                          color: '#64748b' 
+                        }}>7 day free trial</span>
+                        <span style={{ 
+                          fontSize: '13px', 
+                          color: '#64748b' 
+                        }}>$1.34/week</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <Button
                     variant="contained"
                     size="large"
                     startIcon={<CalendarTodayIcon />}
                     onClick={() => {
-                      // Add your purchase logic here
-                      console.log("Purchase clicked for:", appointmentType.id);
+                      console.log("Purchase clicked for:", course.id);
                     }}
                     sx={{
                       background: "#1e3a8a",
@@ -347,35 +514,17 @@ export default function CoachingDetailPage() {
                       width: "100%",
                     }}
                   >
-                    Purchase Package
+                    Start Your 7 day free trial
                   </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    sx={{
-                      borderColor: "#1e3a8a",
-                      color: "#1e3a8a",
-                      "&:hover": {
-                        borderColor: "#1e40af",
-                        background: "rgba(30, 58, 138, 0.04)",
-                      },
-                      textTransform: "none",
-                      fontSize: "16px",
-                      padding: "12px 32px",
-                      width: "100%",
-                    }}
-                  >
-                    Learn More
-                  </Button>
+                  
                 </>
               ) : (
-                // Public access - show Schedule Appointment button
                 <>
                   <Button
                     variant="contained"
                     size="large"
                     startIcon={<CalendarTodayIcon />}
-                    onClick={() => router.push(`/scheduling?typeId=${appointmentType.id}`)}
+                    onClick={() => router.push(`/scheduling?typeId=${course.id}`)}
                     sx={{
                       background: "#1e3a8a",
                       "&:hover": {

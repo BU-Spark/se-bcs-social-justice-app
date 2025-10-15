@@ -209,6 +209,34 @@ const placeholderWorkshops: Workshop[] = [
   },
 ];
 
+// Add placeholder courses here
+const placeholderCourses = [
+  {
+    id: "course-1",
+    title: "Be The Messenger Framework",
+    description: "Learn how to become an effective messenger for social justice",
+    icon: "Person",
+    accessType: "private",
+    image: "/Media.png",  // Add this line
+  },
+  {
+    id: "course-2",
+    title: "Community Leadership Course",
+    description: "Develop leadership skills for community organizing",
+    icon: "Groups",
+    accessType: "public",
+    image: "/Media(1).png",  // Add this line
+  },
+  {
+    id: "course-3",
+    title: "Workplace Culture Transformation",
+    description: "Transform your workplace culture through inclusive practices",
+    icon: "Work",
+    accessType: "private",
+    image: "/Media(2).png",  // Add this line
+  },
+];
+
 const placeholderDownloads = [
   {
     id: "download-1",
@@ -248,35 +276,9 @@ const placeholderPurchases = [
 export default function CoachingPage() {
   const { isExpanded } = useSidebar();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("Coaching");
-  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("Course");
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
   const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
-
-  useEffect(() => {
-    const fetchAppointmentTypes = async () => {
-      try {
-        const response = await fetch("/api/appointment-types");
-        if (!response.ok) {
-          throw new Error("Failed to fetch appointment types");
-        }
-        const data = await response.json();
-        setAppointmentTypes(data);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load appointment types"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAppointmentTypes();
-  }, []);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -286,49 +288,29 @@ export default function CoachingPage() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  if (loading) {
-    return (
-      <StyledMainContent isExpanded={isExpanded}>
-        <div className="flex justify-center items-center h-screen">
-          <CircularProgress />
-        </div>
-      </StyledMainContent>
-    );
-  }
-
-  if (error) {
-    return (
-      <StyledMainContent isExpanded={isExpanded}>
-        <div className="flex justify-center items-center h-screen text-red-500">
-          {error}
-        </div>
-      </StyledMainContent>
-    );
-  }
-
-  // Render coaching grid with real data
+  // Update renderCoachingGrid to use placeholder data
   const renderCoachingGrid = () => (
     <CoachingGrid>
-      {appointmentTypes.map((type) => (
+      {placeholderCourses.map((course) => (
         <CoachingCard 
-          key={type.id}
-          onClick={() => router.push(`/coaching/${type.id}`)}
+          key={course.id}
+          onClick={() => router.push(`/coaching/${course.id}`)}
           style={{ cursor: 'pointer' }}
         >
           <CardImageContainer>
-            {!imageErrors[type.id] ? (
+            {!imageErrors[course.id] ? (
               <Image
-                src={`/images/coaching/${type.id}.jpg`}
-                alt={type.title}
+                src={course.image}  // Changed from `/images/coaching/${course.id}.jpg`
+                alt={course.title}
                 fill
                 style={{ objectFit: "cover" }}
                 onError={() => {
-                  setImageErrors((prev) => ({ ...prev, [type.id]: true }));
+                  setImageErrors((prev) => ({ ...prev, [course.id]: true }));
                 }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <DynamicIcon iconName={type.icon} />
+                <DynamicIcon iconName={course.icon} />
               </div>
             )}
             <ActionButtons>
@@ -341,11 +323,11 @@ export default function CoachingPage() {
             </ActionButtons>
           </CardImageContainer>
           <CardContent>
-            <CardLabel>Coaching Package</CardLabel>
-            <CardTitle>{type.title}</CardTitle>
+            <CardLabel>Course Package</CardLabel>
+            <CardTitle>{course.title}</CardTitle>
             <CardDetails>
               <DetailItem>
-                <DynamicIcon iconName={type.icon} />
+                <DynamicIcon iconName={course.icon} />
                 Weekly meetings
               </DetailItem>
               <DetailItem>
@@ -513,13 +495,13 @@ export default function CoachingPage() {
         <Title>Coaching Services</Title>
         <TabContainer>
           <Tab
-            active={activeTab === "Coaching"}
+            active={activeTab === "Course"}
             onClick={() => {
-              setActiveTab("Coaching");
+              setActiveTab("Course");
               setSelectedWorkshop(null);
             }}
           >
-            Coaching
+            Course
           </Tab>
           <Tab
             active={activeTab === "Workshops"}
@@ -551,7 +533,7 @@ export default function CoachingPage() {
         </TabContainer>
       </PageHeader>
 
-      {activeTab === "Coaching" && renderCoachingGrid()}
+      {activeTab === "Course" && renderCoachingGrid()}
       {activeTab === "Workshops" && renderWorkshopsGrid()}
       {activeTab === "Download" && renderDownloadGrid()}
       {activeTab === "My Purchases" && renderMyPurchasesGrid()}
