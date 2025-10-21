@@ -32,7 +32,9 @@ export async function POST(req: Request) {
       const newInterests = interests
         .filter(
           (i: string) =>
-            !existingInterests.map((e: { name: unknown }) => e.name).includes(i)
+            !existingInterests
+              .map((e: { name: unknown }) => e.name)
+              .includes(i),
         )
         .map((name: string) => ({ name }));
 
@@ -58,13 +60,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { message: "User updated successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error updating user:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

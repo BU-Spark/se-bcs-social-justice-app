@@ -48,13 +48,13 @@ export async function GET(request: Request) {
         totalPosts,
         hasMore: page < totalPages,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching posts:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

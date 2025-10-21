@@ -34,7 +34,7 @@ export async function GET() {
     console.error("Error fetching leader application status:", error);
     return NextResponse.json(
       { error: "Failed to fetch leader application status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

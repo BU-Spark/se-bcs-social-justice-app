@@ -135,10 +135,10 @@ export default function DashboardPage() {
   }, [fetchCommunities]);
 
   const [publicAppointments, setPublicAppointments] = useState<Appointment[]>(
-    []
+    [],
   );
   const [privateAppointments, setPrivateAppointments] = useState<Appointment[]>(
-    []
+    [],
   );
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [appointmentError, setAppointmentError] = useState<string | null>(null);
@@ -164,7 +164,7 @@ export default function DashboardPage() {
         setAppointmentError(null);
       } catch (err) {
         setAppointmentError(
-          err instanceof Error ? err.message : "An error occurred"
+          err instanceof Error ? err.message : "An error occurred",
         );
       } finally {
         setIsLoadingAppointments(false);
@@ -191,11 +191,11 @@ export default function DashboardPage() {
         ) : (
           publicAppointments.map((appointment) => {
             const formattedDate = new Date(
-              appointment.startTime
+              appointment.startTime,
             ).toLocaleDateString("en-US", { month: "long", day: "numeric" });
             const formattedTime = format(
               new Date(appointment.startTime),
-              "MMM d, yyyy 'at' h:mm a"
+              "MMM d, yyyy 'at' h:mm a",
             );
             return (
               <StyledDiv key={appointment.id}>
@@ -278,11 +278,11 @@ export default function DashboardPage() {
         ) : (
           privateAppointments.map((appointment) => {
             const formattedDate = new Date(
-              appointment.startTime
+              appointment.startTime,
             ).toLocaleDateString("en-US", { month: "long", day: "numeric" });
             const formattedTime = format(
               new Date(appointment.startTime),
-              "MMM d, yyyy 'at' h:mm a"
+              "MMM d, yyyy 'at' h:mm a",
             );
             return (
               <StyledDiv key={appointment.id}>

@@ -82,7 +82,7 @@ export async function GET(request: Request) {
     console.error("Error fetching users by interest:", error);
     return NextResponse.json(
       { error: "Error fetching users" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

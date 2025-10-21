@@ -534,7 +534,9 @@ export default function AdminUserInterest() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<UserWithInterests | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithInterests | null>(
+    null,
+  );
   const [selectedInterest, setSelectedInterest] = useState<string | null>(null);
   const [filterByInterest, setFilterByInterest] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -575,7 +577,11 @@ export default function AdminUserInterest() {
       setFilteredUsers(data.users || []);
       // Extract and set all interests from the API response
       if (data.allInterests && Array.isArray(data.allInterests)) {
-        setAllInterests(data.allInterests.map((interest: { name: string }) => interest.name).sort());
+        setAllInterests(
+          data.allInterests
+            .map((interest: { name: string }) => interest.name)
+            .sort(),
+        );
       }
       setError(null);
     } catch (err) {
@@ -606,7 +612,7 @@ export default function AdminUserInterest() {
     // Filter by interest first
     if (filterByInterest) {
       filtered = filtered.filter((user) =>
-        user.interests.some((ui) => ui.interest.name === filterByInterest)
+        user.interests.some((ui) => ui.interest.name === filterByInterest),
       );
     }
 
@@ -619,7 +625,8 @@ export default function AdminUserInterest() {
           user.email.toLowerCase().includes(query) ||
           user.username?.toLowerCase().includes(query) ||
           user.interests.some((ui) =>
-            ui.interest.name.toLowerCase().includes(query)) ||
+            ui.interest.name.toLowerCase().includes(query),
+          ) ||
           (user.communities &&
             user.communities.some((c) => c.name.toLowerCase().includes(query))),
       );
@@ -680,7 +687,7 @@ export default function AdminUserInterest() {
   const getUsersByInterest = (interest: string) => {
     if (!users || users.length === 0) return [];
     return users.filter((user) =>
-      user.interests.some((ui) => ui.interest.name === interest)
+      user.interests.some((ui) => ui.interest.name === interest),
     );
   };
 
@@ -921,7 +928,9 @@ export default function AdminUserInterest() {
                   {selectedInterest && (
                     <div>
                       {getUsersByInterest(selectedInterest).length === 0 ? (
-                        <EmptyState>No users have selected this interest yet</EmptyState>
+                        <EmptyState>
+                          No users have selected this interest yet
+                        </EmptyState>
                       ) : (
                         getUsersByInterest(selectedInterest).map((user) => (
                           <UserListItem key={user.id}>
@@ -964,7 +973,9 @@ export default function AdminUserInterest() {
                               </DetailItem>
                               <DetailItem>
                                 <DetailLabel>Total Interests</DetailLabel>
-                                <DetailValue>{user.interests.length}</DetailValue>
+                                <DetailValue>
+                                  {user.interests.length}
+                                </DetailValue>
                               </DetailItem>
                             </UserDetails>
                           </UserListItem>

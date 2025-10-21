@@ -4,7 +4,7 @@ import { currentUser } from "@clerk/nextjs/server";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const clerkUser = await currentUser();
@@ -71,13 +71,13 @@ export async function POST(
         ...updatedPost,
         currentUserVote: currentUserVote?.type || null,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     console.error("Error updating vote:", error);
     return NextResponse.json(
       { error: "Failed to update vote" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

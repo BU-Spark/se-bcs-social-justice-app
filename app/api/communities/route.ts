@@ -57,13 +57,13 @@ export async function GET() {
 
     return NextResponse.json(
       { joinedCommunities, recommendedCommunities },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching communities:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     if (!localUser) {
       return NextResponse.json(
         { error: "User not found in the database" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     if (existingCommunity) {
       return NextResponse.json(
         { error: "A community with this name already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     console.error("Error creating community:", error);
     return NextResponse.json(
       { error: "Failed to create community" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

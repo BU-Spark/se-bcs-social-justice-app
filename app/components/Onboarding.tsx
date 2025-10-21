@@ -11,7 +11,9 @@ const Onboarding = () => {
   const [step, setStep] = useState<number>(1);
   const [interestOptions, setInterestOptions] = useState<string[]>([]);
   const [isLoadingInterests, setIsLoadingInterests] = useState(true);
-  const [availableCommunities, setAvailableCommunities] = useState<Array<Community>>([]);
+  const [availableCommunities, setAvailableCommunities] = useState<
+    Array<Community>
+  >([]);
   const [isLoadingCommunities, setIsLoadingCommunities] = useState(false);
   const [selectedCommunities, setSelectedCommunities] = useState<string[]>([]);
   const [formData, setFormData] = useState<{
@@ -96,7 +98,6 @@ const Onboarding = () => {
     fetchCommunities();
   }, [user]);
 
-
   const validatePhoneNumber = (phone: string): boolean => {
     return /^\d{10}$/.test(phone);
   };
@@ -109,10 +110,10 @@ const Onboarding = () => {
   // };
 
   const handleCommunityToggle = (communityId: string) => {
-    setSelectedCommunities((prev)=>
+    setSelectedCommunities((prev) =>
       prev.includes(communityId)
         ? prev.filter((id) => id !== communityId)
-        : [...prev,communityId]
+        : [...prev, communityId],
     );
   };
 
@@ -169,7 +170,7 @@ const Onboarding = () => {
         }
 
         setIsOpen(false);
-        window.location.href='/dashboard';
+        window.location.href = "/dashboard";
       } else {
         console.error("Failed to update user.");
       }
@@ -382,13 +383,17 @@ const Onboarding = () => {
                     </button>
                   ))
                 ) : (
-                  <p className="text-gray-500">No interests available. Please contact support.</p>
+                  <p className="text-gray-500">
+                    No interests available. Please contact support.
+                  </p>
                 )}
               </div>
 
               {formData.interests.includes("Community") && (
                 <div className="mt-6 border-t pt-6">
-                  <h3 className="text-lg font-bold mb-4">Available Communities</h3>
+                  <h3 className="text-lg font-bold mb-4">
+                    Available Communities
+                  </h3>
                   {isLoadingCommunities ? (
                     <p className="text-gray-500">Loading communities...</p>
                   ) : availableCommunities.length > 0 ? (
@@ -427,7 +432,9 @@ const Onboarding = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500">No communities available yet.</p>
+                    <p className="text-gray-500">
+                      No communities available yet.
+                    </p>
                   )}
                 </div>
               )}

@@ -160,7 +160,7 @@ export default function AdminLeaderApplications() {
       setError(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load applications"
+        err instanceof Error ? err.message : "Failed to load applications",
       );
       setApplications([]);
     } finally {
@@ -176,7 +176,7 @@ export default function AdminLeaderApplications() {
 
   const handleUpdateStatus = async (
     id: string,
-    status: "APPROVED" | "REJECTED" | "PENDING"
+    status: "APPROVED" | "REJECTED" | "PENDING",
   ) => {
     try {
       const endpoint =
@@ -190,14 +190,14 @@ export default function AdminLeaderApplications() {
         `/api/admin/leader-applications/${id}/${endpoint}`,
         {
           method: "POST",
-        }
+        },
       );
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || `Failed to ${endpoint} application`);
       }
       setApplications((apps) =>
-        apps.map((app) => (app.id === id ? { ...app, status } : app))
+        apps.map((app) => (app.id === id ? { ...app, status } : app)),
       );
     } catch (err) {
       console.error(err);
@@ -268,7 +268,7 @@ export default function AdminLeaderApplications() {
                   >
                     {f}
                   </StyledFilterButton>
-                )
+                ),
               )}
             </StyledFilterContainer>
             {isLoading ? (

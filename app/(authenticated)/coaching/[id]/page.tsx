@@ -201,7 +201,8 @@ interface CourseType {
   updatedAt: string;
   modules: Module[];
   hasAccess?: boolean;
-  accessType?: "locked" | "purchased" | "subscription";
+  accessType?: "locked" | "purchased" | "subscription" | "trial";
+  trialExpiresAt?: string | null;
 }
 
 export default function CoachingDetailPage() {
@@ -213,6 +214,7 @@ export default function CoachingDetailPage() {
     {},
   );
   const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
 
   const id = params?.id as string;
 
@@ -237,6 +239,44 @@ export default function CoachingDetailPage() {
       fetchCourse();
     }
   }, [id]);
+
+  const handleStartTrial = async () => {
+    if (!course) return;
+
+    try {
+      setEnrolling(true);
+      const response = await fetch("/api/courses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          courseId: course.id,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(
+          `✓ Your 7-day free trial has started! Access expires on ${new Date(data.trialExpiresAt).toLocaleDateString()}`,
+        );
+        // Refresh course data to update access status
+        const refreshResponse = await fetch(`/api/courses/${id}`);
+        if (refreshResponse.ok) {
+          const updatedCourse = await refreshResponse.json();
+          setCourse(updatedCourse);
+        }
+      } else {
+        const error = await response.json();
+        alert(`Failed to start trial: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error starting trial:", error);
+      alert("An error occurred while starting the trial. Please try again.");
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -388,6 +428,25 @@ export default function CoachingDetailPage() {
                   }}
                 >
                   ✓ Purchased
+                </span>
+              )}
+              {hasAccess && course.accessType === "trial" && (
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "4px 12px",
+                    borderRadius: "16px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    backgroundColor: "#fef3c7",
+                    color: "#92400e",
+                  }}
+                >
+                  ⏱️ Free Trial (
+                  {course.trialExpiresAt
+                    ? `Expires ${new Date(course.trialExpiresAt).toLocaleDateString()}`
+                    : "Active"}
+                  )
                 </span>
               )}
             </div>
@@ -676,10 +735,8 @@ export default function CoachingDetailPage() {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={() => {
-                      console.log("Purchase/Access clicked for:", course.id);
-                      // TODO: Open purchase modal or navigate to course content
-                    }}
+                    onClick={hasAccess ? undefined : handleStartTrial}
+                    disabled={enrolling}
                     sx={{
                       background: hasAccess ? "#059669" : "#1e7fbf",
                       "&:hover": {
@@ -692,9 +749,11 @@ export default function CoachingDetailPage() {
                       fontWeight: "600",
                     }}
                   >
-                    {hasAccess
-                      ? "Access Course"
-                      : "Start your 7-day free trial"}
+                    {enrolling
+                      ? "Starting trial..."
+                      : hasAccess
+                        ? "Access Course"
+                        : "Start your 7-day free trial"}
                   </Button>
                 </>
               ) : (

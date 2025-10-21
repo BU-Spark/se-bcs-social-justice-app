@@ -326,6 +326,8 @@ model UserCourse {
 
   completionStatus String   @default("not_started")
 
+  trialExpiresAt   DateTime?
+
 
 
   @@id([userId, courseId])

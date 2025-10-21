@@ -6,7 +6,7 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <OnboardingWrapper>  
+    <OnboardingWrapper>
       <div className="flex min-h-screen">
         <Sidebar />
         <main className="flex-1">{children}</main>

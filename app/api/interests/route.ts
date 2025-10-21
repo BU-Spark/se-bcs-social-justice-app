@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     const interests = await prisma.interest.findMany({
-      select: { 
+      select: {
         id: true,
         name: true,
         communities: {
