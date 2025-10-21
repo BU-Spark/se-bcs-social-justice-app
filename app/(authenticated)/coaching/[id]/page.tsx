@@ -37,7 +37,6 @@ const ImagePlaceholder = styled.div`
   justify-content: center;
   position: relative;
   overflow: hidden;
-
   img {
     width: 100%;
     height: 100%;

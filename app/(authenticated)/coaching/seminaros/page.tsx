@@ -1,5 +1,5 @@
 "use client";
-
+import { useState } from "react";
 import styled from "@emotion/styled";
 import { Button } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -7,6 +7,8 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GroupsIcon from "@mui/icons-material/Groups";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import SeminarReserve from "@/app/components/SeminarReserve";
+import { useUser } from "@clerk/nextjs";
 
 const DetailContainer = styled.div`
   max-width: 1200px;
@@ -99,6 +101,11 @@ const ReservationButton = styled(Button)`
   &:hover {
     background-color: #4f46e5;
   }
+
+  &:disabled {
+    background-color: #cbd5e1;
+    color: #64748b;
+  }
 `;
 
 const RightSection = styled.div`
@@ -153,37 +160,52 @@ const VideoTitle = styled.h3`
   margin-top: 12px;
 `;
 
-interface Workshop {
+export interface Workshop {
   id: string;
+  image: string;
   typeName: string;
-  description: string;
   icon: string;
   longDescription?: string;
+  accessType?: "public" | "private";
+  date?: string;
+  duration?: string;
 }
 
-interface CoachingWorkshopsProps {
+interface SeminarsProps {
   workshop: Workshop;
   onBack: () => void;
+  onReservationSuccess?: () => void;
 }
 
-export default function CoachingWorkshops({
-  workshop,
-  onBack,
-}: CoachingWorkshopsProps) {
+export default function Seminars({ workshop, onBack }: SeminarsProps) {
+  const [openReservation, setOpenReservation] = useState(false);
+  const { user, isLoaded, isSignedIn } = useUser();
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
+
   const handleReservation = () => {
-    console.log("Reserve workshop:", workshop.id);
-    alert("Reservation feature coming soon!");
+    if (!isLoaded) {
+      return;
+    }
+    if (!isSignedIn || !user) {
+      alert("Please sign in to reserve a spot");
+      return;
+    }
+    setOpenReservation(true);
+  };
+
+  const handleCloseReservation = () => {
+    setOpenReservation(false);
   };
 
   const handleVideoPlay = () => {
     console.log("Play video for workshop:", workshop.id);
-    alert("Video player coming soon!");
+    alert("Video coming soon!");
   };
 
   return (
     <DetailContainer>
       <BackButton startIcon={<ArrowBackIcon />} onClick={onBack}>
-        Back to Workshops
+        Back to Seminars
       </BackButton>
 
       <ContentGrid>
@@ -191,7 +213,6 @@ export default function CoachingWorkshops({
           <WorkshopTitle>{workshop.typeName}</WorkshopTitle>
           <WorkshopDescription>
             {workshop.longDescription ||
-              workshop.description ||
               "Join us for an engaging workshop experience designed to help you grow and develop new skills"}
           </WorkshopDescription>
 
@@ -199,11 +220,19 @@ export default function CoachingWorkshops({
             <InfoTitle>Workshop Details</InfoTitle>
             <InfoItem>
               <CalendarTodayIcon />
-              <span>Date: TBA (To be scheduled)</span>
+              <span>
+                Date:{" "}
+                {workshop.date
+                  ? new Date(workshop.date).toLocaleString([], {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : "TBA"}
+              </span>
             </InfoItem>
             <InfoItem>
               <AccessTimeIcon />
-              <span>Duration: 2 hours</span>
+              <span>Duration: {workshop.duration || "TBA"}</span>
             </InfoItem>
             <InfoItem>
               <GroupsIcon />
@@ -211,31 +240,45 @@ export default function CoachingWorkshops({
             </InfoItem>
           </InfoSection>
 
-          <ReservationButton onClick={handleReservation}>
-            Reserve Your Spot
+          <ReservationButton onClick={handleReservation} disabled={!isLoaded}>
+            {!isLoaded ? "Loading..." : "Reserve Your Spot"}
           </ReservationButton>
         </LeftSection>
 
         <RightSection>
           <div>
+            <VideoTitle style={{ textAlign: "center" }}>
+              Introduction to the Seminar
+            </VideoTitle>
             <VideoPlaceholder>
               <PlayButton onClick={handleVideoPlay}>
                 <PlayArrowIcon />
               </PlayButton>
             </VideoPlaceholder>
-            <VideoTitle>Workshop Preview Video</VideoTitle>
           </div>
 
           <div>
+            <VideoTitle style={{ textAlign: "center" }}>
+              Introduction to the Facilitator
+            </VideoTitle>
             <VideoPlaceholder>
               <PlayButton onClick={handleVideoPlay}>
                 <PlayArrowIcon />
               </PlayButton>
             </VideoPlaceholder>
-            <VideoTitle>Introduction to the Facilitator</VideoTitle>
           </div>
         </RightSection>
       </ContentGrid>
+
+      {/* Only show dialog when user is loaded and signed in */}
+      {isLoaded && isSignedIn && (
+        <SeminarReserve
+          open={openReservation}
+          onClose={handleCloseReservation}
+          workshop={workshop}
+          userEmail={userEmail}
+        />
+      )}
     </DetailContainer>
   );
 }
