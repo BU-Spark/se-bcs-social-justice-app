@@ -30,6 +30,8 @@ model User {
   votes                  Vote[]
   leaderApplication      LeaderApplication?   
   onboardingComplete     Boolean               @default(false)
+  enrollments            UserCourse[]
+  subscriptions          UserMembership[]
 }
 
 model Interest {
@@ -256,4 +258,172 @@ model LeaderApplication {
   status                LeaderApplicationStatus @default(PENDING)
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
+}
+
+model Course {
+
+  id                 String               @id @default(cuid())
+
+  name               String
+
+  description        String?
+
+  price              Float
+
+  isStandalone       Boolean              @default(true)
+
+  createdAt          DateTime             @default(now())
+
+  updatedAt          DateTime             @updatedAt
+
+  modules            Module[]
+
+  enrollments        UserCourse[]
+
+  unlockedByTiers    TierCourseAccess[]
+
+  prerequisites      CoursePrerequisite[] @relation("courseWithPrereqs")
+
+  requiredForCourses CoursePrerequisite[] @relation("prerequisiteCourse")
+
+}
+
+
+
+model Module {
+
+  id           String   @id @default(cuid())
+
+  title        String
+
+  moduleNumber Int?
+
+  description  String?
+
+  courseId     String
+
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  updatedAt    DateTime @updatedAt
+
+}
+
+
+
+model UserCourse {
+
+  userId           String
+
+  courseId         String
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrollmentDate   DateTime @default(now())
+
+  completionStatus String   @default("not_started")
+
+
+
+  @@id([userId, courseId])
+
+}
+
+
+
+model CoursePrerequisite {
+
+  courseId         String
+
+  requiredCourseId String
+
+  course           Course @relation("courseWithPrereqs", fields: [courseId], references: [id], onDelete: Cascade)
+
+  requiredCourse   Course @relation("prerequisiteCourse", fields: [requiredCourseId], references: [id], onDelete: Cascade)
+
+
+
+  @@id([courseId, requiredCourseId])
+
+}
+
+
+
+model MembershipTier {
+
+  id              String             @id @default(cuid())
+
+  tierName        String             @unique
+
+  monthlyPrice    Float?
+
+  annualPrice     Float?
+
+  description     String?
+
+  isActive        Boolean            @default(true)
+
+  subscriptions   UserMembership[]
+
+  coursesUnlocked TierCourseAccess[]
+
+}
+
+
+
+model UserMembership {
+
+  id          String         @id @default(cuid())
+
+  userId      String
+
+  tierId      String
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tier        MembershipTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+
+  startDate   DateTime       @default(now())
+
+  endDate     DateTime?
+
+  isActive    Boolean        @default(true)
+
+  paymentType PaymentType
+
+  createdAt   DateTime       @default(now())
+
+
+
+  @@index([userId])
+
+  @@index([tierId])
+
+}
+
+
+
+model TierCourseAccess {
+
+  tierId   String
+
+  courseId String
+
+  tier     MembershipTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+
+  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+
+
+  @@id([tierId, courseId])
+
+}
+
+enum PaymentType {
+  free
+  monthly
+  annual
 }

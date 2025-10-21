@@ -12,6 +12,7 @@ import GavelIcon from "@mui/icons-material/Gavel";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import ShareIcon from "@mui/icons-material/Share";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import LockIcon from "@mui/icons-material/Lock";
 import { useRouter } from "next/navigation";
 import CoachingWorkshops from "../../components/CoachingWorkshops";
 
@@ -164,6 +165,28 @@ interface Workshop {
   longDescription?: string;
 }
 
+interface Module {
+  id: string;
+  title: string;
+  moduleNumber: number | null;
+  description: string | null;
+  courseId: string;
+  createdAt: string;
+}
+
+interface Course {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  isStandalone: boolean;
+  createdAt: string;
+  updatedAt: string;
+  modules: Module[];
+  hasAccess?: boolean;
+  accessType?: "locked" | "purchased" | "subscription";
+}
+
 const IconMap: { [key: string]: React.ComponentType } = {
   Person: PersonIcon,
   Groups: GroupsIcon,
@@ -208,50 +231,9 @@ const placeholderWorkshops: Workshop[] = [
   },
 ];
 
-// Add placeholder courses here
-const placeholderCourses = [
-  {
-    id: "course-1",
-    title: "Be The Messenger Framework",
-    description: "Learn how to become an effective messenger for social justice",
-    icon: "Person",
-    accessType: "private",
-    image: "/Media.png",
-    keyOutcomes: [
-      "Courageous leadership",
-      "Improved workplace culture",
-      "Stronger institutional accountability"
-    ]
-  },
-  {
-    id: "course-2",
-    title: "Community Leadership Course",
-    description: "Develop leadership skills for community organizing",
-    icon: "Groups",
-    accessType: "public",
-    image: "/Media(1).png",
-    keyOutcomes: [
-      "Strategic planning and goal setting",
-      "Effective team building and collaboration",
-      "Conflict resolution and mediation skills",
-      "Community engagement strategies"
-    ]
-  },
-  {
-    id: "course-3",
-    title: "Workplace Culture Transformation",
-    description: "Transform your workplace culture through inclusive practices",
-    icon: "Work",
-    accessType: "private",
-    image: "/Media(2).png",
-    keyOutcomes: [
-      "Identify and dismantle systemic barriers",
-      "Implement inclusive policies and practices",
-      "Foster psychological safety",
-      "Measure and sustain cultural change"
-    ]
-  },
-];
+// Mapping for course images based on index
+const courseImages = ["/Media.png", "/Media(1).png", "/Media(2).png"];
+const courseIcons = ["Person", "Groups", "Work", "Psychology", "Gavel"];
 
 const placeholderDownloads = [
   {
@@ -293,8 +275,14 @@ export default function CoachingPage() {
   const { isExpanded } = useSidebar();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Course");
-  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
-  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>(
+    {},
+  );
+  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(
+    null,
+  );
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -304,57 +292,147 @@ export default function CoachingPage() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Update renderCoachingGrid to use placeholder data
-  const renderCoachingGrid = () => (
-    <CoachingGrid>
-      {placeholderCourses.map((course) => (
-        <CoachingCard 
-          key={course.id}
-          onClick={() => router.push(`/coaching/${course.id}`)}
-          style={{ cursor: 'pointer' }}
+  // Fetch courses from API
+  useEffect(() => {
+    async function fetchCourses() {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/courses");
+        if (response.ok) {
+          const data = await response.json();
+          setCourses(data);
+        } else {
+          console.error("Failed to fetch courses");
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCourses();
+  }, []);
+
+  // Render coaching grid with courses from database
+  const renderCoachingGrid = () => {
+    if (loading) {
+      return (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "300px",
+            fontSize: "18px",
+            color: "#64748b",
+          }}
         >
-          <CardImageContainer>
-            {!imageErrors[course.id] ? (
-              <Image
-                src={course.image}  // Changed from `/images/coaching/${course.id}.jpg`
-                alt={course.title}
-                fill
-                style={{ objectFit: "cover" }}
-                onError={() => {
-                  setImageErrors((prev) => ({ ...prev, [course.id]: true }));
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <DynamicIcon iconName={course.icon} />
-              </div>
-            )}
-            <ActionButtons>
-              <IconButton onClick={(e) => e.stopPropagation()}>
-                <FavoriteIcon />
-              </IconButton >
-              <IconButton onClick={(e) => e.stopPropagation()}>
-                <ShareIcon />
-              </IconButton>
-            </ActionButtons>
-          </CardImageContainer>
-          <CardContent>
-            <CardLabel>Course Package</CardLabel>
-            <CardTitle>{course.title}</CardTitle>
-            <CardDetails>
-              <DetailItem>
-                <DynamicIcon iconName={course.icon} />
-                Weekly meetings
-              </DetailItem>
-              <DetailItem>
-                <AccessTimeIcon />1 hr
-              </DetailItem>
-            </CardDetails>
-          </CardContent>
-        </CoachingCard>
-      ))}
-    </CoachingGrid>
-  );
+          Loading courses...
+        </div>
+      );
+    }
+
+    if (courses.length === 0) {
+      return (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "300px",
+            fontSize: "18px",
+            color: "#64748b",
+          }}
+        >
+          No courses available
+        </div>
+      );
+    }
+
+    return (
+      <CoachingGrid>
+        {courses.map((course, index) => {
+          const icon = courseIcons[index % courseIcons.length];
+          const image = courseImages[index % courseImages.length];
+          const isLocked = !course.hasAccess;
+
+          return (
+            <CoachingCard
+              key={course.id}
+              onClick={() => router.push(`/coaching/${course.id}`)}
+              style={{ cursor: "pointer", opacity: isLocked ? 0.8 : 1 }}
+            >
+              <CardImageContainer>
+                {!imageErrors[course.id] ? (
+                  <Image
+                    src={image}
+                    alt={course.name}
+                    fill
+                    style={{
+                      objectFit: "cover",
+                      filter: isLocked ? "grayscale(50%)" : "none",
+                    }}
+                    onError={() => {
+                      setImageErrors((prev) => ({
+                        ...prev,
+                        [course.id]: true,
+                      }));
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <DynamicIcon iconName={icon} />
+                  </div>
+                )}
+                {isLocked && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "rgba(0, 0, 0, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: "48px",
+                    }}
+                  >
+                    <LockIcon fontSize="inherit" />
+                  </div>
+                )}
+                <ActionButtons>
+                  <IconButton onClick={(e) => e.stopPropagation()}>
+                    <FavoriteIcon />
+                  </IconButton>
+                  <IconButton onClick={(e) => e.stopPropagation()}>
+                    <ShareIcon />
+                  </IconButton>
+                </ActionButtons>
+              </CardImageContainer>
+              <CardContent>
+                <CardLabel>
+                  {isLocked ? "🔒 Locked Course" : "Course Package"}
+                </CardLabel>
+                <CardTitle>{course.name}</CardTitle>
+                <CardDetails>
+                  <DetailItem>
+                    <DynamicIcon iconName={icon} />
+                    {course.modules.length} modules
+                  </DetailItem>
+                  <DetailItem>
+                    <AccessTimeIcon />${course.price}
+                  </DetailItem>
+                </CardDetails>
+              </CardContent>
+            </CoachingCard>
+          );
+        })}
+      </CoachingGrid>
+    );
+  };
 
   // Workshops grid with placeholder cards
   const renderWorkshopsGrid = () => {
