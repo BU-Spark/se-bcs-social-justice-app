@@ -1,4 +1,5 @@
 import { PrismaClient, AppointmentAccessType } from "@prisma/client";
+import { communities } from "../db/mock-data.ts";
 
 const prisma = new PrismaClient();
 
@@ -111,6 +112,80 @@ async function main() {
   }
 
   console.log("Sample appointment types have been created");
+
+  console.log("Creating users...");
+  await prisma.user.create({
+    data: {
+      id: "user1",
+      clerkUserId: "clerk_seed_user_1",
+      email: "host@example.com",
+      name: "Sample Host",
+      username: "samplehost",
+      role: "leader",
+      onboardingComplete: true,
+    },
+  });
+
+  console.log("Sample users have been created");
+
+  // Query for the appointment types
+  const seminarType = await prisma.appointmentType.findFirst({
+    where: { title: "Seminars" },
+  });
+
+  const eventType = await prisma.appointmentType.findFirst({
+    where: { title: "Events" },
+  });
+
+  if (seminarType) {
+    await prisma.appointment.create({
+      data: {
+        id: "1", // This matches what your frontend is looking for
+        appointmentTypeId: seminarType.id,
+        hostId: "user1",
+        topic: "Introduction to Social Justice",
+        startTime: new Date("2025-11-15T10:00:00"),
+        endTime: new Date("2025-11-15T12:00:00"),
+        timeZone: "America/New_York",
+        locationOrLink: "Online via Zoom",
+        zoomLink: "https://zoom.us/j/mock-meeting-001",
+        status: "scheduled",
+        isRecurring: false,
+      },
+    });
+
+    await prisma.appointment.create({
+      data: {
+        id: "2",
+        appointmentTypeId: seminarType.id,
+        hostId: "user1",
+        topic: "Environmental Justice Workshop",
+        startTime: new Date("2025-11-20T14:00:00"),
+        endTime: new Date("2025-11-20T16:00:00"),
+        timeZone: "America/New_York",
+        locationOrLink: "Community Center, Room 101",
+        zoomLink: "https://zoom.us/j/mock-meeting-002",
+        status: "scheduled",
+        isRecurring: false,
+      },
+    });
+
+    await prisma.appointment.create({
+      data: {
+        id: "3",
+        appointmentTypeId: seminarType.id,
+        hostId: "user1",
+        topic: "Racial Justice in Education",
+        startTime: new Date("2025-11-25T13:00:00"),
+        endTime: new Date("2025-11-25T15:00:00"),
+        timeZone: "America/New_York",
+        locationOrLink: "Online via Zoom",
+        zoomLink: "https://zoom.us/j/mock-meeting-003",
+        status: "scheduled",
+        isRecurring: false,
+      },
+    });
+  }
 
   // 4. Create Membership Tiers
   console.log("Creating membership tiers...");
@@ -268,6 +343,18 @@ async function main() {
 
   // 6. Set up Relationships
   console.log("Setting up relationships...");
+  console.log("Creating sample communities...");
+  for (const c of communities) {
+    await prisma.community.create({
+      data: {
+        name: c.name,
+        description: c.description,
+        imageUrl: c.imageUrl,
+        type: c.type,
+      },
+    });
+  }
+  console.log("✅ Communities created successfully");
 
   // The Multiplier Messenger tier includes the 'Mastering Identity' course
   await prisma.tierCourseAccess.create({

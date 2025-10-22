@@ -91,31 +91,34 @@ export default function SeminarReserve({
       const response = await fetch("/api/create-reservation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workshop, user: formData }),
+        body: JSON.stringify({
+          seminarId: workshop.id,
+          user: {
+            name: formData.name,
+            email: formData.email,
+            comments: formData.comments,
+          },
+        }),
       });
-
+  
       const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.error || "Failed to create meeting");
-
+      if (!response.ok) throw new Error(data.error || "Failed to create reservation");
+  
       setShowSuccess(true);
-
-      if (onReservationSuccess) {
-        onReservationSuccess();
-      }
-
+      onReservationSuccess?.();
       setTimeout(handleClose, 3000);
     } catch (error) {
       console.error("Reservation error:", error);
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Failed to complete reservation. Please try again later.",
+          : "Failed to complete reservation. Please try again later."
       );
     } finally {
       setSubmitting(false);
     }
   };
+  
 
   return (
     <Dialog
@@ -161,7 +164,7 @@ export default function SeminarReserve({
                 value={formData.name}
                 error={formErrors.name}
                 onChange={handleInputChange("name")}
-                placeholder="Ruby Chen"
+                placeholder="Enter your name"
               />
               <Field
                 label="Email"
@@ -169,7 +172,7 @@ export default function SeminarReserve({
                 value={formData.email}
                 error={formErrors.email}
                 onChange={handleInputChange("email")}
-                placeholder={userEmail || "Enter your email"}
+                placeholder={"Enter your email"}
               />
               <Field
                 label="Additional Comments?"

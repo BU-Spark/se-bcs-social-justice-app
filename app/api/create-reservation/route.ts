@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { PrismaClient } from "@prisma/client";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import nodemailer from "nodemailer";
 
+const prisma = new PrismaClient();
+
+/**
+ * Utility: Send a confirmation email
+ */
 async function sendEmail({
   to,
   subject,
@@ -40,60 +46,99 @@ async function sendEmail({
   return info.messageId;
 }
 
+/**
+ * POST: Reserve a seminar seat and send confirmation email
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    // Authenticate user
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { workshop, user } = await request.json();
-    if (!workshop || !user?.email || !user?.name) {
+    // Parse request body
+    const { seminarId, user } = await request.json();
+    console.log("Received seminarId:", seminarId);
+    console.log("User data:", user);
+
+    if (!seminarId || !user?.email || !user?.name) {
       return NextResponse.json(
-        { error: "Missing required fields: workshop and user info" },
+        { error: "Missing required fields: seminarId, user.email, user.name" },
         { status: 400 }
       );
     }
 
-    // Generate fake meeting
-    const meeting = {
-      id: Math.random().toString(36).substring(7),
-      topic: workshop.typeName,
-      start_time: workshop.date,
-      duration: workshop.duration,
-      join_url: `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`,
-      password: "123456",
-    };
+    // Ensure user exists in Prisma (use Clerk ID lookup)
+    let dbUser = await prisma.user.findUnique({
+      where: { clerkUserId },
+    });
 
+    // Optional: auto-create user if not present in your DB
+    if (!dbUser) {
+      console.log("User not found in DB. Creating a new record...");
+      dbUser = await prisma.user.create({
+        data: {
+          clerkUserId,
+          email: user.email,
+          name: user.name,
+          imageUrl: user.imageUrl || null,
+        },
+      });
+    }
+
+    // Fetch seminar appointment
+    const seminar = await prisma.appointment.findUnique({
+      where: { id: String(seminarId) },
+      include: { appointmentType: true },
+    });
+
+    if (!seminar) {
+      return NextResponse.json({ error: "Seminar not found" }, { status: 404 });
+    }
+
+    // Record reservation (use internal User.id, not Clerk ID)
+    await prisma.appointmentAttendee.create({
+      data: {
+        appointmentId: seminar.id,
+        userId: dbUser.id, // ✅ Correct foreign key
+        email: user.email,
+        role: "client",
+        additionalComments: user.comments || null,
+      },
+    });
+
+    // Compose email content
     const emailBody = `
-    Hi ${user.name},
+Hi ${user.name},
 
-    Your reservation for "${workshop.typeName}" has been confirmed!
+Your reservation for "${seminar.topic || seminar.appointmentType.title}" has been confirmed!
 
-    Join URL: ${meeting.join_url}
-    Meeting ID: ${meeting.id}
-    Password: ${meeting.password}
-    Time: ${meeting.start_time}
+📅 Date: ${new Date(seminar.startTime).toLocaleString()}
+🔗 Join Zoom: ${seminar.zoomLink || "Link not available"}
+${user.comments ? `💬 Your comments: ${user.comments}` : ""}
 
-    ${user.comments ? `Your comments: ${user.comments}` : ""}
+We look forward to seeing you there!
 
-    - The BCS Team
-        `;
+— The BCS Team
+`;
 
-    // Send email
-    await sendEmail({
+    // Send confirmation email
+    const messageId = await sendEmail({
       to: user.email,
-      subject: `Seminar Reservation Confirmation: ${workshop.typeName}`,
+      subject: `Seminar Reservation Confirmation: ${
+        seminar.topic || seminar.appointmentType.title || "Seminar"
+      }`,
       body: emailBody,
     });
 
     return NextResponse.json({
       success: true,
-      meeting,
       message: "Reservation confirmed and email sent",
+      messageId,
     });
   } catch (error) {
-    console.error(" Reservation API Error:", error);
+    console.error("❌ Reservation API Error:", error);
     return NextResponse.json(
       {
         error: "Failed to create reservation",
@@ -101,5 +146,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

@@ -101,6 +101,8 @@ model Appointment {
   endTime             DateTime
   timeZone            String                @default("UTC") @db.VarChar(50)
   locationOrLink      String?               @db.VarChar(255)
+  zoomLink            String?               @db.VarChar(255)
+  topic               String?               @db.VarChar(255)
   status              AppointmentStatus     @default(scheduled)
   isRecurring         Boolean               @default(false)
   recurrencePattern   RecurrencePattern?

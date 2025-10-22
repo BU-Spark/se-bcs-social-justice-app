@@ -175,35 +175,35 @@ const DynamicIcon = ({ iconName }: { iconName: string }) => {
 // Placeholder data for seminartab
 const placeholderWorkshops: Workshop[] = [
   {
-    id: "workshop-1",
+    id: 1,
     image: "/mic.jpeg",
     typeName: "Courageous Leadership Development",
     icon: "Groups",
     accessType: "public",
     date: "2025-11-03T14:00:00Z",
-    duration: "2hrs",
+    duration: 120,
     longDescription:
       "Participants learn how to lead with fairness, build trust, and strengthen resilience within teams and organizations.",
   },
   {
-    id: "workshop-2",
+    id:2,
     image: "/mic.jpeg",
     typeName: "Why We Need Courageous Hearts",
     icon: "Groups",
     accessType: "public",
     date: "2025-10-23T14:00:00Z",
-    duration: "2hrs",
+    duration: 180,
     longDescription:
       "Dr. Starks shares why courageous hearts are the foundation of justice work. Before we can change systems, we must heal ourselves. Justice begins inside.",
   },
   {
-    id: "workshop-3",
+    id: 3,
     image: "/mic.jpeg",
     typeName: "Social Justice Training",
     icon: "Groups",
     accessType: "public",
     date: "2025-11-23T14:00:00Z",
-    duration: "3hrs",
+    duration: 60,
     longDescription:
       "This program builds a hub for justice-focused research and advocacy inside universities. Includes faculty workshops, mentoring, grant support, and community partnerships.",
   },
