@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
 import styled from "@emotion/styled";
+import React, { useState } from "react";
 import CloudinaryUploadWidget from "./CloudinaryUploadWidget";
 
 const StyledPostFormContainer = styled.div`

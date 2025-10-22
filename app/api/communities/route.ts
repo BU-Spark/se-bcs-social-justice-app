@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
+import { currentUser } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
@@ -35,6 +35,20 @@ export async function GET() {
         description: true,
         imageUrl: true,
         type: true,
+        _count: {
+          select: { members: true },
+        },
+        members: {
+          take: 3,
+          include: {
+            user: {
+              select: {
+                username: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -52,6 +66,9 @@ export async function GET() {
         description: true,
         imageUrl: true,
         type: true,
+        _count: {
+          select: { members: true },
+        },
       },
     });
 

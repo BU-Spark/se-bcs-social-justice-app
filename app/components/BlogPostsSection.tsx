@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import styled from "@emotion/styled";
 import { useUser } from "@clerk/nextjs";
-import { FaHeart, FaRegHeart, FaFilePdf } from "react-icons/fa";
+import styled from "@emotion/styled";
+import React, { useEffect, useState } from "react";
+import { FaFilePdf, FaHeart, FaRegHeart } from "react-icons/fa";
 import CommentsSection from "./CommentsSection";
 import PostForm from "./PostForm";
 
