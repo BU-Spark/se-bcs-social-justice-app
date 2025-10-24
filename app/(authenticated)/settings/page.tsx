@@ -253,6 +253,20 @@ export default function Settings() {
                 </Link>
               </div>
             </div>
+
+            <div className="space-y-4" style={{ marginTop: "32px" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-700 font-medium"> Courses Settings</p>
+                  <p className="text-sm text-gray-600"> Management of courses, modules, and enrollments</p>
+                </div>
+                <Link href="/admin/courses" passHref>
+                  <StyledButton className="flex items-center">
+                    <span>Manage Courses</span>
+                  </StyledButton>
+                </Link>
+              </div>
+            </div>
           </StyledSection>
         )}
 
