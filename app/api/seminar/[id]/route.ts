@@ -4,14 +4,16 @@ import { auth } from "@clerk/nextjs/server";
 
 const prisma = new PrismaClient();
 
-// GET: Fetch a single seminar (with attendees)
+// Fetch a single seminar (with attendees)
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const seminar = await prisma.seminar.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         attendees: {
           select: {
@@ -38,12 +40,14 @@ export async function GET(
   }
 }
 
-// PUT: Update seminar (admin only)
+// Update seminar (admin only)
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const { userId } = await auth();
 
     if (!userId) {
@@ -62,7 +66,7 @@ export async function PUT(
     const data = await req.json();
 
     const updated = await prisma.seminar.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: data.title,
         description: data.description,
@@ -86,12 +90,14 @@ export async function PUT(
   }
 }
 
-// DELETE: Delete seminar (admin only)
+// Delete seminar (admin only)
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const { userId } = await auth();
 
     if (!userId) {
@@ -107,7 +113,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    await prisma.seminar.delete({ where: { id: params.id } });
+    await prisma.seminar.delete({ where: { id } });
 
     return NextResponse.json({ message: "Seminar deleted successfully" });
   } catch (err) {

@@ -15,7 +15,7 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import LockIcon from "@mui/icons-material/Lock";
 import { useRouter } from "next/navigation";
 import { Button } from "@mui/material";
-import Seminars, { Seminar } from "./seminars/page";
+import SeminarDetail, { Seminar } from "./seminars/seminarPage";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -205,31 +205,6 @@ const DynamicIcon = ({ iconName }: { iconName: string }) => {
   }
   return <IconComponent />;
 };
-
-// Placeholder data for seminartab
-// const placeholderSeminars: Seminar[] = [
-//   {
-//     id: "1",
-//     title: "Courageous Leadership Development",
-//     description:
-//       "Participants learn how to lead with fairness, build trust, and strengthen resilience within teams and organizations.",
-//     hostName: "Dr. Alex Martinez",
-//     date: "2025-11-03T09:00:00Z",
-//     duration: 120,
-//     zoomLink: "https://zoom.us/j/1234567890",
-//     accessType: "public",
-//     introSeminar: {
-//       type: "video",
-//       src: "/videos/leadership_intro.mp4",
-//     },
-//     introHost: {
-//       type: "image",
-//       src: "/images/host-alex.jpg",
-//     },
-//     image: "",
-//     icon: "Group",
-//   },
-// ];
 
 // Mapping for course images based on index
 const courseImages = ["/Media.png", "/Media(1).png", "/Media(2).png"];
@@ -472,7 +447,7 @@ export default function CoachingPage() {
   const renderSeminarsGrid = () => {
     if (selectedSeminar) {
       return (
-        <Seminars
+        <SeminarDetail
           seminar={selectedSeminar}
           onBack={() => setSelectedSeminar(null)}
         />

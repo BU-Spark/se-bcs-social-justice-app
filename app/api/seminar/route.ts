@@ -17,12 +17,12 @@ export async function GET() {
         date: true,
         duration: true,
         accessType: true,
-        image: true, // keep only small cover, not large media
+        image: true,
+        mediaUrl: true,
         createdAt: true,
       },
-      take: 20, // optional limit
+      take: 20,
     });
-
     return NextResponse.json(seminars);
   } catch (err) {
     console.error("Error fetching seminars:", err);
