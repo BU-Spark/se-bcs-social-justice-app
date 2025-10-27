@@ -14,7 +14,7 @@ export async function GET() {
     console.error("Error fetching appointment types:", error);
     return NextResponse.json(
       { error: "Failed to fetch appointment types" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

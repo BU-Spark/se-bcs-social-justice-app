@@ -51,16 +51,11 @@ async function sendEmail({
  */
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
+    // Authenticate Clerk user (optional — works even if logged out)
     const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userData = clerkUserId ? await currentUser() : null;
 
-    // Parse request body
     const { seminarId, user } = await request.json();
-    console.log("Received seminarId:", seminarId);
-    console.log("User data:", user);
 
     if (!seminarId || !user?.email || !user?.name) {
       return NextResponse.json(
@@ -69,74 +64,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure user exists in Prisma (use Clerk ID lookup)
-    let dbUser = await prisma.user.findUnique({
-      where: { clerkUserId },
-    });
-
-    // Optional: auto-create user if not present in your DB
-    if (!dbUser) {
-      console.log("User not found in DB. Creating a new record...");
-      dbUser = await prisma.user.create({
-        data: {
-          clerkUserId,
-          email: user.email,
-          name: user.name,
-          imageUrl: user.imageUrl || null,
-        },
-      });
-    }
-
-    // Fetch seminar appointment
-    const seminar = await prisma.appointment.findUnique({
-      where: { id: String(seminarId) },
-      include: { appointmentType: true },
+    // Check if seminar exists
+    const seminar = await prisma.seminar.findUnique({
+      where: { id: seminarId },
     });
 
     if (!seminar) {
       return NextResponse.json({ error: "Seminar not found" }, { status: 404 });
     }
 
-    // Record reservation (use internal User.id, not Clerk ID)
-    await prisma.appointmentAttendee.create({
-      data: {
-        appointmentId: seminar.id,
-        userId: dbUser.id, // ✅ Correct foreign key
+    // Check for duplicate registration
+    const existing = await prisma.seminarAttendee.findFirst({
+      where: {
+        seminarId,
         email: user.email,
-        role: "client",
-        additionalComments: user.comments || null,
       },
     });
 
-    // Compose email content
+    if (existing) {
+      return NextResponse.json(
+        { error: "You have already registered for this seminar." },
+        { status: 400 }
+      );
+    }
+
+    // Create new attendee record
+    const attendee = await prisma.seminarAttendee.create({
+      data: {
+        seminarId,
+        name: user.name,
+        email: user.email,
+      },
+    });
+
+    // Compose email
     const emailBody = `
-Hi ${user.name},
+      Hi ${user.name},
 
-Your reservation for "${seminar.topic || seminar.appointmentType.title}" has been confirmed!
+      Your reservation for the seminar "${seminar.title}" has been confirmed!
 
-📅 Date: ${new Date(seminar.startTime).toLocaleString()}
-🔗 Join Zoom: ${seminar.zoomLink || "Link not available"}
-${user.comments ? `💬 Your comments: ${user.comments}` : ""}
+      📅 Date: ${new Date(seminar.date).toLocaleString()}
+      🕓 Duration: ${seminar.duration} minutes
+      🎤 Host: ${seminar.hostName}
+      🔗 Zoom Link: ${seminar.zoomLink || "Link will be shared soon"}
 
-We look forward to seeing you there!
+      We look forward to seeing you there!
 
-— The BCS Team
-`;
+      — The BCS Team
+      `;
 
-    // Send confirmation email
-    const messageId = await sendEmail({
+    // Send email confirmation
+    await sendEmail({
       to: user.email,
-      subject: `Seminar Reservation Confirmation: ${
-        seminar.topic || seminar.appointmentType.title || "Seminar"
-      }`,
+      subject: `Seminar Confirmation: ${seminar.title}`,
       body: emailBody,
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Reservation confirmed and email sent",
-      messageId,
-    });
+    return NextResponse.json(
+      { success: true, message: "Reservation confirmed!", attendee },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("❌ Reservation API Error:", error);
     return NextResponse.json(

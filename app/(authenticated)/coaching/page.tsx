@@ -14,7 +14,8 @@ import ShareIcon from "@mui/icons-material/Share";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import LockIcon from "@mui/icons-material/Lock";
 import { useRouter } from "next/navigation";
-import Seminars, { Workshop } from "./seminaros/page";
+import { Button } from "@mui/material";
+import Seminars, { Seminar } from "./seminars/page";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -89,7 +90,17 @@ const CardImageContainer = styled.div`
   width: 100%;
   height: 200px;
   background-color: #f5f5f5;
+
+  img {
+    pointer-events: none;
+  }
 `;
+// const CardImageContainer = styled.div`
+//   position: relative;
+//   width: 100%;
+//   height: 200px;
+//   background-color: #f5f5f5;
+// `;
 
 const CardContent = styled.div`
   padding: 20px;
@@ -147,23 +158,15 @@ const IconButton = styled.button`
   }
 `;
 
-interface AppointmentType {
-  id: string;
-  title: string;
-  description: string | null;
-  icon: string;
-  accessType: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Workshop {
-  id: string;
-  typeName: string;
-  description: string;
-  icon: string;
-  longDescription?: string;
-}
+// interface AppointmentType {
+//   id: string;
+//   title: string;
+//   description: string | null;
+//   icon: string;
+//   accessType: string;
+//   createdAt: string;
+//   updatedAt: string;
+// }
 
 interface Module {
   id: string;
@@ -204,41 +207,29 @@ const DynamicIcon = ({ iconName }: { iconName: string }) => {
 };
 
 // Placeholder data for seminartab
-const placeholderWorkshops: Workshop[] = [
-  {
-    id: 1,
-    image: "/mic.jpeg",
-    typeName: "Courageous Leadership Development",
-    icon: "Groups",
-    accessType: "public",
-    date: "2025-11-03T14:00:00Z",
-    duration: 120,
-    longDescription:
-      "Participants learn how to lead with fairness, build trust, and strengthen resilience within teams and organizations.",
-  },
-  {
-    id:2,
-    image: "/mic.jpeg",
-    typeName: "Why We Need Courageous Hearts",
-    icon: "Groups",
-    accessType: "public",
-    date: "2025-10-23T14:00:00Z",
-    duration: 180,
-    longDescription:
-      "Dr. Starks shares why courageous hearts are the foundation of justice work. Before we can change systems, we must heal ourselves. Justice begins inside.",
-  },
-  {
-    id: 3,
-    image: "/mic.jpeg",
-    typeName: "Social Justice Training",
-    icon: "Groups",
-    accessType: "public",
-    date: "2025-11-23T14:00:00Z",
-    duration: 60,
-    longDescription:
-      "This program builds a hub for justice-focused research and advocacy inside universities. Includes faculty workshops, mentoring, grant support, and community partnerships.",
-  },
-];
+// const placeholderSeminars: Seminar[] = [
+//   {
+//     id: "1",
+//     title: "Courageous Leadership Development",
+//     description:
+//       "Participants learn how to lead with fairness, build trust, and strengthen resilience within teams and organizations.",
+//     hostName: "Dr. Alex Martinez",
+//     date: "2025-11-03T09:00:00Z",
+//     duration: 120,
+//     zoomLink: "https://zoom.us/j/1234567890",
+//     accessType: "public",
+//     introSeminar: {
+//       type: "video",
+//       src: "/videos/leadership_intro.mp4",
+//     },
+//     introHost: {
+//       type: "image",
+//       src: "/images/host-alex.jpg",
+//     },
+//     image: "",
+//     icon: "Group",
+//   },
+// ];
 
 // Mapping for course images based on index
 const courseImages = ["/Media.png", "/Media(1).png", "/Media(2).png"];
@@ -287,15 +278,29 @@ export default function CoachingPage() {
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>(
     {},
   );
-  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(
-    null,
-  );
+  const [selectedSeminar, setSelectedSeminar] = useState<Seminar | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [seminars, setSeminars] = useState<Seminar[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSeminars, setLoadingSeminars] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  //check admin status
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const res = await fetch("/api/check-admin");
+        setIsAdmin(res.ok);
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      setSelectedWorkshop(null);
+      setSelectedSeminar(null);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -320,6 +325,27 @@ export default function CoachingPage() {
       }
     }
     fetchCourses();
+  }, []);
+
+  // --- Fetch seminars
+  useEffect(() => {
+    async function fetchSeminars() {
+      try {
+        setLoadingSeminars(true);
+        const res = await fetch("/api/seminar");
+        if (res.ok) {
+          const data = await res.json();
+          setSeminars(Array.isArray(data) ? data : []);
+        } else {
+          console.error("Failed to fetch seminars");
+        }
+      } catch (err) {
+        console.error("Error fetching seminars:", err);
+      } finally {
+        setLoadingSeminars(false);
+      }
+    }
+    fetchSeminars();
   }, []);
 
   // Render coaching grid with courses from database
@@ -443,78 +469,117 @@ export default function CoachingPage() {
     );
   };
 
-  // Workshops grid with placeholder cards
-  const renderWorkshopsGrid = () => {
-    // Show detail if a workshop is selected
-    if (selectedWorkshop) {
+  const renderSeminarsGrid = () => {
+    if (selectedSeminar) {
       return (
         <Seminars
-          workshop={selectedWorkshop}
-          onBack={() => setSelectedWorkshop(null)}
+          seminar={selectedSeminar}
+          onBack={() => setSelectedSeminar(null)}
         />
       );
     }
 
-    // Show grid of workshops
+    if (loading) {
+      return (
+        <p style={{ textAlign: "center", color: "#64748b" }}>
+          Loading seminars...
+        </p>
+      );
+    }
+
+    if (seminars.length === 0) {
+      return (
+        <p style={{ textAlign: "center", color: "#64748b" }}>
+          No seminars available
+        </p>
+      );
+    }
+
     return (
-      <CoachingGrid>
-        {placeholderWorkshops.map((workshop) => (
-          <CoachingCard
-            key={workshop.id}
-            onClick={() => {
-              setSelectedWorkshop(workshop);
-              window.history.pushState(
-                { workshopId: workshop.id },
-                "",
-                `?workshop=${workshop.id}`,
-              );
+      <>
+        {isAdmin && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              padding: "0 24px 20px",
             }}
-            style={{ cursor: "pointer" }}
           >
-            <CardImageContainer>
-              {!imageErrors[workshop.id] ? (
-                <Image
-                  src={workshop.image}
-                  alt={workshop.typeName}
-                  fill
-                  style={{ objectFit: "cover" }}
-                  onError={() => {
-                    setImageErrors((prev) => ({
-                      ...prev,
-                      [workshop.id]: true,
-                    }));
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                  <DynamicIcon iconName={workshop.icon} />
-                </div>
-              )}
-              <ActionButtons>
-                <IconButton onClick={(e) => e.stopPropagation()}>
-                  <FavoriteIcon />
-                </IconButton>
-                <IconButton onClick={(e) => e.stopPropagation()}>
-                  <ShareIcon />
-                </IconButton>
-              </ActionButtons>
-            </CardImageContainer>
-            <CardContent>
-              <CardLabel>Seminar</CardLabel>
-              <CardTitle>{workshop.typeName}</CardTitle>
-              <CardDetails>
-                <DetailItem>
-                  <DynamicIcon iconName={workshop.icon} />
-                  Group Session
-                </DetailItem>
-                <DetailItem>
-                  <AccessTimeIcon />{workshop.duration}
-                </DetailItem>
-              </CardDetails>
-            </CardContent>
-          </CoachingCard>
-        ))}
-      </CoachingGrid>
+            <Button
+              variant="contained"
+              onClick={() => router.push("/coaching/seminars/create")}
+              sx={{
+                backgroundColor: "#6366f1",
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                px: 3,
+                py: 1,
+                "&:hover": { backgroundColor: "#4f46e5" },
+              }}
+            >
+              Create Seminar
+            </Button>
+          </div>
+        )}
+
+        <CoachingGrid>
+          {seminars.map((seminar) => (
+            <CoachingCard
+              key={seminar.id}
+              onClick={() => setSelectedSeminar(seminar)}
+              style={{ cursor: "pointer" }}
+            >
+              <CardImageContainer>
+                {!imageErrors[seminar.id] && seminar.image ? (
+                  <Image
+                    src={seminar.image}
+                    alt={seminar.title}
+                    fill
+                    style={{ objectFit: "cover" }}
+                    onError={() =>
+                      setImageErrors((prev) => ({
+                        ...prev,
+                        [seminar.id]: true,
+                      }))
+                    }
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center bg-gray-100"
+                    style={{ fontSize: 40, color: "#6366f1" }}
+                  >
+                    <GroupsIcon />
+                  </div>
+                )}
+                <ActionButtons>
+                  <IconButton onClick={(e) => e.stopPropagation()}>
+                    <FavoriteIcon />
+                  </IconButton>
+                  <IconButton onClick={(e) => e.stopPropagation()}>
+                    <ShareIcon />
+                  </IconButton>
+                </ActionButtons>
+              </CardImageContainer>
+
+              <CardContent>
+                <CardLabel>Seminar</CardLabel>
+                <CardTitle>{seminar.title}</CardTitle>
+                <CardDetails>
+                  <DetailItem>
+                    <AccessTimeIcon />
+                    {seminar.duration ?? 60} mins
+                  </DetailItem>
+                  <DetailItem>
+                    <GroupsIcon />
+                    {seminar.hostName}
+                  </DetailItem>
+                </CardDetails>
+              </CardContent>
+            </CoachingCard>
+          ))}
+        </CoachingGrid>
+      </>
     );
   };
 
@@ -601,7 +666,7 @@ export default function CoachingPage() {
             active={activeTab === "Course"}
             onClick={() => {
               setActiveTab("Course");
-              setSelectedWorkshop(null);
+              setSelectedSeminar(null);
             }}
           >
             Course
@@ -610,7 +675,7 @@ export default function CoachingPage() {
             active={activeTab === "Seminars"}
             onClick={() => {
               setActiveTab("Seminars");
-              setSelectedWorkshop(null);
+              setSelectedSeminar(null);
             }}
           >
             Seminars
@@ -619,7 +684,7 @@ export default function CoachingPage() {
             active={activeTab === "Download"}
             onClick={() => {
               setActiveTab("Download");
-              setSelectedWorkshop(null);
+              setSelectedSeminar(null);
             }}
           >
             Download
@@ -628,7 +693,7 @@ export default function CoachingPage() {
             active={activeTab === "My Purchases"}
             onClick={() => {
               setActiveTab("My Purchases");
-              setSelectedWorkshop(null);
+              setSelectedSeminar(null);
             }}
           >
             My Purchases
@@ -637,7 +702,7 @@ export default function CoachingPage() {
       </PageHeader>
 
       {activeTab === "Course" && renderCoachingGrid()}
-      {activeTab === "Seminars" && renderWorkshopsGrid()}
+      {activeTab === "Seminars" && renderSeminarsGrid()}
       {activeTab === "Download" && renderDownloadGrid()}
       {activeTab === "My Purchases" && renderMyPurchasesGrid()}
     </StyledMainContent>
