@@ -651,6 +651,12 @@ export default function AdminCoursesPage() {
                   </CourseInfo>
                   <ButtonGroup>
                     <IconButton
+                      variant="primary"
+                      onClick={() => router.push(`/admin/new-course?id=${course.id}`)}
+                    >
+                      Edit
+                    </IconButton>
+                    <IconButton
                       variant="danger"
                       onClick={() =>
                         setDeleteModal({

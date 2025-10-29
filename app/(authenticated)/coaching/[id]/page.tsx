@@ -454,6 +454,7 @@ export default function CoachingDetailPage() {
 
         <ContentRow>
           <DescriptionColumn>
+            <h2>Description:</h2>
             <Description>
               {course.description ||
                 "Explore this comprehensive course designed to provide you with in-depth knowledge and practical skills."}

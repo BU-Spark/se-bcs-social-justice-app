@@ -1,9 +1,22 @@
+// ==============================================================================
+// NEW COURSE PAGE - Admin course creation and editing functionality
+// ==============================================================================
+// This page allows administrators to create new courses or edit existing ones.
+// It supports adding/removing modules and updating all course details.
+// ==============================================================================
+
 "use client";
 import { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import { useSidebar } from "../../../components/SidebarContext";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
+// ==============================================================================
+// STYLED COMPONENTS - UI styling using Emotion
+// ==============================================================================
+
+// Main content area that adjusts based on sidebar expansion state
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
   padding: 24px;
@@ -14,11 +27,13 @@ const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   min-height: 100vh;
 `;
 
+// Container to center content with max width
 const StyledContainer = styled.div`
   max-width: 900px;
   margin: 0 auto;
 `;
 
+// Header section at the top of the page
 const StyledHeader = styled.div`
   margin-bottom: 32px;
   background: white;
@@ -27,6 +42,7 @@ const StyledHeader = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
+// Page title styling
 const StyledTitle = styled.h1`
   font-size: 28px;
   font-weight: 600;
@@ -34,12 +50,14 @@ const StyledTitle = styled.h1`
   margin-bottom: 8px;
 `;
 
+// Subtitle/description text styling
 const StyledSubtitle = styled.p`
   font-size: 14px;
   color: #6c757d;
   margin: 0;
 `;
 
+// Section container for form groups
 const FormSection = styled.div`
   background: white;
   border-radius: 8px;
@@ -48,6 +66,7 @@ const FormSection = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
+// Section title within form sections
 const SectionTitle = styled.h2`
   font-size: 18px;
   font-weight: 600;
@@ -55,10 +74,12 @@ const SectionTitle = styled.h2`
   margin-bottom: 16px;
 `;
 
+// Wrapper for individual form fields
 const FormGroup = styled.div`
   margin-bottom: 20px;
 `;
 
+// Label for form inputs
 const Label = styled.label`
   display: block;
   font-size: 14px;
@@ -67,6 +88,7 @@ const Label = styled.label`
   margin-bottom: 8px;
 `;
 
+// Text input field with focus states
 const Input = styled.input`
   width: 100%;
   padding: 10px 12px;
@@ -87,6 +109,7 @@ const Input = styled.input`
   }
 `;
 
+// Multi-line text input with focus states
 const TextArea = styled.textarea`
   width: 100%;
   padding: 10px 12px;
@@ -104,6 +127,7 @@ const TextArea = styled.textarea`
   }
 `;
 
+// Checkbox input styling
 const Checkbox = styled.input`
   width: 18px;
   height: 18px;
@@ -111,6 +135,7 @@ const Checkbox = styled.input`
   cursor: pointer;
 `;
 
+// Label wrapper for checkboxes with flexbox layout
 const CheckboxLabel = styled.label`
   display: flex;
   align-items: center;
@@ -119,6 +144,7 @@ const CheckboxLabel = styled.label`
   cursor: pointer;
 `;
 
+// Card container for each module in the list
 const ModuleCard = styled.div`
   background: #f8f9fa;
   border: 1px solid #dee2e6;
@@ -127,6 +153,7 @@ const ModuleCard = styled.div`
   margin-bottom: 16px;
 `;
 
+// Header section of module card with title and remove button
 const ModuleHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -134,6 +161,7 @@ const ModuleHeader = styled.div`
   margin-bottom: 12px;
 `;
 
+// Module title styling
 const ModuleTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
@@ -141,6 +169,7 @@ const ModuleTitle = styled.h3`
   margin: 0;
 `;
 
+// Button component with variant support (primary, secondary, danger)
 const Button = styled.button<{ variant?: "primary" | "secondary" | "danger" }>`
   padding: 10px 20px;
   border-radius: 6px;
@@ -185,6 +214,7 @@ const Button = styled.button<{ variant?: "primary" | "secondary" | "danger" }>`
   }
 `;
 
+// Container for button groups with flexbox layout
 const ButtonGroup = styled.div`
   display: flex;
   gap: 12px;
@@ -192,6 +222,7 @@ const ButtonGroup = styled.div`
   margin-top: 24px;
 `;
 
+// Smaller button for inline actions (e.g., remove module)
 const SmallButton = styled.button<{ variant?: "secondary" | "danger" }>`
   padding: 6px 12px;
   border-radius: 4px;
@@ -223,6 +254,7 @@ const SmallButton = styled.button<{ variant?: "secondary" | "danger" }>`
   }}
 `;
 
+// Alert/message box for success and error messages
 const Alert = styled.div<{ type: "success" | "error" }>`
   padding: 12px 16px;
   border-radius: 6px;
@@ -243,6 +275,7 @@ const Alert = styled.div<{ type: "success" | "error" }>`
   `}
 `;
 
+// Loading spinner with animation
 const LoadingSpinner = styled.div`
   display: flex;
   justify-content: center;
@@ -265,42 +298,73 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+// ==============================================================================
+// TYPESCRIPT INTERFACES
+// ==============================================================================
+
+// Module interface - represents a single course module
+// id is optional because new modules don't have IDs yet
 interface Module {
-  title: string;
-  moduleNumber: number;
-  description: string;
+  id?: string; // Optional - only exists for saved modules
+  title: string; // Module title (required)
+  moduleNumber: number; // Sequential number for ordering
+  description: string; // Module description text
 }
 
+// ==============================================================================
+// MAIN COMPONENT - Course creation/editing page
+// ==============================================================================
 export default function NewCoursePage() {
-  const { isExpanded } = useSidebar();
-  const router = useRouter();
+  // ------------------------------------------------------------------------------
+  // HOOKS & CONTEXT
+  // ------------------------------------------------------------------------------
+  const { isExpanded } = useSidebar(); // Sidebar expansion state for layout adjustment
+  const router = useRouter(); // Next.js router for navigation
+  const searchParams = useSearchParams(); // URL search params to detect edit mode
+  const courseId = searchParams.get("id"); // Course ID from URL (null = create mode, value = edit mode)
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // ------------------------------------------------------------------------------
+  // STATE MANAGEMENT
+  // ------------------------------------------------------------------------------
+  
+  // Admin verification state
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = checking, true = admin, false = not admin
+  
+  // Loading states
+  const [isLoading, setIsLoading] = useState(false); // True when submitting form
+  const [isFetchingCourse, setIsFetchingCourse] = useState(false); // True when loading existing course data
+  
+  // Message/notification state for user feedback
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
 
-  // Course form state
-  const [courseName, setCourseName] = useState("");
-  const [courseDescription, setCourseDescription] = useState("");
-  const [coursePrice, setCoursePrice] = useState("");
-  const [isStandalone, setIsStandalone] = useState(true);
-  const [modules, setModules] = useState<Module[]>([]);
+  // Course form fields
+  const [courseName, setCourseName] = useState(""); // Course name input
+  const [courseDescription, setCourseDescription] = useState(""); // Course description textarea
+  const [coursePrice, setCoursePrice] = useState(""); // Course price (stored as string for input)
+  const [isStandalone, setIsStandalone] = useState(true); // Whether course can be purchased individually
+  const [modules, setModules] = useState<Module[]>([]); // Array of course modules
 
+  // ------------------------------------------------------------------------------
+  // EFFECT HOOKS
+  // ------------------------------------------------------------------------------
+  
+  // Check if current user is an admin
+  // Runs once on component mount to verify admin permissions
   useEffect(() => {
     const checkAdmin = async () => {
       try {
         const res = await fetch("/api/check-admin");
         if (res.ok) {
-          setIsAdmin(true);
+          setIsAdmin(true); // User is admin, allow access
         } else {
-          setIsAdmin(false);
+          setIsAdmin(false); // Not admin, redirect to dashboard
           router.push("/dashboard");
         }
       } catch (error) {
-        setIsAdmin(false);
+        setIsAdmin(false); // Error checking, treat as not admin
         router.push("/dashboard");
         console.log(error);
       }
@@ -308,56 +372,137 @@ export default function NewCoursePage() {
     checkAdmin();
   }, [router]);
 
+  // Fetch existing course data when editing (courseId present in URL)
+  // Only runs if courseId exists and user is verified as admin
+  useEffect(() => {
+    const fetchCourse = async () => {
+      // Skip if no courseId (create mode) or admin check not complete
+      if (!courseId || !isAdmin) return;
+      
+      setIsFetchingCourse(true); // Show loading state
+      try {
+        // Fetch course data from API
+        const res = await fetch(`/api/admin/courses/${courseId}`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch course");
+        }
+        
+        const data = await res.json();
+        
+        // Pre-fill all form fields with existing course data
+        setCourseName(data.name || "");
+        setCourseDescription(data.description || "");
+        setCoursePrice(data.price?.toString() || "");
+        setIsStandalone(data.isStandalone ?? true);
+        // Map modules to include all necessary fields
+        setModules(data.modules.map((m: any) => ({
+          id: m.id, // Keep existing module IDs for updates
+          title: m.title,
+          moduleNumber: m.moduleNumber,
+          description: m.description || "",
+        })));
+      } catch (error) {
+        console.error("Error fetching course:", error);
+        setMessage({ type: "error", text: "Failed to load course data" });
+      } finally {
+        setIsFetchingCourse(false); // Hide loading state
+      }
+    };
+    
+    fetchCourse();
+  }, [courseId, isAdmin]); // Re-run if courseId or isAdmin changes
+
+  // ------------------------------------------------------------------------------
+  // MODULE MANAGEMENT FUNCTIONS
+  // ------------------------------------------------------------------------------
+  
+  /**
+   * Add a new blank module to the modules array
+   * Module number is automatically assigned based on current array length
+   */
   const addModule = () => {
     setModules([
       ...modules,
       {
-        title: "",
-        moduleNumber: modules.length + 1,
-        description: "",
+        title: "", // Empty title for user to fill in
+        moduleNumber: modules.length + 1, // Next sequential number
+        description: "", // Empty description
+        // No id - will be created when saved to database
       },
     ]);
   };
 
+  /**
+   * Remove a module at the specified index
+   * Automatically re-numbers remaining modules to maintain sequence
+   * @param index - Array index of module to remove
+   */
   const removeModule = (index: number) => {
+    // Filter out the module at the specified index
     const updatedModules = modules.filter((_, i) => i !== index);
-    // Re-number modules
+    
+    // Re-number all remaining modules sequentially (1, 2, 3, etc.)
     updatedModules.forEach((module, i) => {
       module.moduleNumber = i + 1;
     });
+    
     setModules(updatedModules);
   };
 
+  /**
+   * Update a specific field of a module
+   * @param index - Array index of module to update
+   * @param field - Which field to update (title, description, etc.)
+   * @param value - New value for the field
+   */
   const updateModule = (
     index: number,
     field: keyof Module,
     value: string | number
   ) => {
+    // Create a copy of modules array
     const updatedModules = [...modules];
+    
+    // Update the specific field of the module at index
     updatedModules[index] = {
       ...updatedModules[index],
-      [field]: value,
+      [field]: value, // Dynamically update the specified field
     };
+    
     setModules(updatedModules);
   };
 
+  // ------------------------------------------------------------------------------
+  // FORM SUBMISSION HANDLER
+  // ------------------------------------------------------------------------------
+  
+  /**
+   * Handle form submission for creating or updating a course
+   * Validates all fields, makes API call, and handles response
+   * Works for both create (POST) and edit (PUT) modes
+   */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
+    e.preventDefault(); // Prevent default form submission
+    setMessage(null); // Clear any previous messages
 
-    // Validation
+    // --------------
+    // VALIDATION
+    // --------------
+    
+    // Validate course name is not empty
     if (!courseName.trim()) {
       setMessage({ type: "error", text: "Course name is required" });
       return;
     }
 
+    // Validate price is a valid positive number
     const price = parseFloat(coursePrice);
     if (isNaN(price) || price < 0) {
       setMessage({ type: "error", text: "Please enter a valid price" });
       return;
     }
 
-    // Validate modules
+    // Validate all modules have titles
     for (let i = 0; i < modules.length; i++) {
       if (!modules[i].title.trim()) {
         setMessage({
@@ -368,57 +513,91 @@ export default function NewCoursePage() {
       }
     }
 
-    setIsLoading(true);
+    setIsLoading(true); // Show loading state
 
     try {
-      const response = await fetch("/api/admin/new-course", {
-        method: "POST",
+      // --------------
+      // DETERMINE CREATE VS UPDATE MODE
+      // --------------
+      
+      // If courseId exists, we're updating; otherwise, creating
+      const url = courseId 
+        ? `/api/admin/courses/${courseId}` // Update existing course
+        : "/api/admin/new-course"; // Create new course
+      
+      const method = courseId ? "PUT" : "POST"; // HTTP method based on mode
+
+      // --------------
+      // MAKE API REQUEST
+      // --------------
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: courseName.trim(),
-          description: courseDescription.trim() || null,
+          description: courseDescription.trim() || null, // null if empty
           price,
           isStandalone,
           modules: modules.map((module) => ({
+            id: module.id, // Include ID for updates (undefined for new modules)
             title: module.title.trim(),
             moduleNumber: module.moduleNumber,
-            description: module.description.trim() || null,
+            description: module.description.trim() || null, // null if empty
           })),
         }),
       });
 
       const data = await response.json();
 
+      // --------------
+      // HANDLE RESPONSE
+      // --------------
+      
       if (response.ok) {
-        setMessage({ type: "success", text: "Course created successfully!" });
-        // Reset form
-        setCourseName("");
-        setCourseDescription("");
-        setCoursePrice("");
-        setIsStandalone(true);
-        setModules([]);
+        // Success! Show appropriate message
+        setMessage({ 
+          type: "success", 
+          text: courseId ? "Course updated successfully!" : "Course created successfully!" 
+        });
+        
+        // Reset form only when creating (not when editing)
+        if (!courseId) {
+          setCourseName("");
+          setCourseDescription("");
+          setCoursePrice("");
+          setIsStandalone(true);
+          setModules([]);
+        }
 
-        // Redirect after a short delay
+        // Redirect to courses list after 2 seconds
         setTimeout(() => {
-          router.push("/settings");
+          router.push("/admin/courses");
         }, 2000);
       } else {
+        // API returned an error
         setMessage({
           type: "error",
-          text: data.error || "Failed to create course",
+          text: data.error || `Failed to ${courseId ? 'update' : 'create'} course`,
         });
       }
     } catch (error) {
-      console.error("Error creating course:", error);
+      // Network or other error occurred
+      console.error(`Error ${courseId ? 'updating' : 'creating'} course:`, error);
       setMessage({ type: "error", text: "An error occurred. Please try again." });
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Hide loading state
     }
   };
 
-  if (isAdmin === null) {
+  // ------------------------------------------------------------------------------
+  // RENDER GUARDS - Show loading/error states before main content
+  // ------------------------------------------------------------------------------
+  
+  // Show loading spinner while checking admin status or fetching course data
+  if (isAdmin === null || isFetchingCourse) {
     return (
       <StyledMainContent isExpanded={isExpanded}>
         <LoadingSpinner />
@@ -426,6 +605,7 @@ export default function NewCoursePage() {
     );
   }
 
+  // Show access denied if user is not an admin
   if (isAdmin === false) {
     return (
       <StyledMainContent isExpanded={isExpanded}>
@@ -434,22 +614,38 @@ export default function NewCoursePage() {
     );
   }
 
+  // ------------------------------------------------------------------------------
+  // MAIN RENDER - Course creation/editing form
+  // ------------------------------------------------------------------------------
+  
   return (
     <StyledMainContent isExpanded={isExpanded}>
       <StyledContainer>
+        {/* PAGE HEADER - Changes based on create vs edit mode */}
         <StyledHeader>
-          <StyledTitle>Add New Course Package</StyledTitle>
+          <StyledTitle>
+            {courseId ? 'Edit Course Package' : 'Add New Course Package'}
+          </StyledTitle>
           <StyledSubtitle>
-            Create a new course package with modules for the coaching page
+            {courseId 
+              ? 'Modify course details and manage modules'
+              : 'Create a new course package with modules for the coaching page'
+            }
           </StyledSubtitle>
         </StyledHeader>
 
+        {/* SUCCESS/ERROR MESSAGE DISPLAY */}
         {message && <Alert type={message.type}>{message.text}</Alert>}
 
         <form onSubmit={handleSubmit}>
+          {/* ========================================
+              SECTION 1: COURSE INFORMATION
+              Basic course details (name, description, price, type)
+              ======================================== */}
           <FormSection>
             <SectionTitle>Course Information</SectionTitle>
 
+            {/* Course Name Input (Required) */}
             <FormGroup>
               <Label htmlFor="courseName">Course Name *</Label>
               <Input
@@ -463,6 +659,7 @@ export default function NewCoursePage() {
               />
             </FormGroup>
 
+            {/* Course Description Textarea (Optional) */}
             <FormGroup>
               <Label htmlFor="courseDescription">Course Description</Label>
               <TextArea
@@ -474,6 +671,7 @@ export default function NewCoursePage() {
               />
             </FormGroup>
 
+            {/* Course Price Input (Required, must be positive number) */}
             <FormGroup>
               <Label htmlFor="coursePrice">Price (USD) *</Label>
               <Input
@@ -489,6 +687,7 @@ export default function NewCoursePage() {
               />
             </FormGroup>
 
+            {/* Standalone Checkbox - determines if course can be purchased alone */}
             <FormGroup>
               <CheckboxLabel>
                 <Checkbox
@@ -502,7 +701,12 @@ export default function NewCoursePage() {
             </FormGroup>
           </FormSection>
 
+          {/* ========================================
+              SECTION 2: COURSE MODULES
+              Add, remove, and edit course modules
+              ======================================== */}
           <FormSection>
+            {/* Module Section Header with Add Button */}
             <div
               style={{
                 display: "flex",
@@ -514,6 +718,7 @@ export default function NewCoursePage() {
               <SectionTitle style={{ marginBottom: 0 }}>
                 Course Modules ({modules.length})
               </SectionTitle>
+              {/* Button to add new module */}
               <Button
                 type="button"
                 variant="secondary"
@@ -524,15 +729,19 @@ export default function NewCoursePage() {
               </Button>
             </div>
 
+            {/* Empty State - Show when no modules exist */}
             {modules.length === 0 ? (
               <p style={{ color: "#6c757d", fontSize: "14px" }}>
                 No modules added yet. Click "Add Module" to get started.
               </p>
             ) : (
+              /* Module List - Map through all modules and render cards */
               modules.map((module, index) => (
                 <ModuleCard key={index}>
+                  {/* Module Header - Title and Remove Button */}
                   <ModuleHeader>
                     <ModuleTitle>Module {module.moduleNumber}</ModuleTitle>
+                    {/* Remove button for this module */}
                     <SmallButton
                       type="button"
                       variant="danger"
@@ -543,6 +752,7 @@ export default function NewCoursePage() {
                     </SmallButton>
                   </ModuleHeader>
 
+                  {/* Module Title Input (Required) */}
                   <FormGroup>
                     <Label htmlFor={`module-title-${index}`}>
                       Module Title *
@@ -560,6 +770,7 @@ export default function NewCoursePage() {
                     />
                   </FormGroup>
 
+                  {/* Module Description Textarea (Optional) */}
                   <FormGroup style={{ marginBottom: 0 }}>
                     <Label htmlFor={`module-description-${index}`}>
                       Module Description
@@ -580,7 +791,12 @@ export default function NewCoursePage() {
             )}
           </FormSection>
 
+          {/* ========================================
+              FORM ACTION BUTTONS
+              Cancel and Submit buttons
+              ======================================== */}
           <ButtonGroup>
+            {/* Cancel Button - Returns to settings page */}
             <Button
               type="button"
               variant="secondary"
@@ -589,8 +805,13 @@ export default function NewCoursePage() {
             >
               Cancel
             </Button>
+            
+            {/* Submit Button - Text changes based on mode (create/update) */}
             <Button type="submit" variant="primary" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Course"}
+              {isLoading 
+                ? (courseId ? "Updating..." : "Creating...") // Loading state
+                : (courseId ? "Update Course" : "Create Course") // Default state
+              }
             </Button>
           </ButtonGroup>
         </form>
@@ -598,3 +819,7 @@ export default function NewCoursePage() {
     </StyledMainContent>
   );
 }
+
+// ==============================================================================
+// END OF FILE
+// ==============================================================================
