@@ -117,14 +117,20 @@ export default function CreateSeminarPage() {
 
       if (res.ok) {
         alert("✅ Seminar created successfully!");
-        router.push("/coaching/seminars");
+        if (window.history.state && window.history.state.idx > 0) {
+          window.history.back();
+        } else {
+          router.push("/coaching?tab=Seminars");
+        }
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to create seminar. Please try again.");
       }
     } catch (err) {
       console.error("Create seminar error:", err);
-      setError("Error creating seminar. Please check your input and try again.");
+      setError(
+        "Error creating seminar. Please check your input and try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -210,7 +216,11 @@ export default function CreateSeminarPage() {
           <Typography variant="subtitle1" fontWeight={500}>
             Seminar Introduction Media (Image or Video)
           </Typography>
-          <input type="file" accept="image/*,video/*" onChange={handleMediaUpload} />
+          <input
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleMediaUpload}
+          />
           {form.mediaUrl && (
             <Box mt={2}>
               {form.mediaUrl.endsWith(".mp4") ||

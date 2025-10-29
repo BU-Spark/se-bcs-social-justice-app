@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import { Button } from "@mui/material";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GroupsIcon from "@mui/icons-material/Groups";
@@ -11,10 +10,10 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
+import RecordVoiceOverOutlinedIcon from "@mui/icons-material/RecordVoiceOverOutlined";
 import { useUser } from "@clerk/nextjs";
 import SeminarReserve from "@/app/components/SeminarReserve";
-
-// ======================== STYLED COMPONENTS ========================
+import { useRouter } from "next/navigation";
 
 const DetailContainer = styled.div`
   max-width: 1200px;
@@ -102,7 +101,7 @@ const InfoItem = styled.div`
 `;
 
 const ReservationButton = styled(Button)`
-  background-color: #6366f1;
+  background-color: #1e3a8a;
   color: white;
   padding: 16px 48px;
   font-size: 16px;
@@ -141,8 +140,6 @@ const AttendeeInfo = styled.div`
   color: #1e293b;
 `;
 
-// ======================== INTERFACES ========================
-
 export interface Seminar {
   id: string;
   title: string;
@@ -168,16 +165,15 @@ interface SeminarDetailProps {
   onReservationSuccess?: () => void;
 }
 
-// ======================== COMPONENT ========================
-
 export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
   const [openReservation, setOpenReservation] = useState(false);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
+  const router = useRouter();
 
-  // ✅ Check if current user is admin
+  // Check if current user is admin
   useEffect(() => {
     async function fetchAdminStatus() {
       try {
@@ -189,8 +185,6 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
     }
     fetchAdminStatus();
   }, []);
-
-  // ✅ Fetch seminar with attendees from your /api/seminar/[id]
   useEffect(() => {
     async function fetchSeminarData() {
       try {
@@ -205,8 +199,6 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
     }
     fetchSeminarData();
   }, [seminar.id]);
-
-  // ======================== ATTENDEE / ADMIN ACTIONS ========================
 
   const handleReservation = () => {
     if (!isLoaded) return;
@@ -225,12 +217,17 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
       const res = await fetch(`/api/seminar/${seminar.id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        alert("Seminar deleted successfully.");
-        onBack();
-      } else {
-        alert("Failed to delete seminar.");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "❌ Failed to delete seminar.");
+        return;
       }
+      alert("✅ Seminar deleted successfully!");
+
+      onBack();
+      setTimeout(() => {
+        window.location.href = "/coaching?tab=Seminars";
+      }, 300);
     } catch (err) {
       console.error(err);
     }
@@ -256,8 +253,6 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
     link.download = `${seminar.title}_attendees.csv`;
     link.click();
   };
-
-  // ======================== MEDIA RENDER ========================
 
   const renderMedia = (url?: string) => {
     if (!url) return null;
@@ -290,8 +285,6 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
       />
     );
   };
-
-  // ======================== UI ========================
 
   return (
     <DetailContainer>
@@ -357,7 +350,7 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
               <span>Duration: {seminar.duration || "TBA"} mins</span>
             </InfoItem>
             <InfoItem>
-              <GroupsIcon />
+              <RecordVoiceOverOutlinedIcon />
               <span>Host: {seminar.hostName}</span>
             </InfoItem>
             <InfoItem>

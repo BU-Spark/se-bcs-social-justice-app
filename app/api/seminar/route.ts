@@ -28,7 +28,7 @@ export async function GET() {
     console.error("Error fetching seminars:", err);
     return NextResponse.json(
       { error: "Failed to fetch seminars" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -81,8 +81,8 @@ export async function POST(req: Request) {
         duration: Number(data.duration),
         zoomLink: data.zoomLink,
         accessType: data.accessType ?? "public",
-        image: data.image || null, // cover image
-        mediaUrl: data.mediaUrl || null, // intro media
+        image: data.image || null,
+        mediaUrl: data.mediaUrl || null,
       },
     });
 

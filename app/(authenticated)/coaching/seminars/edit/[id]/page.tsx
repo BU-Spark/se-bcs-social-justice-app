@@ -56,7 +56,7 @@ export default function EditSeminarPage() {
         if (!res.ok) throw new Error("Failed to fetch seminar");
         const data = await res.json();
 
-        // convert date to ISO string for <input type="datetime-local">
+        // convert date to ISO string
         const dateStr = data.date
           ? new Date(data.date).toISOString().slice(0, 16)
           : "";
@@ -105,7 +105,7 @@ export default function EditSeminarPage() {
 
       if (res.ok) {
         alert("Seminar updated successfully!");
-        router.push("/coaching"); // or back to seminars tab
+        router.push("/coaching");
       } else {
         const err = await res.json();
         alert(err.error || "Failed to update seminar.");

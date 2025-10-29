@@ -13,7 +13,7 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import ShareIcon from "@mui/icons-material/Share";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import LockIcon from "@mui/icons-material/Lock";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@mui/material";
 import SeminarDetail, { Seminar } from "./seminars/seminarPage";
 
@@ -95,12 +95,6 @@ const CardImageContainer = styled.div`
     pointer-events: none;
   }
 `;
-// const CardImageContainer = styled.div`
-//   position: relative;
-//   width: 100%;
-//   height: 200px;
-//   background-color: #f5f5f5;
-// `;
 
 const CardContent = styled.div`
   padding: 20px;
@@ -249,6 +243,7 @@ const placeholderPurchases = [
 export default function CoachingPage() {
   const { isExpanded } = useSidebar();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("Course");
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>(
     {},
@@ -259,6 +254,12 @@ export default function CoachingPage() {
   const [loading, setLoading] = useState(true);
   const [loadingSeminars, setLoadingSeminars] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  // keep activeTab synced
+  useEffect(() => {
+    const tabParam = searchParams.get("tab") || "Course";
+    setActiveTab(tabParam);
+  }, [searchParams]);
 
   //check admin status
   useEffect(() => {
@@ -449,7 +450,12 @@ export default function CoachingPage() {
       return (
         <SeminarDetail
           seminar={selectedSeminar}
-          onBack={() => setSelectedSeminar(null)}
+          onBack={() => {
+            setSelectedSeminar(null);
+            if (window.history.state && window.history.state.seminarId) {
+              window.history.back();
+            }
+          }}
         />
       );
     }
@@ -484,7 +490,7 @@ export default function CoachingPage() {
               variant="contained"
               onClick={() => router.push("/coaching/seminars/create")}
               sx={{
-                backgroundColor: "#6366f1",
+                backgroundColor: "#1F3A8A",
                 borderRadius: 2,
                 textTransform: "none",
                 fontWeight: 600,
@@ -651,6 +657,7 @@ export default function CoachingPage() {
             onClick={() => {
               setActiveTab("Seminars");
               setSelectedSeminar(null);
+              router.push("?tab=Seminars");
             }}
           >
             Seminars

@@ -2,20 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import nodemailer from "nodemailer";
+import ics from "ics";
 
 const prisma = new PrismaClient();
 
-/**
- * Utility: Send a confirmation email
- */
+function generateICS(seminar: any) {
+  const event = {
+    title: seminar.title,
+    description: `Hosted by ${seminar.hostName}\n${seminar.zoomLink || ""}`,
+    start: [
+      new Date(seminar.date).getFullYear(),
+      new Date(seminar.date).getMonth() + 1,
+      new Date(seminar.date).getDate(),
+      new Date(seminar.date).getHours(),
+      new Date(seminar.date).getMinutes(),
+    ],
+    duration: { minutes: seminar.duration || 60 },
+    location: seminar.zoomLink ? "Online (Zoom)" : "TBD",
+    organizer: { name: "BCS Team", email: process.env.EMAIL_USER },
+  };
+
+  const { error, value } = ics.createEvent(event);
+  if (error) throw error;
+  return value;
+}
+
 async function sendEmail({
   to,
   subject,
   body,
+  icsContent,
 }: {
   to: string;
   subject: string;
   body: string;
+  icsContent?: string;
 }) {
   if (
     !process.env.SMTP_HOST ||
@@ -35,14 +56,27 @@ async function sendEmail({
     },
   });
 
-  const info = await transporter.sendMail({
+  const mailOptions: any = {
     from: `"BCS Team" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     text: body,
     html: body.replace(/\n/g, "<br>"),
-  });
+  };
 
+  // Attach ICS calendar invite if provided
+  if (icsContent) {
+    mailOptions.attachments = [
+      {
+        filename: "seminar.ics",
+        content: icsContent,
+        contentType: "text/calendar; charset=utf-8",
+        method: "REQUEST",
+      },
+    ];
+  }
+
+  const info = await transporter.sendMail(mailOptions);
   return info.messageId;
 }
 
@@ -51,7 +85,7 @@ async function sendEmail({
  */
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate Clerk user (optional — works even if logged out)
+    // Authenticate Clerk user (optional)
     const { userId: clerkUserId } = await auth();
     const userData = clerkUserId ? await currentUser() : null;
 
@@ -97,7 +131,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Compose email
+    // Email body
     const emailBody = `
       Hi ${user.name},
 
@@ -113,11 +147,15 @@ export async function POST(request: NextRequest) {
       — The BCS Team
       `;
 
-    // Send email confirmation
+    // Generate calendar event file (.ics)
+    const icsContent = generateICS(seminar);
+
+    // Send email with calendar invite
     await sendEmail({
       to: user.email,
       subject: `Seminar Confirmation: ${seminar.title}`,
       body: emailBody,
+      icsContent,
     });
 
     return NextResponse.json(
