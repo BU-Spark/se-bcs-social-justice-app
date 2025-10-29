@@ -364,6 +364,25 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
               {!isLoaded ? "Loading..." : "Reserve Your Spot"}
             </ReservationButton>
           )}
+          {isAdmin && seminar.zoomLink && (
+            <InfoSection>
+              <InfoTitle>Zoom Meeting</InfoTitle>
+              <InfoItem>
+                <AccessTimeIcon />
+                <span>
+                  <strong>Meeting Link:</strong>{" "}
+                  <a
+                    href={seminar.zoomLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#6366f1", fontWeight: 500 }}
+                  >
+                    {seminar.zoomLink}
+                  </a>
+                </span>
+              </InfoItem>
+            </InfoSection>
+          )}
 
           {isAdmin && attendees.length > 0 && (
             <AttendeeInfo>

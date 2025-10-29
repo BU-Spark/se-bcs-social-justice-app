@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
+import { createZoomMeeting } from "@/lib/zoomApi";
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,7 @@ export async function GET() {
         hostName: true,
         date: true,
         duration: true,
+        zoomLink: true,
         accessType: true,
         image: true,
         mediaUrl: true,
@@ -38,12 +40,10 @@ export async function POST(req: Request) {
   try {
     const { userId } = await auth();
 
-    // Must be logged in
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Check if the user is an admin in the DB
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
       select: { role: true },
@@ -57,29 +57,48 @@ export async function POST(req: Request) {
     const data = await req.json();
     console.log("Received seminar data:", data);
 
-    // Validate required fields
-    if (
-      !data.title ||
-      !data.hostName ||
-      !data.date ||
-      !data.duration ||
-      !data.zoomLink
-    ) {
+    if (!data.title || !data.hostName || !data.date || !data.duration) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Create new seminar record
+    // create zoom meeting
+    let zoomLink: string | null = null;
+    try {
+      const meetingDetails = {
+        topic: data.title,
+        type: 2, // Scheduled meeting
+        start_time: data.date,
+        duration: parseInt(data.duration, 10),
+        timezone: "America/New_York",
+        agenda: data.description || "",
+        settings: {
+          host_video: true,
+          participant_video: true,
+          join_before_host: false,
+          mute_upon_entry: true,
+          waiting_room: false,
+          auto_recording: "cloud",
+        },
+      };
+
+      const zoomMeeting = await createZoomMeeting(meetingDetails);
+      zoomLink = zoomMeeting?.join_url || null;
+    } catch (zoomErr) {
+      console.error("⚠️ Zoom meeting creation failed:", zoomErr);
+      zoomLink = "Zoom meeting unavailable";
+    }
+
     const seminar = await prisma.seminar.create({
       data: {
         title: data.title,
-        description: data.description,
+        description: data.description || "",
         hostName: data.hostName,
         date: new Date(data.date),
         duration: Number(data.duration),
-        zoomLink: data.zoomLink,
+        zoomLink,
         accessType: data.accessType ?? "public",
         image: data.image || null,
         mediaUrl: data.mediaUrl || null,
@@ -91,7 +110,8 @@ export async function POST(req: Request) {
     console.error("Error creating seminar:", err);
     return NextResponse.json(
       { error: "Failed to create seminar" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
+

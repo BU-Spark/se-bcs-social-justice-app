@@ -12,7 +12,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { Seminar } from "../(authenticated)/coaching/seminars/[id]/page";
+import { Seminar } from "../(authenticated)/coaching/seminars/seminarPage";
 
 interface SeminarReserveProps {
   open: boolean;

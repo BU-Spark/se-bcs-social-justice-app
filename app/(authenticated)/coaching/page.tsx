@@ -266,13 +266,41 @@ export default function CoachingPage() {
     const checkAdmin = async () => {
       try {
         const res = await fetch("/api/check-admin");
-        setIsAdmin(res.ok);
-      } catch {
+        let data = null;
+  
+        // Try to parse JSON safely, even if response is 403/401
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
+        }
+        if (res.ok && data?.isAdmin) {
+          // ✅ success: route returned { isAdmin: true }
+          setIsAdmin(true);
+        } else {
+          // ❌ any error / non-admin / 403 case
+          setIsAdmin(false);
+        }
+        console.log("Admin API response:", res.status, data);
+      } catch (error) {
+        console.error("Error checking admin:", error);
         setIsAdmin(false);
       }
     };
+
     checkAdmin();
   }, []);
+  // useEffect(() => {
+  //   const checkAdmin = async () => {
+  //     try {
+  //       const res = await fetch("/api/check-admin");
+  //       setIsAdmin(res.ok);
+  //     } catch {
+  //       setIsAdmin(false);
+  //     }
+  //   };
+  //   checkAdmin();
+  // }, []);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -303,7 +331,7 @@ export default function CoachingPage() {
     fetchCourses();
   }, []);
 
-  // --- Fetch seminars
+  // Fetch seminars
   useEffect(() => {
     async function fetchSeminars() {
       try {
@@ -445,6 +473,7 @@ export default function CoachingPage() {
     );
   };
 
+  // Seminars grid
   const renderSeminarsGrid = () => {
     if (selectedSeminar) {
       return (
@@ -468,17 +497,9 @@ export default function CoachingPage() {
       );
     }
 
-    if (seminars.length === 0) {
-      return (
-        <p style={{ textAlign: "center", color: "#64748b" }}>
-          No seminars available
-        </p>
-      );
-    }
-
     return (
       <>
-        {isAdmin && (
+        {activeTab === "Seminars" && isAdmin && (
           <div
             style={{
               display: "flex",
@@ -499,67 +520,75 @@ export default function CoachingPage() {
                 "&:hover": { backgroundColor: "#4f46e5" },
               }}
             >
-              Create Seminar
+              + Create Seminar
             </Button>
           </div>
         )}
 
-        <CoachingGrid>
-          {seminars.map((seminar) => (
-            <CoachingCard
-              key={seminar.id}
-              onClick={() => setSelectedSeminar(seminar)}
-              style={{ cursor: "pointer" }}
-            >
-              <CardImageContainer>
-                {!imageErrors[seminar.id] && seminar.image ? (
-                  <Image
-                    src={seminar.image}
-                    alt={seminar.title}
-                    fill
-                    style={{ objectFit: "cover" }}
-                    onError={() =>
-                      setImageErrors((prev) => ({
-                        ...prev,
-                        [seminar.id]: true,
-                      }))
-                    }
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center bg-gray-100"
-                    style={{ fontSize: 40, color: "#6366f1" }}
-                  >
-                    <GroupsIcon />
-                  </div>
-                )}
-                <ActionButtons>
-                  <IconButton onClick={(e) => e.stopPropagation()}>
-                    <FavoriteIcon />
-                  </IconButton>
-                  <IconButton onClick={(e) => e.stopPropagation()}>
-                    <ShareIcon />
-                  </IconButton>
-                </ActionButtons>
-              </CardImageContainer>
+        {/* if there are no seminars */}
+        {seminars.length === 0 ? (
+          <p style={{ textAlign: "center", color: "#64748b" }}>
+            No seminars available
+          </p>
+        ) : (
+          <CoachingGrid>
+            {seminars.map((seminar) => (
+              <CoachingCard
+                key={seminar.id}
+                onClick={() => setSelectedSeminar(seminar)}
+                style={{ cursor: "pointer" }}
+              >
+                <CardImageContainer>
+                  {!imageErrors[seminar.id] && seminar.image ? (
+                    <Image
+                      src={seminar.image}
+                      alt={seminar.title}
+                      fill
+                      style={{ objectFit: "cover" }}
+                      onError={() =>
+                        setImageErrors((prev) => ({
+                          ...prev,
+                          [seminar.id]: true,
+                        }))
+                      }
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center bg-gray-100"
+                      style={{ fontSize: 40, color: "#6366f1" }}
+                    >
+                      <GroupsIcon />
+                    </div>
+                  )}
 
-              <CardContent>
-                <CardLabel>Seminar</CardLabel>
-                <CardTitle>{seminar.title}</CardTitle>
-                <CardDetails>
-                  <DetailItem>
-                    <AccessTimeIcon />
-                    {seminar.duration ?? 60} mins
-                  </DetailItem>
-                  <DetailItem>
-                    <GroupsIcon />
-                    {seminar.hostName}
-                  </DetailItem>
-                </CardDetails>
-              </CardContent>
-            </CoachingCard>
-          ))}
-        </CoachingGrid>
+                  <ActionButtons>
+                    <IconButton onClick={(e) => e.stopPropagation()}>
+                      <FavoriteIcon />
+                    </IconButton>
+                    <IconButton onClick={(e) => e.stopPropagation()}>
+                      <ShareIcon />
+                    </IconButton>
+                  </ActionButtons>
+                </CardImageContainer>
+
+                <CardContent>
+                  <CardLabel>Seminar</CardLabel>
+                  <CardTitle>{seminar.title}</CardTitle>
+                  <CardDetails>
+                    <DetailItem>
+                      <AccessTimeIcon />
+                      {seminar.duration ?? 60} mins
+                    </DetailItem>
+                    <DetailItem>
+                      <GroupsIcon />
+                      {seminar.hostName}
+                    </DetailItem>
+                  </CardDetails>
+                </CardContent>
+              </CoachingCard>
+            ))}
+          </CoachingGrid>
+        )}
       </>
     );
   };

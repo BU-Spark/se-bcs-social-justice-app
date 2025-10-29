@@ -24,16 +24,14 @@ export default function CreateSeminarPage() {
     hostName: "",
     date: "",
     duration: "",
-    zoomLink: "",
     accessType: "public",
-    image: "", // Seminar cover URL
-    mediaUrl: "", // Intro image/video URL
+    image: "",
+    mediaUrl: "",
   });
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Generic change handler
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -42,7 +40,6 @@ export default function CreateSeminarPage() {
     setForm({ ...form, date: newValue ? newValue.toISOString() : "" });
   };
 
-  /** Upload Seminar Cover Image */
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -56,10 +53,11 @@ export default function CreateSeminarPage() {
         body: formData,
       });
       const data = await res.json();
+
       if (data.url) {
         setForm((prev) => ({ ...prev, image: data.url }));
       } else {
-        alert("Image upload failed");
+        alert("Image upload failed.");
       }
     } catch (err) {
       console.error("Image upload error:", err);
@@ -67,7 +65,6 @@ export default function CreateSeminarPage() {
     }
   };
 
-  /** Upload Seminar Intro Media (Image or Video) */
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -81,10 +78,11 @@ export default function CreateSeminarPage() {
         body: formData,
       });
       const data = await res.json();
+
       if (data.url) {
         setForm((prev) => ({ ...prev, mediaUrl: data.url }));
       } else {
-        alert("Media upload failed");
+        alert("Media upload failed.");
       }
     } catch (err) {
       console.error("Media upload error:", err);
@@ -92,14 +90,12 @@ export default function CreateSeminarPage() {
     }
   };
 
-  /** Submit new Seminar */
   const handleSubmit = async () => {
     if (
       !form.title.trim() ||
       !form.hostName.trim() ||
       !form.date ||
-      !form.duration ||
-      !form.zoomLink.trim()
+      !form.duration
     ) {
       setError("All required fields must be filled before submitting.");
       return;
@@ -116,12 +112,12 @@ export default function CreateSeminarPage() {
       });
 
       if (res.ok) {
-        alert("✅ Seminar created successfully!");
-        if (window.history.state && window.history.state.idx > 0) {
-          window.history.back();
-        } else {
-          router.push("/coaching?tab=Seminars");
-        }
+        const seminar = await res.json();
+        alert(
+          `✅ Seminar created successfully!\nZoom Link:\n${seminar.zoomLink ?? "Unavailable"}`
+        );
+
+        router.push("/coaching?tab=Seminars");
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to create seminar. Please try again.");
@@ -145,7 +141,7 @@ export default function CreateSeminarPage() {
 
         {error && <Alert severity="error">{error}</Alert>}
 
-        {/* Title / Description / Host */}
+        {/* Basic Info */}
         <TextField
           label="Title"
           name="title"
@@ -169,7 +165,7 @@ export default function CreateSeminarPage() {
           required
         />
 
-        {/* Date / Duration / Zoom */}
+        {/* Date & Duration */}
         <DateTimePicker
           label="Date & Time"
           value={form.date ? dayjs(form.date) : null}
@@ -182,13 +178,6 @@ export default function CreateSeminarPage() {
           name="duration"
           type="number"
           value={form.duration}
-          onChange={handleChange}
-          required
-        />
-        <TextField
-          label="Zoom Link"
-          name="zoomLink"
-          value={form.zoomLink}
           onChange={handleChange}
           required
         />
@@ -211,7 +200,7 @@ export default function CreateSeminarPage() {
           )}
         </Box>
 
-        {/* Optional Intro Media */}
+        {/* Optional Media */}
         <Box>
           <Typography variant="subtitle1" fontWeight={500}>
             Seminar Introduction Media (Image or Video)
@@ -223,8 +212,7 @@ export default function CreateSeminarPage() {
           />
           {form.mediaUrl && (
             <Box mt={2}>
-              {form.mediaUrl.endsWith(".mp4") ||
-              form.mediaUrl.includes("video") ? (
+              {/\.(mp4|mov|avi|webm)$/i.test(form.mediaUrl) ? (
                 <video src={form.mediaUrl} controls width="100%" />
               ) : (
                 <img src={form.mediaUrl} alt="Seminar Preview" width="100%" />
