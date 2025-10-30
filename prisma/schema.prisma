@@ -101,8 +101,6 @@ model Appointment {
   endTime             DateTime
   timeZone            String                @default("UTC") @db.VarChar(50)
   locationOrLink      String?               @db.VarChar(255)
-  zoomLink            String?               @db.VarChar(255)
-  topic               String?               @db.VarChar(255)
   status              AppointmentStatus     @default(scheduled)
   isRecurring         Boolean               @default(false)
   recurrencePattern   RecurrencePattern?
@@ -458,3 +456,38 @@ enum PaymentType {
   monthly
   annual
 }
+
+model SeminarAttendee {
+  id          String   @id @default(cuid())
+  seminarId   String
+  name        String?
+  email       String
+  createdAt   DateTime @default(now())
+
+  seminar     Seminar  @relation(fields: [seminarId], references: [id], onDelete: Cascade)
+  
+  @@unique([seminarId, email])
+}
+
+model Seminar {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  hostName    String
+  date        DateTime
+  duration    Int          // duration in minutes
+  zoomLink    String?
+  accessType  AccessType   @default(public)
+  mediaUrl    String?      // field for image or video
+  image       String?      //for seminarcover
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  attendees   SeminarAttendee[] 
+}
+
+enum AccessType {
+  public
+  private
+}
+
