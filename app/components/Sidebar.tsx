@@ -1,19 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSidebar } from "./SidebarContext";
 import { useEffect, useState } from "react";
 import {
-  FaTachometerAlt,
   FaCalendarAlt,
-  FaUsers,
+  FaChalkboardTeacher,
   FaCogs,
   FaComments,
-  FaChalkboardTeacher,
+  FaTachometerAlt,
+  FaUsers,
 } from "react-icons/fa";
+import { useSidebar } from "./SidebarContext";
 
 const menuItems = [
   { name: "Dashboard", href: "/dashboard", icon: <FaTachometerAlt /> },

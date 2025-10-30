@@ -3,7 +3,7 @@
 import { Community } from "@/types/community";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const Onboarding = () => {
   const { user } = useUser();
@@ -33,6 +33,7 @@ const Onboarding = () => {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const communitiesRef = useRef(null);
 
   const ethnicityOptions: string[] = [
     "American Indian",
@@ -377,6 +378,17 @@ const Onboarding = () => {
                             )
                           : [...formData.interests, interest];
                         handleChange("interests", updatedInterests);
+
+                        if (interest === "Community") {
+                          setTimeout(() => {
+                            communitiesRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                          }, 0);
+                        }
+
+
                       }}
                     >
                       {interest}
@@ -390,7 +402,7 @@ const Onboarding = () => {
               </div>
 
               {formData.interests.includes("Community") && (
-                <div className="mt-6 border-t pt-6">
+                <div ref={communitiesRef} className="mt-6 border-t pt-6">
                   <h3 className="text-lg font-bold mb-4">
                     Available Communities
                   </h3>
@@ -528,3 +540,4 @@ const Onboarding = () => {
 };
 
 export default Onboarding;
+
