@@ -20,7 +20,6 @@ export type CommunityWithMemberCount = Community & {
   };
 };
 
-
 export type CommunitiesData = {
   joinedCommunities: Community[];
   recommendedCommunities: Community[];
