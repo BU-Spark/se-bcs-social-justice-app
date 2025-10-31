@@ -112,10 +112,7 @@ export default function CreateSeminarPage() {
       });
 
       if (res.ok) {
-        const seminar = await res.json();
-        alert(
-          `✅ Seminar created successfully!\nZoom Link:\n${seminar.zoomLink ?? "Unavailable"}`
-        );
+        alert(`Seminar created successfully!`);
 
         router.push("/coaching?tab=Seminars");
       } else {

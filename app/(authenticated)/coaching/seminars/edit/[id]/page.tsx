@@ -36,6 +36,8 @@ export default function EditSeminarPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   const [seminar, setSeminar] = useState({
     title: "",
     description: "",
@@ -118,6 +120,43 @@ export default function EditSeminarPage() {
     }
   };
 
+
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "image" | "mediaUrl"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        alert("Upload failed");
+        setUploading(false);
+        return;
+      }
+
+      const data = await res.json();
+      const fileUrl = data.url;
+
+      setSeminar((prev) => ({ ...prev, [field]: fileUrl }));
+      alert(" File uploaded successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("File upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Container>
@@ -189,20 +228,77 @@ export default function EditSeminarPage() {
           <MenuItem value="public">Public</MenuItem>
           <MenuItem value="private">Private</MenuItem>
         </TextField>
-        <TextField
-          label="Cover Image URL"
-          name="image"
-          value={seminar.image}
-          onChange={handleChange}
-          fullWidth
-        />
-        <TextField
-          label="Intro Media (video/image URL)"
-          name="mediaUrl"
-          value={seminar.mediaUrl}
-          onChange={handleChange}
-          fullWidth
-        />
+        <div>
+          <label style={{ fontWeight: 600, color: "#1e293b" }}>
+            Cover Image
+          </label>
+          {seminar.image ? (
+            <div style={{ marginTop: 8 }}>
+              <img
+                src={seminar.image}
+                alt="Cover"
+                style={{
+                  width: "100%",
+                  maxWidth: 400,
+                  borderRadius: 8,
+                  border: "1px solid #ddd",
+                }}
+              />
+            </div>
+          ) : (
+            <p style={{ color: "#64748b" }}>No image uploaded yet.</p>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileUpload(e, "image")}
+            style={{ marginTop: 10 }}
+          />
+          {uploading && <p style={{ color: "#64748b" }}>Uploading...</p>}
+        </div>
+
+        <div>
+          <label style={{ fontWeight: 600, color: "#1e293b" }}>
+            Intro Media (Image/Video)
+          </label>
+          {seminar.mediaUrl ? (
+            <div style={{ marginTop: 8 }}>
+              {seminar.mediaUrl.endsWith(".mp4") ||
+              seminar.mediaUrl.includes("video") ? (
+                <video
+                  src={seminar.mediaUrl}
+                  controls
+                  style={{
+                    width: "100%",
+                    maxWidth: 400,
+                    borderRadius: 8,
+                    border: "1px solid #ddd",
+                  }}
+                />
+              ) : (
+                <img
+                  src={seminar.mediaUrl}
+                  alt="Intro Media"
+                  style={{
+                    width: "100%",
+                    maxWidth: 400,
+                    borderRadius: 8,
+                    border: "1px solid #ddd",
+                  }}
+                />
+              )}
+            </div>
+          ) : (
+            <p style={{ color: "#64748b" }}>No media uploaded yet.</p>
+          )}
+          <input
+            type="file"
+            accept="image/*,video/*"
+            onChange={(e) => handleFileUpload(e, "mediaUrl")}
+            style={{ marginTop: 10 }}
+          />
+          {uploading && <p style={{ color: "#64748b" }}>Uploading...</p>}
+        </div>
       </FormGrid>
 
       <ActionButtons>

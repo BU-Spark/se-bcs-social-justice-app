@@ -8,7 +8,19 @@ const prisma = new PrismaClient();
 // GET all seminars
 export async function GET() {
   try {
+    const { userId } = await auth();
+
+    let isAdmin = false;
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { clerkUserId: userId },
+        select: { role: true },
+      });
+      isAdmin = user?.role === "admin";
+    }
+
     const seminars = await prisma.seminar.findMany({
+      where: isAdmin ? {} : { accessType: "public" }, // member only can access public seminars
       orderBy: { date: "asc" },
       select: {
         id: true,
@@ -30,7 +42,7 @@ export async function GET() {
     console.error("Error fetching seminars:", err);
     return NextResponse.json(
       { error: "Failed to fetch seminars" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -60,7 +72,7 @@ export async function POST(req: Request) {
     if (!data.title || !data.hostName || !data.date || !data.duration) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -110,8 +122,7 @@ export async function POST(req: Request) {
     console.error("Error creating seminar:", err);
     return NextResponse.json(
       { error: "Failed to create seminar" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
-

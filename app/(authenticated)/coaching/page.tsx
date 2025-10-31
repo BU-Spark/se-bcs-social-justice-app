@@ -267,7 +267,7 @@ export default function CoachingPage() {
       try {
         const res = await fetch("/api/check-admin");
         let data = null;
-  
+
         // Try to parse JSON safely, even if response is 403/401
         try {
           data = await res.json();
@@ -275,10 +275,10 @@ export default function CoachingPage() {
           data = null;
         }
         if (res.ok && data?.isAdmin) {
-          // ✅ success: route returned { isAdmin: true }
+          //success: route returned { isAdmin: true }
           setIsAdmin(true);
         } else {
-          // ❌ any error / non-admin / 403 case
+          // any error / non-admin / 403 case
           setIsAdmin(false);
         }
         console.log("Admin API response:", res.status, data);

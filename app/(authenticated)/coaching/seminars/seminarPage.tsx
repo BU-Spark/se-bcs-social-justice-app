@@ -171,7 +171,6 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
-  const router = useRouter();
 
   // Check if current user is admin
   useEffect(() => {
