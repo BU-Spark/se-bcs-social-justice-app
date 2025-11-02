@@ -70,7 +70,13 @@ model CommunityMembers {
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  status      CommunityMemberStatus    @default(active)
   @@id([userId, communityId])
+}
+
+enum CommunityMemberStatus {
+  active
+  banned
 }
 
 model CommunityInterest {
@@ -142,7 +148,7 @@ model Posting {
   pdfUrl      String?
   score       Int       @default(0)
   comments    Comment[]
-  community   Community @relation(fields: [communityId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id])
   votes       Vote[]
 }
@@ -154,7 +160,7 @@ model Comment {
   updatedAt DateTime @updatedAt
   postId    String
   userId    String
-  post      Posting  @relation(fields: [postId], references: [id])
+  post      Posting  @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 }
 
@@ -164,7 +170,7 @@ model Vote {
   createdAt DateTime @default(now())
   postId    String
   userId    String
-  post      Posting  @relation(fields: [postId], references: [id])
+  post      Posting  @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([postId, userId])
@@ -174,11 +180,13 @@ model CommunityLeader {
   id          String    @id
   userId      String
   communityId String
-  Community   Community @relation(fields: [communityId], references: [id])
+  Community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   User        User      @relation(fields: [userId], references: [id])
 
   @@unique([userId, communityId])
 }
+
+
 
 enum AppointmentStatus {
   scheduled
@@ -291,21 +299,14 @@ model Course {
 
 
 model Module {
-
   id           String   @id @default(cuid())
-
   title        String
-
   moduleNumber Int?
-
   description  String?
-
   courseId     String
-
   course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   contents     ModuleContent[] // one module can have many content items
   createdAt    DateTime @default(now())
-
   updatedAt    DateTime @updatedAt
 
 }

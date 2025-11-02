@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import BlogPostsSection from "@/app/components/BlogPostsSection";
 import styled from "@emotion/styled";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import Sidebar from "../../../components/Sidebar";
-import BlogPostsSection from "@/app/components/BlogPostsSection";
 
 type Community = {
   id: string;
