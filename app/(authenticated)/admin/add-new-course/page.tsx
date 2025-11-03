@@ -523,7 +523,7 @@ export default function NewCoursePage() {
       // If courseId exists, we're updating; otherwise, creating
       const url = courseId 
         ? `/api/admin/courses/${courseId}` // Update existing course
-        : "/api/admin/new-course"; // Create new course
+        : "/api/admin/add-new-course"; // Create new course
       
       const method = courseId ? "PUT" : "POST"; // HTTP method based on mode
 
