@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "User not authenticated" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     if (!typeName) {
       return NextResponse.json(
         { error: "Type name is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -41,13 +41,13 @@ export async function POST(request: NextRequest) {
         appointmentType,
         message: "Appointment type created successfully",
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     console.error("Error creating appointment type:", error);
     return NextResponse.json(
       { error: "Failed to create appointment type" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -66,7 +66,7 @@ export async function GET() {
     console.error("Error fetching appointment types:", error);
     return NextResponse.json(
       { error: "Failed to fetch appointment types" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

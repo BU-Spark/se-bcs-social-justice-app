@@ -12,12 +12,12 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { Workshop } from "../(authenticated)/coaching/seminaros/page";
+import { Seminar } from "../(authenticated)/coaching/seminars/seminarPage";
 
 interface SeminarReserveProps {
   open: boolean;
   onClose: () => void;
-  workshop: Workshop;
+  seminar: Seminar;
   userEmail: string;
   onReservationSuccess?: () => void;
 }
@@ -31,7 +31,7 @@ interface ReservationFormData {
 export default function SeminarReserve({
   open,
   onClose,
-  workshop,
+  seminar,
   userEmail,
   onReservationSuccess,
 }: SeminarReserveProps) {
@@ -92,7 +92,7 @@ export default function SeminarReserve({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          seminarId: workshop.id,
+          seminarId: seminar.id,
           user: {
             name: formData.name,
             email: formData.email,
@@ -100,10 +100,10 @@ export default function SeminarReserve({
           },
         }),
       });
-  
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to create reservation");
-  
+
       setShowSuccess(true);
       onReservationSuccess?.();
       setTimeout(handleClose, 3000);
@@ -118,7 +118,6 @@ export default function SeminarReserve({
       setSubmitting(false);
     }
   };
-  
 
   return (
     <Dialog

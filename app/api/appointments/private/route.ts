@@ -48,7 +48,7 @@ export async function GET() {
     console.error("Error fetching private appointments:", error);
     return NextResponse.json(
       { error: "Failed to fetch private appointments" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
