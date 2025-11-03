@@ -161,6 +161,23 @@ const ActionButtons = styled.div`
   margin-top: 0; /* Changed from 32px to 0 */
 `;
 
+// Expanded module content card
+const ExpandedContent = styled.div`
+  margin-top: 12px;
+  padding: 24px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 14px;
+  font-style: italic;
+`;
+
 const IconMap: { [key: string]: React.ComponentType } = {
   Person: PersonIcon,
   Groups: GroupsIcon,
@@ -214,6 +231,7 @@ export default function CoachingDetailPage() {
   );
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
 
   const id = params?.id as string;
 
@@ -275,6 +293,18 @@ export default function CoachingDetailPage() {
     } finally {
       setEnrolling(false);
     }
+  };
+
+  const toggleModule = (moduleId: string) => {
+    setExpandedModules(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(moduleId)) {
+        newSet.delete(moduleId);
+      } else {
+        newSet.add(moduleId);
+      }
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -510,99 +540,128 @@ export default function CoachingDetailPage() {
                     .sort(
                       (a, b) => (a.moduleNumber || 0) - (b.moduleNumber || 0),
                     )
-                    .map((module, index) => (
-                      <div
-                        key={module.id}
-                        style={{
-                          padding: "16px",
-                          backgroundColor: isLocked ? "#f9fafb" : "#f8fafc",
-                          borderRadius: "8px",
-                          border: `1px solid ${isLocked ? "#e5e7eb" : "#e2e8f0"}`,
-                          transition: "all 0.2s ease",
-                          opacity: isLocked ? 0.6 : 1,
-                          cursor: isLocked ? "not-allowed" : "pointer",
-                          position: "relative",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isLocked) {
-                            e.currentTarget.style.backgroundColor = "#f1f5f9";
-                            e.currentTarget.style.borderColor = "#cbd5e1";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isLocked) {
-                            e.currentTarget.style.backgroundColor = "#f8fafc";
-                            e.currentTarget.style.borderColor = "#e2e8f0";
-                          }
-                        }}
-                        onClick={(e) => {
-                          if (isLocked) {
-                            e.preventDefault();
-                            alert(
-                              "This module is locked. Purchase the course to access it.",
-                            );
-                          }
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            marginBottom: module.description ? "8px" : "0",
-                          }}
-                        >
-                          <span
+                    .map((module, index) => {
+                      const isExpanded = expandedModules.has(module.id);
+                      return (
+                        <div key={module.id}>
+                          <div
                             style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "50%",
-                              backgroundColor: isLocked ? "#9ca3af" : "#1e3a8a",
-                              color: "white",
-                              fontSize: "14px",
-                              fontWeight: "600",
+                              padding: "16px",
+                              backgroundColor: isLocked 
+                                ? "#f9fafb" 
+                                : isExpanded 
+                                  ? "#f1f5f9" 
+                                  : "#f8fafc",
+                              borderRadius: "8px",
+                              border: `1px solid ${isLocked ? "#e5e7eb" : isExpanded ? "#cbd5e1" : "#e2e8f0"}`,
+                              transition: "all 0.2s ease",
+                              opacity: isLocked ? 0.6 : 1,
+                              cursor: isLocked ? "not-allowed" : "pointer",
+                              position: "relative",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isLocked) {
+                                e.currentTarget.style.backgroundColor = "#f1f5f9";
+                                e.currentTarget.style.borderColor = "#cbd5e1";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isLocked && !isExpanded) {
+                                e.currentTarget.style.backgroundColor = "#f8fafc";
+                                e.currentTarget.style.borderColor = "#e2e8f0";
+                              }
+                            }}
+                            onClick={(e) => {
+                              if (isLocked) {
+                                e.preventDefault();
+                                alert(
+                                  "This module is locked. Purchase the course to access it.",
+                                );
+                              } else {
+                                toggleModule(module.id);
+                              }
                             }}
                           >
-                            {module.moduleNumber || index + 1}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "16px",
-                              fontWeight: "600",
-                              color: isLocked ? "#6b7280" : "#1a1a1a",
-                              flex: 1,
-                            }}
-                          >
-                            {module.title}
-                          </span>
-                          {isLocked && (
-                            <span
+                            <div
                               style={{
-                                fontSize: "16px",
-                                color: "#9ca3af",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                                marginBottom: module.description ? "8px" : "0",
                               }}
                             >
-                              🔒
-                            </span>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "32px",
+                                  height: "32px",
+                                  borderRadius: "50%",
+                                  backgroundColor: isLocked ? "#9ca3af" : "#1e3a8a",
+                                  color: "white",
+                                  fontSize: "14px",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                {module.moduleNumber || index + 1}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "16px",
+                                  fontWeight: "600",
+                                  color: isLocked ? "#6b7280" : "#1a1a1a",
+                                  flex: 1,
+                                }}
+                              >
+                                {module.title}
+                              </span>
+                              {isLocked && (
+                                <span
+                                  style={{
+                                    fontSize: "16px",
+                                    color: "#9ca3af",
+                                  }}
+                                >
+                                  🔒
+                                </span>
+                              )}
+                              {!isLocked && (
+                                <span
+                                  style={{
+                                    fontSize: "18px",
+                                    color: "#64748b",
+                                    transition: "transform 0.2s ease",
+                                    transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                                  }}
+                                >
+                                  ▼
+                                </span>
+                              )}
+                            </div>
+                            {module.description && !isLocked && (
+                              <p
+                                style={{
+                                  fontSize: "14px",
+                                  color: "#64748b",
+                                  margin: "0 0 0 44px",
+                                  lineHeight: "1.6",
+                                }}
+                              >
+                                {module.description}
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Expanded content card */}
+                          {isExpanded && !isLocked && (
+                            <ExpandedContent>
+                              Module content will be displayed here
+                            </ExpandedContent>
                           )}
                         </div>
-                        {module.description && !isLocked && (
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "#64748b",
-                              margin: "0 0 0 44px",
-                              lineHeight: "1.6",
-                            }}
-                          >
-                            {module.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             )}
