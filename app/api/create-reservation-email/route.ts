@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import ics from "ics";
 
-/**
- * Helper: Generate Add-to-Calendar links
- */
+// calendarLlink
 function generateCalendarLinks(seminar: any) {
   const start = new Date(seminar.date);
   const end = new Date(start.getTime() + (seminar.duration || 60) * 60000);
@@ -25,9 +23,7 @@ function generateCalendarLinks(seminar: any) {
   };
 }
 
-/**
- * Helper: Generate .ics file content
- */
+// ical
 function generateICS(seminar: any) {
   const start = new Date(seminar.date);
   const event = {
@@ -50,9 +46,6 @@ function generateICS(seminar: any) {
   return value;
 }
 
-/**
- * GET → When user clicks “iCal”, return downloadable .ics file
- */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -90,9 +83,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * POST → Send confirmation email (with “iCal” download link only)
- */
 export async function POST(req: NextRequest) {
   try {
     const { to, seminar, user } = await req.json();
@@ -102,14 +92,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
 
-    console.log("📧 Sending email to:", to, "for seminar:", seminar.title);
-
-    // ✅ Detect base URL (safe for local + prod)
     const host = req.headers.get("host");
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const origin = `${protocol}://${host}`;
 
-    // ✅ Build working iCal download link
     const icsDownloadUrl = `${origin}/api/create-reservation-email?title=${encodeURIComponent(
       seminar.title
     )}&date=${encodeURIComponent(seminar.date)}&duration=${
@@ -121,8 +107,8 @@ export async function POST(req: NextRequest) {
     const links = generateCalendarLinks(seminar);
 
     const calendarLinks = `
-      <a href="${icsDownloadUrl}">📅 Download iCal (.ics)</a><br/>
-      <a href="${links.google}">Google Calendar</a> ·
+      <a href="${icsDownloadUrl}">iCal (.ics)</a><br/>
+      <a href="${links.google}">Google</a> ·
       <a href="${links.outlook}">Outlook</a> ·
       <a href="${links.yahoo}">Yahoo</a>
     `;
@@ -141,8 +127,8 @@ export async function POST(req: NextRequest) {
       <p><strong>Add to your calendar:</strong><br/>${calendarLinks}</p>
       <p>We look forward to seeing you there!<br/>— The BCS Team</p>
     `;
-
-    // ✅ Verify SMTP
+    
+    //Verify SMTP
     if (
       !process.env.SMTP_HOST ||
       !process.env.SMTP_PORT ||

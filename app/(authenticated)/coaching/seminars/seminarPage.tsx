@@ -218,10 +218,10 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || "❌ Failed to delete seminar.");
+        alert(err.error || "Failed to delete seminar.");
         return;
       }
-      alert("✅ Seminar deleted successfully!");
+      alert("Seminar deleted successfully!");
 
       onBack();
       setTimeout(() => {

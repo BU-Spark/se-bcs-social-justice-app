@@ -120,7 +120,6 @@ export default function EditSeminarPage() {
     }
   };
 
-
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "image" | "mediaUrl"
