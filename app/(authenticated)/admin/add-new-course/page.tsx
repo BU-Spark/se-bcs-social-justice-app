@@ -298,6 +298,115 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+// File dropbox container with drag-and-drop styling
+const FileDropbox = styled.div<{ isDragging?: boolean }>`
+  border: 2px dashed ${({ isDragging }) => (isDragging ? "#667eea" : "#dee2e6")};
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background: ${({ isDragging }) => (isDragging ? "#f0f3ff" : "#f8f9fa")};
+  transition: all 0.3s;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #667eea;
+    background: #f0f3ff;
+  }
+`;
+
+// Icon and text container for dropbox
+const DropboxContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+`;
+
+// Dropbox icon styling
+const DropboxIcon = styled.div`
+  font-size: 36px;
+  color: #667eea;
+`;
+
+// Dropbox text styling
+const DropboxText = styled.p`
+  font-size: 14px;
+  color: #495057;
+  margin: 0;
+`;
+
+// Dropbox subtext for file types
+const DropboxSubtext = styled.p`
+  font-size: 12px;
+  color: #6c757d;
+  margin: 4px 0 0 0;
+`;
+
+// Hidden file input
+const HiddenFileInput = styled.input`
+  display: none;
+`;
+
+// File list container showing uploaded files
+const FileList = styled.div`
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+// Individual file item display
+const FileItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 13px;
+`;
+
+// File info (name and size)
+const FileInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+`;
+
+// File name with truncation
+const FileName = styled.span`
+  color: #495057;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+// File size text
+const FileSize = styled.span`
+  color: #6c757d;
+  font-size: 12px;
+  flex-shrink: 0;
+`;
+
+// Remove file button
+const RemoveFileButton = styled.button`
+  padding: 4px 8px;
+  border: none;
+  background: #dc3545;
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #c82333;
+  }
+`;
+
 // ==============================================================================
 // TYPESCRIPT INTERFACES
 // ==============================================================================
@@ -309,6 +418,7 @@ interface Module {
   title: string; // Module title (required)
   moduleNumber: number; // Sequential number for ordering
   description: string; // Module description text
+  files?: File[]; // Optional - uploaded files (not stored, just for UI)
 }
 
 // ==============================================================================
@@ -346,6 +456,9 @@ export default function NewCoursePage() {
   const [coursePrice, setCoursePrice] = useState(""); // Course price (stored as string for input)
   const [isStandalone, setIsStandalone] = useState(true); // Whether course can be purchased individually
   const [modules, setModules] = useState<Module[]>([]); // Array of course modules
+  
+  // File drag state for dropbox
+  const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null); // Track which module is being dragged over
 
   // ------------------------------------------------------------------------------
   // EFFECT HOOKS
@@ -400,6 +513,7 @@ export default function NewCoursePage() {
           title: m.title,
           moduleNumber: m.moduleNumber,
           description: m.description || "",
+          files: [], // Initialize with empty files array (files not persisted)
         })));
       } catch (error) {
         console.error("Error fetching course:", error);
@@ -427,6 +541,7 @@ export default function NewCoursePage() {
         title: "", // Empty title for user to fill in
         moduleNumber: modules.length + 1, // Next sequential number
         description: "", // Empty description
+        files: [], // Empty files array
         // No id - will be created when saved to database
       },
     ]);
@@ -470,6 +585,108 @@ export default function NewCoursePage() {
     };
     
     setModules(updatedModules);
+  };
+
+  // ------------------------------------------------------------------------------
+  // FILE HANDLING FUNCTIONS
+  // ------------------------------------------------------------------------------
+  
+  /**
+   * Handle file selection from input or drag-and-drop
+   * Accepts video, image, text, and audio files
+   * @param index - Array index of module
+   * @param files - FileList from input or drag event
+   */
+  const handleFileSelect = (index: number, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    // Convert FileList to Array and filter by accepted types
+    const acceptedFiles = Array.from(files).filter(file => {
+      const type = file.type;
+      return (
+        type.startsWith('video/') ||
+        type.startsWith('image/') ||
+        type.startsWith('audio/') ||
+        type.startsWith('text/')
+      );
+    });
+    
+    if (acceptedFiles.length === 0) {
+      alert('Please select valid video, image, audio, or text files.');
+      return;
+    }
+    
+    // Update module with new files
+    const updatedModules = [...modules];
+    const existingFiles = updatedModules[index].files || [];
+    updatedModules[index] = {
+      ...updatedModules[index],
+      files: [...existingFiles, ...acceptedFiles],
+    };
+    setModules(updatedModules);
+  };
+  
+  /**
+   * Handle drag over event for dropbox
+   * @param e - Drag event
+   * @param index - Array index of module
+   */
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggedModuleIndex(index);
+  };
+  
+  /**
+   * Handle drag leave event for dropbox
+   * @param e - Drag event
+   */
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggedModuleIndex(null);
+  };
+  
+  /**
+   * Handle file drop event
+   * @param e - Drag event
+   * @param index - Array index of module
+   */
+  const handleFileDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggedModuleIndex(null);
+    
+    const files = e.dataTransfer.files;
+    handleFileSelect(index, files);
+  };
+  
+  /**
+   * Remove a file from module's file list
+   * @param moduleIndex - Array index of module
+   * @param fileIndex - Array index of file to remove
+   */
+  const removeFile = (moduleIndex: number, fileIndex: number) => {
+    const updatedModules = [...modules];
+    const files = updatedModules[moduleIndex].files || [];
+    updatedModules[moduleIndex] = {
+      ...updatedModules[moduleIndex],
+      files: files.filter((_, i) => i !== fileIndex),
+    };
+    setModules(updatedModules);
+  };
+  
+  /**
+   * Format file size for display
+   * @param bytes - File size in bytes
+   * @returns Formatted string (e.g., "1.5 MB")
+   */
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   // ------------------------------------------------------------------------------
@@ -771,7 +988,7 @@ export default function NewCoursePage() {
                   </FormGroup>
 
                   {/* Module Description Textarea (Optional) */}
-                  <FormGroup style={{ marginBottom: 0 }}>
+                  <FormGroup>
                     <Label htmlFor={`module-description-${index}`}>
                       Module Description
                     </Label>
@@ -785,6 +1002,63 @@ export default function NewCoursePage() {
                       disabled={isLoading}
                       style={{ minHeight: "80px" }}
                     />
+                  </FormGroup>
+
+                  {/* Module Content Files - Drag-and-drop file upload */}
+                  <FormGroup style={{ marginBottom: 0 }}>
+                    <Label>Module Content Files</Label>
+                    <HiddenFileInput
+                      id={`file-input-${index}`}
+                      type="file"
+                      multiple
+                      accept="video/*,image/*,audio/*,text/*"
+                      onChange={(e) => handleFileSelect(index, e.target.files)}
+                      disabled={isLoading}
+                    />
+                    <FileDropbox
+                      isDragging={draggedModuleIndex === index}
+                      onClick={() => !isLoading && document.getElementById(`file-input-${index}`)?.click()}
+                      onDragOver={(e) => !isLoading && handleDragOver(e, index)}
+                      onDragLeave={(e) => !isLoading && handleDragLeave(e)}
+                      onDrop={(e) => !isLoading && handleFileDrop(e, index)}
+                    >
+                      <DropboxContent>
+                        <DropboxIcon>📁</DropboxIcon>
+                        <DropboxText>
+                          Drag & drop files here or click to browse
+                        </DropboxText>
+                        <DropboxSubtext>
+                          Supports: Video, Image, Audio, and Text files
+                        </DropboxSubtext>
+                      </DropboxContent>
+                    </FileDropbox>
+
+                    {/* Display list of selected files */}
+                    {module.files && module.files.length > 0 && (
+                      <FileList>
+                        {module.files.map((file, fileIndex) => (
+                          <FileItem key={fileIndex}>
+                            <FileInfo>
+                              <FileName title={file.name}>
+                                {file.type.startsWith('video/') && '🎥 '}
+                                {file.type.startsWith('image/') && '🖼️ '}
+                                {file.type.startsWith('audio/') && '🎵 '}
+                                {file.type.startsWith('text/') && '📄 '}
+                                {file.name}
+                              </FileName>
+                              <FileSize>{formatFileSize(file.size)}</FileSize>
+                            </FileInfo>
+                            <RemoveFileButton
+                              type="button"
+                              onClick={() => removeFile(index, fileIndex)}
+                              disabled={isLoading}
+                            >
+                              Remove
+                            </RemoveFileButton>
+                          </FileItem>
+                        ))}
+                      </FileList>
+                    )}
                   </FormGroup>
                 </ModuleCard>
               ))
