@@ -1,10 +1,21 @@
-import { PrismaClient, AppointmentAccessType } from "@prisma/client";
-import { communities } from "../db/mock-data.ts";
-
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Start seeding...");
+
+  // // 1. Clean up existing data to avoid conflicts
+  // // Delete in an order that respects foreign key constraints
+  // console.log("Deleting old data...");
+  // await prisma.tierCourseAccess.deleteMany();
+  // await prisma.userMembership.deleteMany();
+  // await prisma.coursePrerequisite.deleteMany();
+  // await prisma.userCourse.deleteMany();
+  // await prisma.module.deleteMany();
+  // await prisma.course.deleteMany();
+  // await prisma.membershipTier.deleteMany();
+  
+  // console.log("Start seeding...");
 
   // 1. Clean up existing data to avoid conflicts
   // Delete in an order that respects foreign key constraints
@@ -18,7 +29,45 @@ async function main() {
   await prisma.membershipTier.deleteMany();
   await prisma.appointmentType.deleteMany();
   await prisma.interest.deleteMany();
+  
+  
+  // --- Post Dependencies ---
+  await prisma.vote.deleteMany();
+  await prisma.comment.deleteMany();
+  
+  // --- Appointment Dependencies ---
+  await prisma.appointmentAttendee.deleteMany();
 
+  // --- Community/Interest Dependencies ---
+  await prisma.userInterest.deleteMany();
+  await prisma.communityInterest.deleteMany();
+
+  // --- Course/Tier Dependencies ---
+  await prisma.tierCourseAccess.deleteMany();
+  await prisma.coursePrerequisite.deleteMany();
+  await prisma.userCourse.deleteMany();
+  await prisma.module.deleteMany();
+  
+  // --- User/Membership Dependencies ---
+  await prisma.userMembership.deleteMany();
+
+  // --- delete "child" tables ---
+  await prisma.posting.deleteMany();
+  await prisma.appointment.deleteMany();
+  await prisma.communityMembers.deleteMany();
+  await prisma.communityLeader.deleteMany();
+  await prisma.leaderApplication.deleteMany();
+  
+  // --- delete "parent" tables ---
+  await prisma.course.deleteMany();
+  await prisma.membershipTier.deleteMany();
+  await prisma.appointmentType.deleteMany();
+  await prisma.interest.deleteMany();
+  await prisma.community.deleteMany();
+  // --- delete users last ---
+  await prisma.user.deleteMany();
+  
+  console.log("Old data deleted successfully.");
   // 2. Create interests
   console.log("Creating interests...");
   const interests = [
@@ -112,6 +161,164 @@ async function main() {
   }
 
   console.log("Sample appointment types have been created");
+
+  console.log("Creating users...");
+  const user1 = await prisma.user.create({
+    data: {
+      id: "user1",
+      clerkUserId: "clerk_seed_user_1",
+      email: "host@example.com",
+      name: "Sample Host",
+      username: "samplehost",
+      role: "leader",
+      onboardingComplete: true,
+    },
+  });
+
+  const user3 = await prisma.user.create({
+    data: {
+      id: "user3",
+      clerkUserId: "clerk_seed_user_3",
+      email: "host3@example.com",
+      name: "Sample Host3",
+      username: "samplehost3",
+      role: "leader",
+      onboardingComplete: true,
+    },
+  });
+
+  const user2 = await prisma.user.create({
+    data: {
+      id: "user2",
+      clerkUserId: "clerk_seed_user_2",
+      email: "bob@example.com",
+      name: "Bob",
+      username: "bob",
+      role: "member",
+      onboardingComplete: true,
+    },
+  });
+
+  console.log("Sample users have been created");
+
+  // Create a community
+  console.log("Creating community...");
+  const community = await prisma.community.create({
+    data: {
+      id: "seed_comm_1",
+      name: "General Discussion",
+      type: "Social",
+      description: "A place to talk about anything and everything.",
+    },
+  });
+
+  console.log("Community has been created");
+
+  //add both seed users to community
+  console.log("Adding new users to community...")
+  await prisma.communityMembers.createMany({
+    data: [
+      {
+        userId: user3.id,
+        communityId: community.id,
+        status: CommunityMemberStatus.active,
+      },
+      {
+        userId: user2.id,
+        communityId: community.id,
+        status: CommunityMemberStatus.active,
+      },
+    ],
+  });
+
+  console.log("Successfully added members to the community.");
+
+  // Create a post in that community by Alice
+  console.log("Adding post to community...");
+  const post = await prisma.posting.create({
+    data: {
+      id: "seed_post_1",
+      title: "Hello world!",
+      content: "This is the first post in the general discussion community.",
+      communityId: "seed_comm_1",
+      userId: "user3",
+    },
+  });
+
+  console.log(`Created post: "${post.title}" by ${user3.name}`);
+
+  //create reply on post
+  console.log("Adding reply to post...");
+  const comment = await prisma.comment.create({
+    data: {
+      id: "seed_comment_1",
+      content: "Great to be here! Nice post, Alice.",
+      postId: post.id,
+      userId: "user2",
+    },
+  });
+
+  console.log("Adding reply to post");
+
+
+  // Query for the appointment types
+  const seminarType = await prisma.appointmentType.findFirst({
+    where: { title: "Seminars" },
+  });
+
+  const eventType = await prisma.appointmentType.findFirst({
+    where: { title: "Events" },
+  });
+
+  if (seminarType) {
+    await prisma.appointment.create({
+      data: {
+        id: "1", // This matches what your frontend is looking for
+        appointmentTypeId: seminarType.id,
+        hostId: "user1",
+        // topic: "Introduction to Social Justice",
+        startTime: new Date("2025-11-15T10:00:00"),
+        endTime: new Date("2025-11-15T12:00:00"),
+        timeZone: "America/New_York",
+        locationOrLink: "Online via Zoom",
+        // zoomLink: "https://zoom.us/j/mock-meeting-001",
+        status: "scheduled",
+        isRecurring: false,
+      },
+    });
+
+    await prisma.appointment.create({
+      data: {
+        id: "2",
+        appointmentTypeId: seminarType.id,
+        hostId: "user1",
+        // topic: "Environmental Justice Workshop",
+        startTime: new Date("2025-11-20T14:00:00"),
+        endTime: new Date("2025-11-20T16:00:00"),
+        timeZone: "America/New_York",
+        locationOrLink: "Community Center, Room 101",
+        // zoomLink: "https://zoom.us/j/mock-meeting-002",
+        status: "scheduled",
+        isRecurring: false,
+      },
+    });
+
+    await prisma.appointment.create({
+      data: {
+        id: "3",
+        appointmentTypeId: seminarType.id,
+        hostId: "user1",
+        // topic: "Racial Justice in Education",
+        startTime: new Date("2025-11-25T13:00:00"),
+        endTime: new Date("2025-11-25T15:00:00"),
+        timeZone: "America/New_York",
+        locationOrLink: "Online via Zoom",
+        // zoomLink: "https://zoom.us/j/mock-meeting-003",
+        status: "scheduled",
+        isRecurring: false,
+      },
+    });
+  }
 
   // 4. Create Membership Tiers
   console.log("Creating membership tiers...");
@@ -299,6 +506,9 @@ async function main() {
       { courseId: certCourse.id, requiredCourseId: course4.id },
     ],
   });
+
+
+
 
   console.log("Seeding finished.");
 }

@@ -11,7 +11,6 @@ const StyledContainer = styled.div`
   margin-top: 28px;
   padding: 0 16px;
 `;
-
 const StyledSectionHeader = styled.h1`
   color: charcoal;
   font-size: 39px;
@@ -19,14 +18,12 @@ const StyledSectionHeader = styled.h1`
   text-align: center;
   margin-bottom: 24px;
 `;
-
 const StyledTopBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
 `;
-
 const StyledButton = styled.button`
   padding: 12px 20px;
   background-color: blue;
@@ -40,7 +37,6 @@ const StyledButton = styled.button`
     background-color: red;
   }
 `;
-
 const StyledPostCard = styled.div`
   background-color: white;
   border: 1px solid black;
@@ -51,20 +47,17 @@ const StyledPostCard = styled.div`
   flex-direction: column;
   text-align: left;
 `;
-
 const StyledPostTitle = styled.h2`
   margin: 0 0 8px 0;
   font-size: 28px;
   font-weight: bold;
 `;
-
 const StyledPostContent = styled.p`
   font-size: 16px;
   color: black;
   line-height: 1.5;
   margin: 0;
 `;
-
 const StyledPostFooter = styled.div`
   margin-top: 12px;
   display: flex;
@@ -72,13 +65,11 @@ const StyledPostFooter = styled.div`
   font-size: 13px;
   color: silver;
 `;
-
 const StyledDateTime = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 8px;
 `;
-
 const StyledProfileImage = styled.img`
   width: 40px;
   height: 40px;
@@ -86,40 +77,34 @@ const StyledProfileImage = styled.img`
   object-fit: cover;
   margin-right: 8px;
 `;
-
 const StyledLikes = styled.span`
   font-size: 18px;
   color: orange;
   margin-right: 16px;
   font-weight: bold;
 `;
-
 const StyledLikeButton = styled(StyledButton)`
   background-color: green;
   &:hover {
     background-color: darkgreen;
   }
 `;
-
 const StyledDeleteButton = styled(StyledButton)`
   background-color: darkred;
   &:hover {
     background-color: red;
   }
 `;
-
 const StyledAttachments = styled.div`
   margin-top: 16px;
   border-top: 1px solid lightgray;
   padding-top: 12px;
 `;
-
 const StyledAttachmentHeader = styled.h4`
   font-size: 16px;
   margin-bottom: 8px;
   color: darkgray;
 `;
-
 const StyledPdfLink = styled.a`
   display: flex;
   align-items: center;
@@ -134,7 +119,6 @@ const StyledPdfLink = styled.a`
     background-color: gainsboro;
   }
 `;
-
 const StyledPdfIcon = styled.div`
   width: 30px;
   height: 36px;
@@ -146,7 +130,6 @@ const StyledPdfIcon = styled.div`
   border-radius: 4px;
   margin-right: 8px;
 `;
-
 const StyledImageContainer = styled.div`
   margin-top: 16px;
   max-width: 100%;
@@ -175,13 +158,38 @@ interface BlogPostsSectionProps {
 }
 
 const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser, isLoaded: clerkIsLoaded } = useUser();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthCheckLoaded, setIsAuthCheckLoaded] = useState(false);
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const res = await fetch("/api/check-admin");
+        if (res.ok) {
+          const data = await res.json();
+          setIsAdmin(data.isAdmin);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error("Failed to check admin status", error);
+        setIsAdmin(false);
+      } finally {
+        setIsAuthCheckLoaded(true);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -205,10 +213,17 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
     fetchPosts();
   }, [communityId, page]);
 
-  const handleDelete = async (postId: string) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
+  const handleDelete = async (postId: string, asAdmin: boolean) => {
+    const confirmMessage = asAdmin
+      ? "Are you sure you want to delete this post as an admin?"
+      : "Are you sure you want to delete your post?";
+
+    if (!confirm(confirmMessage)) return;
+
+    const url = asAdmin ? `/api/admin/posts/${postId}` : `/api/posts/${postId}`;
+
     try {
-      const res = await fetch(`/api/posts/${postId}`, {
+      const res = await fetch(url, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete post");
@@ -240,6 +255,15 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
     }
     return filename.length > 25 ? filename.substring(0, 22) + "..." : filename;
   };
+
+  const isAuthReady = clerkIsLoaded && isAuthCheckLoaded;
+  if (!isAuthReady) {
+    return (
+      <StyledContainer>
+        <p>Loading user data...</p>
+      </StyledContainer>
+    );
+  }
 
   return (
     <StyledContainer>
@@ -279,6 +303,8 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
             !currentVote || currentVote === "DOWNVOTE" ? "UPVOTE" : "DOWNVOTE";
           const buttonText =
             !currentVote || currentVote === "DOWNVOTE" ? "Like" : "Dislike";
+
+          const isAuthor = clerkUser && post.user?.clerkUserId === clerkUser.id;
 
           return (
             <StyledPostCard key={post.id}>
@@ -347,12 +373,20 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
                   >
                     {buttonText}
                   </StyledLikeButton>
-                  {clerkUser && post.user?.clerkUserId === clerkUser.id && (
+                  {isAuthor && (
                     <StyledDeleteButton
-                      onClick={() => handleDelete(post.id)}
+                      onClick={() => handleDelete(post.id, false)}
                       style={{ marginLeft: "auto" }}
                     >
                       Delete
+                    </StyledDeleteButton>
+                  )}
+                  {isAdmin && !isAuthor && (
+                    <StyledDeleteButton
+                      onClick={() => handleDelete(post.id, true)}
+                      style={{ marginLeft: "auto", backgroundColor: "#500724" }}
+                    >
+                      Delete (Admin)
                     </StyledDeleteButton>
                   )}
                 </div>
@@ -391,3 +425,4 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
 };
 
 export default BlogPostsSection;
+
