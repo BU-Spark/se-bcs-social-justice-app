@@ -62,7 +62,6 @@ const Onboarding = () => {
       email: user?.emailAddresses[0]?.emailAddress || "",
     }));
 
-    // Fetch interests from API
     async function fetchInterests() {
       try {
         setIsLoadingInterests(true);
@@ -80,7 +79,7 @@ const Onboarding = () => {
       }
     }
 
-    // Fetch Communities from API
+
     async function fetchCommunities() {
       try {
         const response = await fetch("/api/communities");
@@ -103,13 +102,6 @@ const Onboarding = () => {
     return /^\d{10}$/.test(phone);
   };
 
-  // const handleInterestClick = async(interest: string) => {
-  //   const updatedInterests = formData.interests.includes(interest)
-  //     ? formData.interests.filter((item) => item !== interest)
-  //     : [...formData.interests,interest];
-  //   handleChange("interests",updatedInterests);
-  // };
-
   const handleCommunityToggle = (communityId: string) => {
     setSelectedCommunities((prev) =>
       prev.includes(communityId)
@@ -119,7 +111,6 @@ const Onboarding = () => {
   };
 
   const handleNext = () => {
-    // Example validation for step 2
     if (step === 2) {
       const newErrors: { [key: string]: string } = {};
       if (!formData.username) newErrors.username = "Username is required";
@@ -194,16 +185,14 @@ const Onboarding = () => {
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-lg w-[600px] h-[500px] md:w-[700px] md:h-[550px] lg:w-[700px] lg:h-[550px] flex flex-col relative">
         <div className="absolute top-4 w-full px-6 flex justify-between items-center">
-          {/* Step Indicator - Only visible for steps 2, 3, and 4 */}
           {step > 1 && step < 5 ? (
             <span className="text-blue-600 font-bold text-md">
               Step {step - 1}/3
             </span>
           ) : (
-            <div></div> // Empty div to maintain layout consistency
+            <div></div>
           )}
 
-          {/* Close Button - Always stays on the right */}
           <button
             className="text-gray-500 hover:text-gray-800 text-2xl font-bold"
             onClick={handleClose}
@@ -212,7 +201,6 @@ const Onboarding = () => {
           </button>
         </div>
 
-        {/* Content area with fixed height to allow for scrolling if needed */}
         <div className="flex-1 p-12 overflow-y-auto">
           {step === 1 && (
             <div className="flex flex-col h-full">
@@ -387,8 +375,6 @@ const Onboarding = () => {
                             });
                           }, 0);
                         }
-
-
                       }}
                     >
                       {interest}
@@ -472,7 +458,6 @@ const Onboarding = () => {
           )}
         </div>
 
-        {/* Fixed button area at the bottom */}
         <div className="p-6 border-t">
           <div className="flex justify-between items-center">
             {step > 1 ? (
@@ -540,4 +525,3 @@ const Onboarding = () => {
 };
 
 export default Onboarding;
-
