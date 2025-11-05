@@ -151,6 +151,19 @@ model Posting {
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id])
   votes       Vote[]
+  status      PostingStatus @default(active)
+}
+
+model BannedWord {
+  id          String    @id @default(cuid())    
+  word        String    @unique
+  createdAt   DateTime  @default(now())
+}
+
+enum PostingStatus {
+  active
+  flagged
+  removed
 }
 
 model Comment {

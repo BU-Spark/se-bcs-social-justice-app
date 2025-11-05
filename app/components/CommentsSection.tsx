@@ -100,8 +100,8 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
   const { user: clerkUser, isLoaded: clerkIsLoaded } = useUser();
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentInput, setCommentInput] = useState("");
-  const [isAdmin,setIsAdmin] = useState(false);
-  const [isAuthCheckLoaded,setIsAuthCheckLoaded] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthCheckLoaded, setIsAuthCheckLoaded] = useState(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {

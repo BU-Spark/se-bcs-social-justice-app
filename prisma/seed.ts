@@ -1,4 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import {
+  AppointmentAccessType,
+  CommunityMemberStatus,
+  PrismaClient,
+} from "@prisma/client";
+import { communities } from "../db/mock-data.ts";
 const prisma = new PrismaClient();
 
 async function main() {
@@ -14,7 +19,7 @@ async function main() {
   // await prisma.module.deleteMany();
   // await prisma.course.deleteMany();
   // await prisma.membershipTier.deleteMany();
-  
+
   // console.log("Start seeding...");
 
   // 1. Clean up existing data to avoid conflicts
@@ -29,12 +34,11 @@ async function main() {
   await prisma.membershipTier.deleteMany();
   await prisma.appointmentType.deleteMany();
   await prisma.interest.deleteMany();
-  
-  
+
   // --- Post Dependencies ---
   await prisma.vote.deleteMany();
   await prisma.comment.deleteMany();
-  
+
   // --- Appointment Dependencies ---
   await prisma.appointmentAttendee.deleteMany();
 
@@ -47,7 +51,7 @@ async function main() {
   await prisma.coursePrerequisite.deleteMany();
   await prisma.userCourse.deleteMany();
   await prisma.module.deleteMany();
-  
+
   // --- User/Membership Dependencies ---
   await prisma.userMembership.deleteMany();
 
@@ -57,7 +61,7 @@ async function main() {
   await prisma.communityMembers.deleteMany();
   await prisma.communityLeader.deleteMany();
   await prisma.leaderApplication.deleteMany();
-  
+
   // --- delete "parent" tables ---
   await prisma.course.deleteMany();
   await prisma.membershipTier.deleteMany();
@@ -66,7 +70,7 @@ async function main() {
   await prisma.community.deleteMany();
   // --- delete users last ---
   await prisma.user.deleteMany();
-  
+
   console.log("Old data deleted successfully.");
   // 2. Create interests
   console.log("Creating interests...");
@@ -215,7 +219,7 @@ async function main() {
   console.log("Community has been created");
 
   //add both seed users to community
-  console.log("Adding new users to community...")
+  console.log("Adding new users to community...");
   await prisma.communityMembers.createMany({
     data: [
       {
@@ -259,7 +263,6 @@ async function main() {
   });
 
   console.log("Adding reply to post");
-
 
   // Query for the appointment types
   const seminarType = await prisma.appointmentType.findFirst({
@@ -506,9 +509,6 @@ async function main() {
       { courseId: certCourse.id, requiredCourseId: course4.id },
     ],
   });
-
-
-
 
   console.log("Seeding finished.");
 }

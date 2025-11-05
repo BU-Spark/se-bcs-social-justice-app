@@ -63,14 +63,14 @@ export function CommunitiesTable({
               <td className="px-6 py-4 text-right text-sm font-medium space-x-4">
                 <Link
                   href={`/admin/communities/${community.id}/members`}
-                  className="text-blue-600 hover:text-blue-900"
+                  className="text-white rounded bg-blue-600 p-2 hover:bg-blue-900"
                 >
                   Manage Members
                 </Link>
                 <button
                   onClick={() => handleDelete(community.id, community.name)}
                   disabled={loadingId === community.id}
-                  className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                  className="text-white rounded p-2 bg-red-600 hover:bg-red-900 disabled:opacity-50"
                 >
                   {loadingId === community.id ? "Deleting..." : "Delete"}
                 </button>

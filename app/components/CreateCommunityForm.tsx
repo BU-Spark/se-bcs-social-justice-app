@@ -147,7 +147,7 @@ export function CreateCommunityForm() {
       setDescription("");
       setCategory("");
       setImageUrl("");
-      router.refresh();
+      router.push("/communities");
     } catch (error: any) {
       console.error("Error creating community:", error);
       setError(error.message);
