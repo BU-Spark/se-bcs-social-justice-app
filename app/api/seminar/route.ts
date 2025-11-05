@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
 import { createZoomMeeting } from "@/lib/zoomApi";
+import { fromZonedTime } from "date-fns-tz";
 
 const prisma = new PrismaClient();
 
@@ -75,6 +76,13 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    //Check S3 URLs are properly formatted
+    if (data.image && !data.image.startsWith("https://")) {
+      console.warn("Invalid image URL format:", data.image);
+    }
+    if (data.mediaUrl && !data.mediaUrl.startsWith("https://")) {
+      console.warn("Invalid mediaUrl format:", data.mediaUrl);
+    }
 
     // create zoom meeting
     let zoomLink: string | null = null;
@@ -103,12 +111,14 @@ export async function POST(req: Request) {
       zoomLink = "Zoom meeting unavailable";
     }
 
+    const utcDate = fromZonedTime(data.date, "America/New_York");
+
     const seminar = await prisma.seminar.create({
       data: {
         title: data.title,
         description: data.description || "",
         hostName: data.hostName,
-        date: new Date(data.date),
+        date: utcDate,
         duration: Number(data.duration),
         zoomLink,
         accessType: data.accessType ?? "public",

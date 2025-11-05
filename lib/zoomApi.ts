@@ -157,7 +157,7 @@ export async function createZoomMeeting(meetingDetails: ZoomMeetingDetails) {
  */
 export function formatRecurrenceData(
   pattern: string,
-  recurrenceData: ZoomRecurrenceData
+  recurrenceData: ZoomRecurrenceData,
 ) {
   // Default to recurring with fixed time (type 3)
   const zoomRecurrence: {

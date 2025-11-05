@@ -107,7 +107,7 @@ export default function EditSeminarPage() {
 
       if (res.ok) {
         alert("Seminar updated successfully!");
-        router.push("/coaching");
+        router.push("/coaching?tab=Seminars");
       } else {
         const err = await res.json();
         alert(err.error || "Failed to update seminar.");

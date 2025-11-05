@@ -330,24 +330,6 @@ model ModuleContent {
   updatedAt   DateTime    @updatedAt
 }
 
-<<<<<<< HEAD
-=======
-model ModuleContent {
-  id          String      @id @default(cuid())
-  moduleId    String
-  module      Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title       String?     // Optional title for the content
-  description String?
-  contentType ContentType // Enum: TEXT, VIDEO, AUDIO
-  isExternal  Boolean     @default(false) // true = external link, false = internal content
-  // Only ONE of these should be populated based on isExternal
-  textContent String?     @db.Text // For internal text content (null if external)
-  externalLink String?    // For external URLs (null if internal)
-  order       Int?        // Order within the module
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-}
->>>>>>> seminars
 // Add this enum for content types
 enum ContentType {
   TEXT
@@ -356,10 +338,6 @@ enum ContentType {
   PDF
   LINK
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> seminars
 
 model UserCourse {
 

@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     const links = generateCalendarLinks(seminar);
 
     const calendarLinks = `
-      <a href="${icsDownloadUrl}">iCal (.ics)</a><br/>
+      <a href="${icsDownloadUrl}">iCal (.ics)</a>
       <a href="${links.google}">Google</a> ·
       <a href="${links.outlook}">Outlook</a> ·
       <a href="${links.yahoo}">Yahoo</a>
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
       <p><strong>Add to your calendar:</strong><br/>${calendarLinks}</p>
       <p>We look forward to seeing you there!<br/>— The BCS Team</p>
     `;
-    
+
     //Verify SMTP
     if (
       !process.env.SMTP_HOST ||
