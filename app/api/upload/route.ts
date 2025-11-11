@@ -35,12 +35,19 @@ export async function POST(req: Request) {
       Body: buffer,
       ContentType: file.type,
     };
+    // const uploadParams = {
+    //   Bucket: process.env.S3_BUCKET_NAME!,
+    //   Key: fileName,
+    //   Body: buffer,
+    //   ContentType: file.type,
+    // };
 
     const command = new PutObjectCommand(uploadParams);
     await s3.send(command);
 
     // Construct public URL manually
     const fileUrl = `https://${process.env.AWS_S3_BUCKET!}.s3.${process.env.AWS_REGION!}.amazonaws.com/${fileName}`;
+    //const fileUrl = `${process.env.S3_PUBLIC_URL}/${fileName}`;
 
     return NextResponse.json({ url: fileUrl });
   } catch (err) {

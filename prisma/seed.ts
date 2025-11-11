@@ -264,64 +264,9 @@ async function main() {
 
   console.log("Adding reply to post");
 
-  // Query for the appointment types
-  const seminarType = await prisma.appointmentType.findFirst({
-    where: { title: "Seminars" },
-  });
-
   const eventType = await prisma.appointmentType.findFirst({
     where: { title: "Events" },
   });
-
-  if (seminarType) {
-    await prisma.appointment.create({
-      data: {
-        id: "1", // This matches what your frontend is looking for
-        appointmentTypeId: seminarType.id,
-        hostId: "user1",
-        // topic: "Introduction to Social Justice",
-        startTime: new Date("2025-11-15T10:00:00"),
-        endTime: new Date("2025-11-15T12:00:00"),
-        timeZone: "America/New_York",
-        locationOrLink: "Online via Zoom",
-        // zoomLink: "https://zoom.us/j/mock-meeting-001",
-        status: "scheduled",
-        isRecurring: false,
-      },
-    });
-
-    await prisma.appointment.create({
-      data: {
-        id: "2",
-        appointmentTypeId: seminarType.id,
-        hostId: "user1",
-        // topic: "Environmental Justice Workshop",
-        startTime: new Date("2025-11-20T14:00:00"),
-        endTime: new Date("2025-11-20T16:00:00"),
-        timeZone: "America/New_York",
-        locationOrLink: "Community Center, Room 101",
-        // zoomLink: "https://zoom.us/j/mock-meeting-002",
-        status: "scheduled",
-        isRecurring: false,
-      },
-    });
-
-    await prisma.appointment.create({
-      data: {
-        id: "3",
-        appointmentTypeId: seminarType.id,
-        hostId: "user1",
-        // topic: "Racial Justice in Education",
-        startTime: new Date("2025-11-25T13:00:00"),
-        endTime: new Date("2025-11-25T15:00:00"),
-        timeZone: "America/New_York",
-        locationOrLink: "Online via Zoom",
-        // zoomLink: "https://zoom.us/j/mock-meeting-003",
-        status: "scheduled",
-        isRecurring: false,
-      },
-    });
-  }
 
   // 4. Create Membership Tiers
   console.log("Creating membership tiers...");

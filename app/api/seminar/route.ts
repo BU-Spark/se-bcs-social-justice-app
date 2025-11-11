@@ -21,7 +21,13 @@ export async function GET() {
     }
 
     const seminars = await prisma.seminar.findMany({
-      where: isAdmin ? {} : { accessType: "public" }, // member only can access public seminars
+      where: isAdmin
+        ? {} // admins see all seminars
+        : {
+            accessRules: {
+              some: { accessScope: "public" }, // only public seminars visible to normal users
+            },
+          },
       orderBy: { date: "asc" },
       select: {
         id: true,
@@ -31,13 +37,21 @@ export async function GET() {
         date: true,
         duration: true,
         zoomLink: true,
-        accessType: true,
         image: true,
         mediaUrl: true,
         createdAt: true,
+        accessRules: {
+          select: {
+            accessScope: true,
+            price: true,
+            communityId: true,
+            tierId: true,
+          },
+        },
       },
       take: 20,
     });
+
     return NextResponse.json(seminars);
   } catch (err) {
     console.error("Error fetching seminars:", err);
@@ -121,11 +135,32 @@ export async function POST(req: Request) {
         date: utcDate,
         duration: Number(data.duration),
         zoomLink,
-        accessType: data.accessType ?? "public",
         image: data.image || null,
         mediaUrl: data.mediaUrl || null,
       },
     });
+
+    // Create access rules; public by default
+    if (data.accessRules && Array.isArray(data.accessRules)) {
+      for (const rule of data.accessRules) {
+        await prisma.seminarAccessRule.create({
+          data: {
+            seminarId: seminar.id,
+            accessScope: rule.accessScope,
+            communityId: rule.communityId || null,
+            tierId: rule.tierId || null,
+            price: rule.price || null,
+          },
+        });
+      }
+    } else {
+      await prisma.seminarAccessRule.create({
+        data: {
+          seminarId: seminar.id,
+          accessScope: "public",
+        },
+      });
+    }
 
     return NextResponse.json(seminar, { status: 201 });
   } catch (err) {
