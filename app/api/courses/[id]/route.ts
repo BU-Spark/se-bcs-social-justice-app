@@ -18,6 +18,9 @@ export async function GET(
           orderBy: {
             moduleNumber: "asc",
           },
+          include: {
+            contents: true,
+          },
         },
       },
     });

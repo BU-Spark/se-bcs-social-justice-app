@@ -2,10 +2,17 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
+interface ModuleContentData {
+  type: 'VIDEO' | 'AUDIO' | 'PDF' | 'IMAGE' | 'TEXT' | 'LINK';
+  name: string;
+  externalLink: string;
+}
+
 interface ModuleData {
   title: string;
   moduleNumber: number;
   description: string | null;
+  contents?: ModuleContentData[];
 }
 
 interface CourseData {
@@ -49,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create course with modules
+    // Create course with modules and their contents
     const course = await prisma.course.create({
       data: {
         name: name.trim(),
@@ -61,6 +68,14 @@ export async function POST(request: Request) {
             title: module.title.trim(),
             moduleNumber: module.moduleNumber,
             description: module.description?.trim() || null,
+            contents: module.contents && module.contents.length > 0 ? {
+              create: module.contents.map((content) => ({
+                contentType: content.type,
+                title: content.name,
+                externalLink: content.externalLink,
+                isExternal: true,
+              })),
+            } : undefined,
           })),
         },
       },
@@ -68,6 +83,9 @@ export async function POST(request: Request) {
         modules: {
           orderBy: {
             moduleNumber: "asc",
+          },
+          include: {
+            contents: true,
           },
         },
       },

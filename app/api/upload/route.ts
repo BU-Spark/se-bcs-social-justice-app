@@ -9,10 +9,16 @@ const s3 = new S3Client({
   },
 });
 
+// Configure route for large file uploads
+export const runtime = "nodejs"; // Use Node.js runtime (required for large uploads)
+export const maxDuration = 60; // Maximum duration in seconds
+export const dynamic = "force-dynamic"; // Disable static optimization
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
+    const customFolder = formData.get("folder") as string | null;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -22,10 +28,17 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
     const ext = file.name.split(".").pop();
 
-    // Optional: organize by type (e.g. seminarImages or seminarVideo)
-    const folder = file.type.startsWith("video")
-      ? "seminarVideo"
-      : "seminarImages";
+    // Determine folder structure based on upload context
+    let folder: string;
+
+    if (customFolder) {
+      // Use custom folder if provided (e.g., courseVideos, courseImage, courseAudio, courseFile)
+      folder = customFolder;
+    } else {
+      // Default seminar behavior
+      folder = file.type.startsWith("video") ? "seminarVideo" : "seminarImages";
+    }
+
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
 
     // Upload to S3 (no ACL — bucket policy handles public access)

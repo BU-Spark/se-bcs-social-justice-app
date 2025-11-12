@@ -407,9 +407,64 @@ const RemoveFileButton = styled.button`
   }
 `;
 
+// Media upload grid container
+const MediaUploadGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+// Individual media upload box
+const MediaUploadBox = styled.div<{ isDragging?: boolean }>`
+  border: 2px dashed ${({ isDragging }) => (isDragging ? "#667eea" : "#dee2e6")};
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  background: ${({ isDragging }) => (isDragging ? "#f0f3ff" : "#ffffff")};
+  transition: all 0.3s;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #667eea;
+    background: #f0f3ff;
+  }
+`;
+
+// Media upload icon
+const MediaUploadIcon = styled.div`
+  font-size: 28px;
+  margin-bottom: 8px;
+`;
+
+// Media upload title
+const MediaUploadTitle = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 4px;
+`;
+
+// Media upload subtext
+const MediaUploadSubtext = styled.div`
+  font-size: 11px;
+  color: #6c757d;
+`;
+
 // ==============================================================================
 // TYPESCRIPT INTERFACES
 // ==============================================================================
+
+// Uploaded file with S3 URL
+interface UploadedFile {
+  name: string; // Original file name
+  url: string; // S3 URL
+  size: number; // File size in bytes
+}
 
 // Module interface - represents a single course module
 // id is optional because new modules don't have IDs yet
@@ -418,7 +473,10 @@ interface Module {
   title: string; // Module title (required)
   moduleNumber: number; // Sequential number for ordering
   description: string; // Module description text
-  files?: File[]; // Optional - uploaded files (not stored, just for UI)
+  imageFiles?: UploadedFile[]; // Uploaded image files with S3 URLs
+  videoFiles?: UploadedFile[]; // Uploaded video files with S3 URLs
+  audioFiles?: UploadedFile[]; // Uploaded audio files with S3 URLs
+  textFiles?: UploadedFile[]; // Uploaded text/document files with S3 URLs
 }
 
 // ==============================================================================
@@ -458,7 +516,10 @@ export default function NewCoursePage() {
   const [modules, setModules] = useState<Module[]>([]); // Array of course modules
   
   // File drag state for dropbox
-  const [draggedModuleIndex, setDraggedModuleIndex] = useState<number | null>(null); // Track which module is being dragged over
+  const [draggedModule, setDraggedModule] = useState<{ index: number; type: string } | null>(null); // Track which module and media type is being dragged over
+  
+  // Track upload progress for each file
+  const [uploadingFiles, setUploadingFiles] = useState<{ [key: string]: boolean }>({}); // Track which files are uploading
 
   // ------------------------------------------------------------------------------
   // EFFECT HOOKS
@@ -507,14 +568,53 @@ export default function NewCoursePage() {
         setCourseDescription(data.description || "");
         setCoursePrice(data.price?.toString() || "");
         setIsStandalone(data.isStandalone ?? true);
-        // Map modules to include all necessary fields
-        setModules(data.modules.map((m: any) => ({
-          id: m.id, // Keep existing module IDs for updates
-          title: m.title,
-          moduleNumber: m.moduleNumber,
-          description: m.description || "",
-          files: [], // Initialize with empty files array (files not persisted)
-        })));
+        
+        // Map modules to include all necessary fields and organize contents by type
+        setModules(data.modules.map((m: any) => {
+          // Organize contents by type
+          const imageFiles: UploadedFile[] = [];
+          const videoFiles: UploadedFile[] = [];
+          const audioFiles: UploadedFile[] = [];
+          const textFiles: UploadedFile[] = [];
+          
+          if (m.contents && Array.isArray(m.contents)) {
+            m.contents.forEach((content: any) => {
+              const uploadedFile: UploadedFile = {
+                name: content.title || 'Untitled',
+                url: content.externalLink,
+                size: 0, // Size not stored in DB, set to 0
+              };
+              
+              switch (content.contentType) {
+                case 'IMAGE':
+                  imageFiles.push(uploadedFile);
+                  break;
+                case 'VIDEO':
+                  videoFiles.push(uploadedFile);
+                  break;
+                case 'AUDIO':
+                  audioFiles.push(uploadedFile);
+                  break;
+                case 'PDF':
+                case 'TEXT':
+                case 'LINK':
+                  textFiles.push(uploadedFile);
+                  break;
+              }
+            });
+          }
+          
+          return {
+            id: m.id, // Keep existing module IDs for updates
+            title: m.title,
+            moduleNumber: m.moduleNumber,
+            description: m.description || "",
+            imageFiles,
+            videoFiles,
+            audioFiles,
+            textFiles,
+          };
+        }));
       } catch (error) {
         console.error("Error fetching course:", error);
         setMessage({ type: "error", text: "Failed to load course data" });
@@ -541,7 +641,10 @@ export default function NewCoursePage() {
         title: "", // Empty title for user to fill in
         moduleNumber: modules.length + 1, // Next sequential number
         description: "", // Empty description
-        files: [], // Empty files array
+        imageFiles: [], // Empty image files array
+        videoFiles: [], // Empty video files array
+        audioFiles: [], // Empty audio files array
+        textFiles: [], // Empty text files array
         // No id - will be created when saved to database
       },
     ]);
@@ -592,86 +695,168 @@ export default function NewCoursePage() {
   // ------------------------------------------------------------------------------
   
   /**
-   * Handle file selection from input or drag-and-drop
-   * Accepts video, image, text, and audio files
+   * Upload a file to S3
+   * @param file - File to upload
+   * @param folder - S3 folder name
+   * @returns S3 URL or null if failed
+   */
+  const uploadFileToS3 = async (file: File, folder: string): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", folder);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error(`Error uploading ${file.name}:`, error);
+      return null;
+    }
+  };
+
+  /**
+   * Handle file selection for a specific media type
+   * Uploads files immediately to S3 and stores URLs
    * @param index - Array index of module
    * @param files - FileList from input or drag event
+   * @param mediaType - Type of media (image, video, audio, text)
    */
-  const handleFileSelect = (index: number, files: FileList | null) => {
+  const handleMediaFileSelect = async (
+    index: number, 
+    files: FileList | null, 
+    mediaType: 'image' | 'video' | 'audio' | 'text'
+  ) => {
     if (!files || files.length === 0) return;
     
-    // Convert FileList to Array and filter by accepted types
+    // Convert FileList to Array and filter by media type
     const acceptedFiles = Array.from(files).filter(file => {
-      const type = file.type;
-      return (
-        type.startsWith('video/') ||
-        type.startsWith('image/') ||
-        type.startsWith('audio/') ||
-        type.startsWith('text/')
-      );
+      const matchesType = file.type.startsWith(`${mediaType}/`) || 
+        (mediaType === 'text' && (file.type === 'application/pdf' || file.name.endsWith('.pdf') || file.name.endsWith('.doc') || file.name.endsWith('.docx')));
+      return matchesType;
     });
     
     if (acceptedFiles.length === 0) {
-      alert('Please select valid video, image, audio, or text files.');
+      alert(`Please select valid ${mediaType} files.`);
       return;
     }
     
-    // Update module with new files
+    // Map media type to S3 folder name
+    const folderMap: { [key: string]: string } = {
+      'image': 'courseImage',
+      'video': 'courseVideos',
+      'audio': 'courseAudio',
+      'text': 'courseFile'
+    };
+    const s3Folder = folderMap[mediaType];
+    
+    // Upload each file to S3
+    const uploadPromises = acceptedFiles.map(async (file) => {
+      const uploadKey = `${index}-${mediaType}-${file.name}`;
+      setUploadingFiles(prev => ({ ...prev, [uploadKey]: true }));
+      
+      const url = await uploadFileToS3(file, s3Folder);
+      
+      setUploadingFiles(prev => {
+        const updated = { ...prev };
+        delete updated[uploadKey];
+        return updated;
+      });
+      
+      if (url) {
+        return {
+          name: file.name,
+          url,
+          size: file.size
+        };
+      }
+      return null;
+    });
+    
+    const uploadedFiles = (await Promise.all(uploadPromises)).filter((f): f is UploadedFile => f !== null);
+    
+    if (uploadedFiles.length === 0) {
+      alert('All uploads failed. Please try again.');
+      return;
+    }
+    
+    // Update module with uploaded files
     const updatedModules = [...modules];
-    const existingFiles = updatedModules[index].files || [];
+    const fileKey = `${mediaType}Files` as 'imageFiles' | 'videoFiles' | 'audioFiles' | 'textFiles';
+    const existingFiles = updatedModules[index][fileKey] || [];
     updatedModules[index] = {
       ...updatedModules[index],
-      files: [...existingFiles, ...acceptedFiles],
+      [fileKey]: [...existingFiles, ...uploadedFiles],
     };
     setModules(updatedModules);
+    
+    if (uploadedFiles.length < acceptedFiles.length) {
+      alert(`${uploadedFiles.length} of ${acceptedFiles.length} files uploaded successfully.`);
+    }
   };
   
   /**
-   * Handle drag over event for dropbox
+   * Handle drag over event for media upload box
    * @param e - Drag event
    * @param index - Array index of module
+   * @param mediaType - Type of media being dragged
    */
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleMediaDragOver = (e: React.DragEvent, index: number, mediaType: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setDraggedModuleIndex(index);
+    setDraggedModule({ index, type: mediaType });
   };
   
   /**
-   * Handle drag leave event for dropbox
+   * Handle drag leave event for media upload box
    * @param e - Drag event
    */
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleMediaDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDraggedModuleIndex(null);
+    setDraggedModule(null);
   };
   
   /**
-   * Handle file drop event
+   * Handle file drop event for specific media type
    * @param e - Drag event
    * @param index - Array index of module
+   * @param mediaType - Type of media being dropped
    */
-  const handleFileDrop = (e: React.DragEvent, index: number) => {
+  const handleMediaDrop = (e: React.DragEvent, index: number, mediaType: 'image' | 'video' | 'audio' | 'text') => {
     e.preventDefault();
     e.stopPropagation();
-    setDraggedModuleIndex(null);
+    setDraggedModule(null);
     
     const files = e.dataTransfer.files;
-    handleFileSelect(index, files);
+    handleMediaFileSelect(index, files, mediaType);
   };
   
   /**
-   * Remove a file from module's file list
+   * Remove a file from module's media file list
    * @param moduleIndex - Array index of module
    * @param fileIndex - Array index of file to remove
+   * @param mediaType - Type of media file to remove
    */
-  const removeFile = (moduleIndex: number, fileIndex: number) => {
+  const removeMediaFile = (
+    moduleIndex: number, 
+    fileIndex: number, 
+    mediaType: 'image' | 'video' | 'audio' | 'text'
+  ) => {
     const updatedModules = [...modules];
-    const files = updatedModules[moduleIndex].files || [];
+    const fileKey = `${mediaType}Files` as 'imageFiles' | 'videoFiles' | 'audioFiles' | 'textFiles';
+    const files = updatedModules[moduleIndex][fileKey] || [];
     updatedModules[moduleIndex] = {
       ...updatedModules[moduleIndex],
-      files: files.filter((_, i) => i !== fileIndex),
+      [fileKey]: files.filter((_, i) => i !== fileIndex),
     };
     setModules(updatedModules);
   };
@@ -758,12 +943,62 @@ export default function NewCoursePage() {
           description: courseDescription.trim() || null, // null if empty
           price,
           isStandalone,
-          modules: modules.map((module) => ({
-            id: module.id, // Include ID for updates (undefined for new modules)
-            title: module.title.trim(),
-            moduleNumber: module.moduleNumber,
-            description: module.description.trim() || null, // null if empty
-          })),
+          modules: modules.map((module) => {
+            // Collect all uploaded files as module content
+            const contents: any[] = [];
+            
+            // Add images
+            if (module.imageFiles && module.imageFiles.length > 0) {
+              module.imageFiles.forEach(file => {
+                contents.push({
+                  type: 'IMAGE',
+                  name: file.name,
+                  externalLink: file.url
+                });
+              });
+            }
+            
+            // Add videos
+            if (module.videoFiles && module.videoFiles.length > 0) {
+              module.videoFiles.forEach(file => {
+                contents.push({
+                  type: 'VIDEO',
+                  name: file.name,
+                  externalLink: file.url
+                });
+              });
+            }
+            
+            // Add audio
+            if (module.audioFiles && module.audioFiles.length > 0) {
+              module.audioFiles.forEach(file => {
+                contents.push({
+                  type: 'AUDIO',
+                  name: file.name,
+                  externalLink: file.url
+                });
+              });
+            }
+            
+            // Add text/documents
+            if (module.textFiles && module.textFiles.length > 0) {
+              module.textFiles.forEach(file => {
+                contents.push({
+                  type: 'PDF',
+                  name: file.name,
+                  externalLink: file.url
+                });
+              });
+            }
+            
+            return {
+              id: module.id, // Include ID for updates (undefined for new modules)
+              title: module.title.trim(),
+              moduleNumber: module.moduleNumber,
+              description: module.description.trim() || null, // null if empty
+              contents: contents.length > 0 ? contents : undefined
+            };
+          }),
         }),
       });
 
@@ -1004,61 +1239,186 @@ export default function NewCoursePage() {
                     />
                   </FormGroup>
 
-                  {/* Module Content Files - Drag-and-drop file upload */}
+                  {/* Module Content Files - 4 separate upload areas by media type */}
                   <FormGroup style={{ marginBottom: 0 }}>
                     <Label>Module Content Files</Label>
+                    
+                    {/* Hidden file inputs for each media type */}
                     <HiddenFileInput
-                      id={`file-input-${index}`}
+                      id={`image-input-${index}`}
                       type="file"
                       multiple
-                      accept="video/*,image/*,audio/*,text/*"
-                      onChange={(e) => handleFileSelect(index, e.target.files)}
+                      accept="image/*"
+                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'image')}
                       disabled={isLoading}
                     />
-                    <FileDropbox
-                      isDragging={draggedModuleIndex === index}
-                      onClick={() => !isLoading && document.getElementById(`file-input-${index}`)?.click()}
-                      onDragOver={(e) => !isLoading && handleDragOver(e, index)}
-                      onDragLeave={(e) => !isLoading && handleDragLeave(e)}
-                      onDrop={(e) => !isLoading && handleFileDrop(e, index)}
-                    >
-                      <DropboxContent>
-                        <DropboxIcon>📁</DropboxIcon>
-                        <DropboxText>
-                          Drag & drop files here or click to browse
-                        </DropboxText>
-                        <DropboxSubtext>
-                          Supports: Video, Image, Audio, and Text files
-                        </DropboxSubtext>
-                      </DropboxContent>
-                    </FileDropbox>
+                    <HiddenFileInput
+                      id={`video-input-${index}`}
+                      type="file"
+                      multiple
+                      accept="video/*"
+                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'video')}
+                      disabled={isLoading}
+                    />
+                    <HiddenFileInput
+                      id={`audio-input-${index}`}
+                      type="file"
+                      multiple
+                      accept="audio/*"
+                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'audio')}
+                      disabled={isLoading}
+                    />
+                    <HiddenFileInput
+                      id={`text-input-${index}`}
+                      type="file"
+                      multiple
+                      accept="text/*,.txt,.doc,.docx,.pdf"
+                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'text')}
+                      disabled={isLoading}
+                    />
+                    
+                    {/* Grid of 4 media upload boxes */}
+                    <MediaUploadGrid>
+                      {/* IMAGE UPLOAD */}
+                      <div>
+                        <MediaUploadBox
+                          isDragging={draggedModule?.index === index && draggedModule?.type === 'image'}
+                          onClick={() => !isLoading && document.getElementById(`image-input-${index}`)?.click()}
+                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'image')}
+                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
+                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'image')}
+                        >
+                          <MediaUploadIcon>🖼️</MediaUploadIcon>
+                          <MediaUploadTitle>Images</MediaUploadTitle>
+                          <MediaUploadSubtext>JPG, PNG, GIF, etc.</MediaUploadSubtext>
+                        </MediaUploadBox>
+                        {/* Display selected image files */}
+                        {module.imageFiles && module.imageFiles.length > 0 && (
+                          <FileList>
+                            {module.imageFiles.map((file, fileIndex) => (
+                              <FileItem key={fileIndex}>
+                                <FileInfo>
+                                  <FileName title={file.name}>{file.name}</FileName>
+                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                </FileInfo>
+                                <RemoveFileButton
+                                  type="button"
+                                  onClick={() => removeMediaFile(index, fileIndex, 'image')}
+                                  disabled={isLoading}
+                                >
+                                  ×
+                                </RemoveFileButton>
+                              </FileItem>
+                            ))}
+                          </FileList>
+                        )}
+                      </div>
 
-                    {/* Display list of selected files */}
-                    {module.files && module.files.length > 0 && (
-                      <FileList>
-                        {module.files.map((file, fileIndex) => (
-                          <FileItem key={fileIndex}>
-                            <FileInfo>
-                              <FileName title={file.name}>
-                                {file.type.startsWith('video/') && '🎥 '}
-                                {file.type.startsWith('image/') && '🖼️ '}
-                                {file.type.startsWith('audio/') && '🎵 '}
-                                {file.type.startsWith('text/') && '📄 '}
-                                {file.name}
-                              </FileName>
-                              <FileSize>{formatFileSize(file.size)}</FileSize>
-                            </FileInfo>
-                            <RemoveFileButton
-                              type="button"
-                              onClick={() => removeFile(index, fileIndex)}
-                              disabled={isLoading}
-                            >
-                              Remove
-                            </RemoveFileButton>
-                          </FileItem>
-                        ))}
-                      </FileList>
-                    )}
+                      {/* VIDEO UPLOAD */}
+                      <div>
+                        <MediaUploadBox
+                          isDragging={draggedModule?.index === index && draggedModule?.type === 'video'}
+                          onClick={() => !isLoading && document.getElementById(`video-input-${index}`)?.click()}
+                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'video')}
+                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
+                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'video')}
+                        >
+                          <MediaUploadIcon>🎥</MediaUploadIcon>
+                          <MediaUploadTitle>Videos</MediaUploadTitle>
+                          <MediaUploadSubtext>MP4, MOV, AVI, etc.</MediaUploadSubtext>
+                        </MediaUploadBox>
+                        {/* Display selected video files */}
+                        {module.videoFiles && module.videoFiles.length > 0 && (
+                          <FileList>
+                            {module.videoFiles.map((file, fileIndex) => (
+                              <FileItem key={fileIndex}>
+                                <FileInfo>
+                                  <FileName title={file.name}>{file.name}</FileName>
+                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                </FileInfo>
+                                <RemoveFileButton
+                                  type="button"
+                                  onClick={() => removeMediaFile(index, fileIndex, 'video')}
+                                  disabled={isLoading}
+                                >
+                                  ×
+                                </RemoveFileButton>
+                              </FileItem>
+                            ))}
+                          </FileList>
+                        )}
+                      </div>
+
+                      {/* AUDIO UPLOAD */}
+                      <div>
+                        <MediaUploadBox
+                          isDragging={draggedModule?.index === index && draggedModule?.type === 'audio'}
+                          onClick={() => !isLoading && document.getElementById(`audio-input-${index}`)?.click()}
+                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'audio')}
+                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
+                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'audio')}
+                        >
+                          <MediaUploadIcon>🎵</MediaUploadIcon>
+                          <MediaUploadTitle>Audio</MediaUploadTitle>
+                          <MediaUploadSubtext>MP3, WAV, AAC, etc.</MediaUploadSubtext>
+                        </MediaUploadBox>
+                        {/* Display selected audio files */}
+                        {module.audioFiles && module.audioFiles.length > 0 && (
+                          <FileList>
+                            {module.audioFiles.map((file, fileIndex) => (
+                              <FileItem key={fileIndex}>
+                                <FileInfo>
+                                  <FileName title={file.name}>{file.name}</FileName>
+                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                </FileInfo>
+                                <RemoveFileButton
+                                  type="button"
+                                  onClick={() => removeMediaFile(index, fileIndex, 'audio')}
+                                  disabled={isLoading}
+                                >
+                                  ×
+                                </RemoveFileButton>
+                              </FileItem>
+                            ))}
+                          </FileList>
+                        )}
+                      </div>
+
+                      {/* TEXT/DOCUMENT UPLOAD */}
+                      <div>
+                        <MediaUploadBox
+                          isDragging={draggedModule?.index === index && draggedModule?.type === 'text'}
+                          onClick={() => !isLoading && document.getElementById(`text-input-${index}`)?.click()}
+                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'text')}
+                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
+                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'text')}
+                        >
+                          <MediaUploadIcon>📄</MediaUploadIcon>
+                          <MediaUploadTitle>Documents</MediaUploadTitle>
+                          <MediaUploadSubtext>TXT, PDF, DOC, etc.</MediaUploadSubtext>
+                        </MediaUploadBox>
+                        {/* Display selected text files */}
+                        {module.textFiles && module.textFiles.length > 0 && (
+                          <FileList>
+                            {module.textFiles.map((file, fileIndex) => (
+                              <FileItem key={fileIndex}>
+                                <FileInfo>
+                                  <FileName title={file.name}>{file.name}</FileName>
+                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                </FileInfo>
+                                <RemoveFileButton
+                                  type="button"
+                                  onClick={() => removeMediaFile(index, fileIndex, 'text')}
+                                  disabled={isLoading}
+                                >
+                                  ×
+                                </RemoveFileButton>
+                              </FileItem>
+                            ))}
+                          </FileList>
+                        )}
+                      </div>
+                    </MediaUploadGrid>
                   </FormGroup>
                 </ModuleCard>
               ))

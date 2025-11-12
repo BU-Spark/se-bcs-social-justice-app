@@ -5,9 +5,11 @@ import prisma from "@/lib/prisma";
 // GET - Fetch single course (admin only)
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -22,10 +24,13 @@ export async function GET(
     }
 
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         modules: {
           orderBy: { moduleNumber: "asc" },
+          include: {
+            contents: true,
+          },
         },
       },
     });
@@ -47,9 +52,11 @@ export async function GET(
 // PUT - Update course and modules (admin only)
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -67,7 +74,7 @@ export async function PUT(
 
     // Update course
     await prisma.course.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name,
         description,
@@ -78,7 +85,7 @@ export async function PUT(
 
     // Get existing modules
     const existingModules = await prisma.module.findMany({
-      where: { courseId: params.id },
+      where: { courseId: id },
     });
 
     const existingModuleIds = existingModules.map((m) => m.id);
@@ -109,14 +116,40 @@ export async function PUT(
             description: module.description,
           },
         });
+        
+        // Delete existing contents for this module
+        await prisma.moduleContent.deleteMany({
+          where: { moduleId: module.id },
+        });
+        
+        // Create new contents if provided
+        if (module.contents && module.contents.length > 0) {
+          await prisma.moduleContent.createMany({
+            data: module.contents.map((content: any) => ({
+              moduleId: module.id,
+              contentType: content.type,
+              title: content.name,
+              externalLink: content.externalLink,
+              isExternal: true,
+            })),
+          });
+        }
       } else {
-        // Create new module
+        // Create new module with contents
         await prisma.module.create({
           data: {
             title: module.title,
             moduleNumber: module.moduleNumber,
             description: module.description,
-            courseId: params.id,
+            courseId: id,
+            contents: module.contents && module.contents.length > 0 ? {
+              create: module.contents.map((content: any) => ({
+                contentType: content.type,
+                title: content.name,
+                externalLink: content.externalLink,
+                isExternal: true,
+              })),
+            } : undefined,
           },
         });
       }
@@ -135,9 +168,11 @@ export async function PUT(
 // DELETE - Delete course (admin only)
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -152,7 +187,7 @@ export async function DELETE(
     }
 
     await prisma.course.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true }, { status: 200 });

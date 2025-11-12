@@ -169,13 +169,85 @@ const ExpandedContent = styled.div`
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  min-height: 200px;
+`;
+
+// Content grid for media items
+const ContentGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+`;
+
+// Individual content item
+const ContentItem = styled.div`
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+// Content header with title
+const ContentHeader = styled.div`
+  padding: 12px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+`;
+
+// Content title
+const ContentTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+`;
+
+// Content icon
+const ContentIcon = styled.span`
+  font-size: 18px;
+`;
+
+// Media container for videos/images
+const MediaContainer = styled.div`
+  width: 100%;
+  background: #000;
+  position: relative;
+  
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  audio {
+    width: 100%;
+  }
+`;
+
+// Empty state
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px 20px;
   color: #64748b;
-  font-size: 14px;
-  font-style: italic;
+`;
+
+const EmptyStateIcon = styled.div`
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
 `;
 
 const IconMap: { [key: string]: React.ComponentType } = {
@@ -198,6 +270,14 @@ const DynamicIcon = ({ iconName }: { iconName: string }) => {
 const courseImages = ["/Media.png", "/Media(1).png", "/Media(2).png"];
 const courseIcons = ["Person", "Groups", "Work", "Psychology", "Gavel"];
 
+interface ModuleContent {
+  id: string;
+  contentType: string;
+  title: string | null;
+  externalLink: string | null;
+  isExternal: boolean;
+}
+
 interface Module {
   id: string;
   title: string;
@@ -205,6 +285,7 @@ interface Module {
   description: string | null;
   courseId: string;
   createdAt: string;
+  contents?: ModuleContent[];
 }
 
 interface CourseType {
@@ -656,7 +737,79 @@ export default function CoachingDetailPage() {
                           {/* Expanded content card */}
                           {isExpanded && !isLocked && (
                             <ExpandedContent>
-                              Module content will be displayed here
+                              {module.contents && module.contents.length > 0 ? (
+                                <ContentGrid>
+                                  {module.contents.map((content) => (
+                                    <ContentItem key={content.id}>
+                                      <ContentHeader>
+                                        <ContentTitle>
+                                          <ContentIcon>
+                                            {content.contentType === 'IMAGE' && '🖼️'}
+                                            {content.contentType === 'VIDEO' && '🎥'}
+                                            {content.contentType === 'AUDIO' && '🎵'}
+                                            {content.contentType === 'PDF' && '📄'}
+                                            {content.contentType === 'LINK' && '🔗'}
+                                            {content.contentType === 'TEXT' && '📝'}
+                                          </ContentIcon>
+                                          {content.title || 'Untitled'}
+                                        </ContentTitle>
+                                      </ContentHeader>
+                                      <MediaContainer>
+                                        {content.contentType === 'IMAGE' && content.externalLink && (
+                                          <Image 
+                                            src={content.externalLink} 
+                                            alt={content.title || 'Module content'} 
+                                            width={800}
+                                            height={450}
+                                            style={{ width: '100%', height: 'auto' }}
+                                          />
+                                        )}
+                                        {content.contentType === 'VIDEO' && content.externalLink && (
+                                          <video controls>
+                                            <source src={content.externalLink} type="video/mp4" />
+                                            Your browser does not support the video tag.
+                                          </video>
+                                        )}
+                                        {content.contentType === 'AUDIO' && content.externalLink && (
+                                          <audio controls>
+                                            <source src={content.externalLink} type="audio/mpeg" />
+                                            Your browser does not support the audio tag.
+                                          </audio>
+                                        )}
+                                        {content.contentType === 'PDF' && content.externalLink && (
+                                          <iframe 
+                                            src={content.externalLink} 
+                                            style={{ width: '100%', height: '500px', border: 'none' }}
+                                            title={content.title || 'PDF Document'}
+                                          />
+                                        )}
+                                        {content.contentType === 'LINK' && content.externalLink && (
+                                          <div style={{ padding: '20px', textAlign: 'center' }}>
+                                            <a 
+                                              href={content.externalLink} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              style={{
+                                                color: '#1e3a8a',
+                                                textDecoration: 'none',
+                                                fontSize: '16px',
+                                                fontWeight: '500'
+                                              }}
+                                            >
+                                              Open Link →
+                                            </a>
+                                          </div>
+                                        )}
+                                      </MediaContainer>
+                                    </ContentItem>
+                                  ))}
+                                </ContentGrid>
+                              ) : (
+                                <EmptyState>
+                                  <EmptyStateIcon>📦</EmptyStateIcon>
+                                  <div>No content available for this module yet</div>
+                                </EmptyState>
+                              )}
                             </ExpandedContent>
                           )}
                         </div>
