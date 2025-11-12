@@ -10,51 +10,85 @@ const prisma = new PrismaClient();
 export async function GET() {
   try {
     const { userId } = await auth();
-
     let isAdmin = false;
+    let userCommunityIds: string[] = [];
+    let userTierIds: string[] = [];
+
     if (userId) {
+      // Fetch user info
       const user = await prisma.user.findUnique({
         where: { clerkUserId: userId },
-        select: { role: true },
-      });
-      isAdmin = user?.role === "admin";
-    }
-
-    const seminars = await prisma.seminar.findMany({
-      where: isAdmin
-        ? {} // admins see all seminars
-        : {
-            accessRules: {
-              some: { accessScope: "public" }, // only public seminars visible to normal users
+        select: {
+          id: true,
+          role: true,
+          memberships: { select: { communityId: true } },
+          subscriptions: {
+            select: {
+              tierId: true,
             },
           },
+        },
+      });
+
+      if (user) {
+        isAdmin = user.role === "admin";
+        userCommunityIds = user.memberships.map((m) => m.communityId);
+        userTierIds = user.subscriptions.map((s) => s.tierId);
+      }
+    }
+
+    // Fetch all seminars with access rules
+    const seminars = await prisma.seminar.findMany({
       orderBy: { date: "asc" },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        hostName: true,
-        date: true,
-        duration: true,
-        zoomLink: true,
-        image: true,
-        mediaUrl: true,
-        createdAt: true,
+      include: {
         accessRules: {
-          select: {
-            accessScope: true,
-            price: true,
-            communityId: true,
-            tierId: true,
+          include: {
+            community: { select: { id: true, name: true } },
+            tier: { select: { id: true, tierName: true } },
           },
         },
       },
-      take: 20,
     });
 
-    return NextResponse.json(seminars);
+    // check seminar is locked for the user based on access rules
+    const seminarsWithLockStatus = seminars.map((seminar) => {
+      let locked = true;
+
+      // Admins have access
+      if (isAdmin) return { ...seminar, locked: false };
+
+      for (const rule of seminar.accessRules) {
+        if (rule.accessScope === "public") {
+          locked = false;
+          break;
+        }
+
+        // Community
+        if (
+          rule.accessScope === "community" &&
+          rule.communityId &&
+          userCommunityIds.includes(rule.communityId)
+        ) {
+          locked = false;
+          break;
+        }
+
+        // membership tier rule
+        if (
+          rule.accessScope === "membership" &&
+          rule.tierId &&
+          userTierIds.includes(rule.tierId)
+        ) {
+          locked = false;
+          break;
+        }
+      }
+      return { ...seminar, locked };
+    });
+
+    return NextResponse.json(seminarsWithLockStatus);
   } catch (err) {
-    console.error("Error fetching seminars:", err);
+    console.error("❌ Error fetching seminars:", err);
     return NextResponse.json(
       { error: "Failed to fetch seminars" },
       { status: 500 }
@@ -140,16 +174,21 @@ export async function POST(req: Request) {
       },
     });
 
-    // Create access rules; public by default
+    // add access rules, public by default
     if (data.accessRules && Array.isArray(data.accessRules)) {
       for (const rule of data.accessRules) {
+        const parsedPrice =
+          rule.price && !isNaN(parseFloat(rule.price))
+            ? parseFloat(rule.price)
+            : null;
+
         await prisma.seminarAccessRule.create({
           data: {
             seminarId: seminar.id,
             accessScope: rule.accessScope,
             communityId: rule.communityId || null,
             tierId: rule.tierId || null,
-            price: rule.price || null,
+            price: parsedPrice,
           },
         });
       }

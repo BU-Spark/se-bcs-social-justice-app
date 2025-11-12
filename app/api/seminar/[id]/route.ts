@@ -23,6 +23,17 @@ export async function GET(
             createdAt: true,
           },
         },
+        accessRules: {
+          select: {
+            id: true,
+            accessScope: true,
+            price: true,
+            communityId: true,
+            tierId: true,
+            community: { select: { name: true } },
+            tier: { select: { tierName: true } },
+          },
+        },
       },
     });
 
@@ -47,7 +58,6 @@ export async function PUT(
 ) {
   try {
     const { id } = await context.params;
-
     const { userId } = await auth();
 
     if (!userId) {
@@ -65,7 +75,8 @@ export async function PUT(
 
     const data = await req.json();
 
-    const updated = await prisma.seminar.update({
+    // Update seminar core fields
+    await prisma.seminar.update({
       where: { id },
       data: {
         title: data.title,
@@ -74,15 +85,55 @@ export async function PUT(
         date: data.date ? new Date(data.date) : undefined,
         duration: data.duration ? Number(data.duration) : undefined,
         zoomLink: data.zoomLink,
-        accessType: data.accessType ?? "public",
         image: data.image || null,
         mediaUrl: data.mediaUrl || null,
       },
     });
 
-    return NextResponse.json(updated);
+    // Update access rules (replace existing)
+    if (Array.isArray(data.accessRules)) {
+      await prisma.seminarAccessRule.deleteMany({ where: { seminarId: id } });
+
+      for (const rule of data.accessRules) {
+        const parsedPrice =
+          rule.price && !isNaN(parseFloat(rule.price))
+            ? parseFloat(rule.price)
+            : null;
+
+        await prisma.seminarAccessRule.create({
+          data: {
+            seminarId: id,
+            accessScope: rule.accessScope,
+            communityId: rule.communityId || null,
+            tierId: rule.tierId || null,
+            price: parsedPrice,
+          },
+        });
+      }
+    }
+
+    // Return seminar with updated accessRules
+    const seminarWithRules = await prisma.seminar.findUnique({
+      where: { id },
+      include: {
+        attendees: {
+          select: { id: true, name: true, email: true, createdAt: true },
+        },
+        accessRules: {
+          select: {
+            id: true,
+            accessScope: true,
+            price: true,
+            communityId: true,
+            tierId: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(seminarWithRules);
   } catch (err) {
-    console.error("Error updating seminar:", err);
+    console.error("❌ Error updating seminar:", err);
     return NextResponse.json(
       { error: "Failed to update seminar" },
       { status: 500 }

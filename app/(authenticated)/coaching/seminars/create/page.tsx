@@ -16,12 +16,12 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs, { Dayjs } from "dayjs";
 import { useRouter } from "next/navigation";
 
-interface Community {
+export interface Community {
   id: string;
   name: string;
 }
 
-interface MembershipTier {
+export interface MembershipTier {
   id: string;
   tierName: string;
 }
@@ -60,14 +60,11 @@ export default function CreateSeminarPage() {
           fetch("/api/membership-tier", { credentials: "include" }),
         ]);
 
-        console.log("📡 communities status:", commRes.status, commRes.url);
-        console.log("📡 tiers status:", tierRes.status, tierRes.url);
-
         // peek at response text (for debugging only)
         const commText = await commRes.text();
         const tierText = await tierRes.text();
-        console.log("🔍 communities raw:", commText.slice(0, 150));
-        console.log("🔍 tiers raw:", tierText.slice(0, 150));
+        console.log("communities raw:", commText.slice(0, 150));
+        console.log("tiers raw:", tierText.slice(0, 150));
 
         // now try to parse JSON safely
         const commData = JSON.parse(commText);
@@ -114,55 +111,95 @@ export default function CreateSeminarPage() {
     setForm({ ...form, accessRules: updatedRules });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+
+  //   const formData = new FormData();
+  //   formData.append("file", file);
+
+  //   try {
+  //     const res = await fetch("/api/upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+  //     const data = await res.json();
+
+  //     if (data.url) {
+  //       setForm((prev) => ({ ...prev, image: data.url }));
+  //     } else {
+  //       alert("Image upload failed.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Image upload error:", err);
+  //     alert("Image upload failed.");
+  //   }
+  // };
+
+  // const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+
+  //   const formData = new FormData();
+  //   formData.append("file", file);
+
+  //   try {
+  //     const res = await fetch("/api/upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+  //     const data = await res.json();
+
+  //     if (data.url) {
+  //       setForm((prev) => ({ ...prev, mediaUrl: data.url }));
+  //     } else {
+  //       alert("Media upload failed.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Media upload error:", err);
+  //     alert("Media upload failed.");
+  //   }
+  // };
+
+  const uploadToS3 = async (file: File) => {
+    const folder = file.type.startsWith("video")
+      ? "seminarVideo"
+      : "seminarImages";
+    const fileName = `${folder}/${Date.now()}-${file.name}`;
+
+    const res = await fetch(
+      `/api/upload-url?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+    );
+    const { url } = await res.json();
+
+    await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+
+    return url.split("?")[0]; // the public S3 URL
+  };
+
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "image" | "media"
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (data.url) {
-        setForm((prev) => ({ ...prev, image: data.url }));
-      } else {
-        alert("Image upload failed.");
-      }
+      const uploadedUrl = await uploadToS3(file);
+      setForm((prev) => ({
+        ...prev,
+        [type === "image" ? "image" : "mediaUrl"]: uploadedUrl,
+      }));
     } catch (err) {
-      console.error("Image upload error:", err);
-      alert("Image upload failed.");
+      console.error(`${type} upload failed:`, err);
+      alert(`${type} upload failed.`);
     }
   };
 
-  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (data.url) {
-        setForm((prev) => ({ ...prev, mediaUrl: data.url }));
-      } else {
-        alert("Media upload failed.");
-      }
-    } catch (err) {
-      console.error("Media upload error:", err);
-      alert("Media upload failed.");
-    }
-  };
 
   const handleSubmit = async () => {
     if (
@@ -366,7 +403,11 @@ export default function CreateSeminarPage() {
           <Typography variant="subtitle1" fontWeight={500}>
             Seminar Cover Image
           </Typography>
-          <input type="file" accept="image/*" onChange={handleImageUpload} />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileUpload(e, "image")}
+          />
           {form.image && (
             <Box mt={2}>
               <img
@@ -387,7 +428,7 @@ export default function CreateSeminarPage() {
           <input
             type="file"
             accept="image/*,video/*"
-            onChange={handleMediaUpload}
+            onChange={(e) => handleFileUpload(e, "media")}
           />
           {form.mediaUrl && (
             <Box mt={2}>

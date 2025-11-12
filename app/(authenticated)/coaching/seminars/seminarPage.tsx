@@ -3,17 +3,19 @@
 import { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import { Button } from "@mui/material";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import GroupsIcon from "@mui/icons-material/Groups";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DownloadIcon from "@mui/icons-material/Download";
-import RecordVoiceOverOutlinedIcon from "@mui/icons-material/RecordVoiceOverOutlined";
+import {
+  CalendarToday as CalendarTodayIcon,
+  AccessTime as AccessTimeIcon,
+  Groups as GroupsIcon,
+  ArrowBack as ArrowBackIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Download as DownloadIcon,
+  RecordVoiceOverOutlined as RecordVoiceOverOutlinedIcon,
+  AttachMoney as AttachMoneyIcon,
+} from "@mui/icons-material";
 import { useUser } from "@clerk/nextjs";
 import SeminarReserve from "@/app/components/SeminarReserve";
-import { useRouter } from "next/navigation";
 
 const DetailContainer = styled.div`
   max-width: 1200px;
@@ -140,23 +142,27 @@ const AttendeeInfo = styled.div`
   color: #1e293b;
 `;
 
+export interface AccessRule {
+  id: string;
+  accessScope: "public" | "community" | "tier";
+  price?: number | null;
+  community?: { name: string } | null;
+  tier?: { tierName: string } | null;
+}
+
 export interface Seminar {
   id: string;
   title: string;
-  hostName: string;
-  image?: string;
-  mediaUrl?: string;
   description?: string;
-  accessType?: "public" | "private";
+  hostName: string;
   date?: string;
   duration?: number;
   zoomLink?: string;
-}
-
-interface Attendee {
-  id: string;
-  name: string;
-  email: string;
+  mediaUrl?: string;
+  image?: string;
+  attendees?: { id: string; name: string; email: string }[];
+  accessRules?: AccessRule[];
+  locked?: boolean;
 }
 
 interface SeminarDetailProps {
@@ -167,12 +173,14 @@ interface SeminarDetailProps {
 
 export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
   const [openReservation, setOpenReservation] = useState(false);
-  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [attendees, setAttendees] = useState(seminar.attendees || []);
+  const [accessRules, setAccessRules] = useState(seminar.accessRules || []);
   const [isAdmin, setIsAdmin] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
   const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
+  const [isLocked, setIsLocked] = useState(seminar.locked ?? false);
 
-  // Check if current user is admin
+  // Check admin
   useEffect(() => {
     async function fetchAdminStatus() {
       try {
@@ -184,6 +192,8 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
     }
     fetchAdminStatus();
   }, []);
+
+  // Fetch latest seminar data
   useEffect(() => {
     async function fetchSeminarData() {
       try {
@@ -191,6 +201,8 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
         if (res.ok) {
           const data = await res.json();
           setAttendees(data.attendees || []);
+          setAccessRules(data.accessRules || []);
+          if (typeof data.locked !== "undefined") setIsLocked(data.locked);
         }
       } catch (err) {
         console.error("Error fetching seminar:", err);
@@ -203,6 +215,10 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
     if (!isLoaded) return;
     if (!isSignedIn || !user) {
       alert("Please sign in to reserve a spot.");
+      return;
+    }
+    if (isLocked && !isAdmin) {
+      alert("You don’t have access to reserve this seminar.");
       return;
     }
     setOpenReservation(true);
@@ -320,6 +336,34 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
           </AdminActions>
         )}
       </HeaderActions>
+      {isLocked && !isAdmin && (
+        <div
+          style={{
+            background: "#f9fafb",
+            border: "1px solid #e2e8f0",
+            borderRadius: 12,
+            padding: "16px 20px",
+            marginBottom: 24,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <svg width="22" height="22" fill="#6366f1" viewBox="0 0 24 24">
+            <path d="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+            <path
+              fillRule="evenodd"
+              d="M6 8V7a6 6 0 1 1 12 0v1a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2zm2-1a4 4 0 1 1 8 0v1H8V7zm10 4H6v9h12v-9z"
+            />
+          </svg>
+          <div>
+            <strong style={{ color: "#111827" }}>Locked Seminar</strong>
+            <p style={{ margin: 0, color: "#4b5563" }}>
+              You don’t meet the access rules for this seminar.
+            </p>
+          </div>
+        </div>
+      )}
 
       <ContentGrid>
         {/* LEFT SECTION */}
@@ -356,6 +400,51 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
               <GroupsIcon />
               <span>Attendees: {attendees.length}</span>
             </InfoItem>
+            {accessRules.length > 0 &&
+              accessRules.map((rule, i) => {
+                const communityName = rule.community?.name;
+                const tierName = rule.tier?.tierName;
+
+                let ruleText;
+                if (rule.accessScope === "public")
+                  ruleText = <>Open to everyone</>;
+                else if (rule.accessScope === "community")
+                  ruleText = (
+                    <>
+                      Only open for members in the community{" "}
+                      <strong style={{ color: "#1e3a8a" }}>
+                        {communityName || "this community"}
+                      </strong>
+                    </>
+                  );
+                else if (rule.accessScope === "tier")
+                  ruleText = (
+                    <>
+                      Only open for{" "}
+                      <strong style={{ color: "#1e3a8a" }}>
+                        {tierName || "this tier"}
+                      </strong>{" "}
+                      members
+                    </>
+                  );
+                else ruleText = <>Restricted access</>;
+
+                return (
+                  <div key={rule.id || i} style={{ marginBottom: 12 }}>
+                    <InfoItem>
+                      <GroupsIcon />
+                      <span>{ruleText}</span>
+                    </InfoItem>
+
+                    {rule.price && rule.price > 0 && (
+                      <InfoItem>
+                        <AttachMoneyIcon />
+                        <span>Price: ${rule.price.toFixed(2)}</span>
+                      </InfoItem>
+                    )}
+                  </div>
+                );
+              })}
           </InfoSection>
 
           {!isAdmin && (

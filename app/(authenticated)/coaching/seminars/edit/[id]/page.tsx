@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { TextField, Button, MenuItem, CircularProgress } from "@mui/material";
+import {
+  TextField,
+  Button,
+  MenuItem,
+  CircularProgress,
+  Box,
+  Typography,
+  Stack,
+} from "@mui/material";
 import styled from "@emotion/styled";
+import type { Community, MembershipTier } from "../../create/page";
 
 const Container = styled.div`
   max-width: 800px;
@@ -37,6 +46,8 @@ export default function EditSeminarPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [tiers, setTiers] = useState<MembershipTier[]>([]);
 
   const [seminar, setSeminar] = useState({
     title: "",
@@ -45,18 +56,53 @@ export default function EditSeminarPage() {
     date: "",
     duration: "",
     zoomLink: "",
-    accessType: "public",
     image: "",
     mediaUrl: "",
+    accessRules: [] as {
+      accessScope: "public" | "community" | "membership";
+      communityId?: string;
+      tierId?: string;
+      price?: string;
+    }[],
   });
 
   // Fetch seminar info
   useEffect(() => {
     async function fetchSeminar() {
       try {
-        const res = await fetch(`/api/seminar/${seminarId}`);
-        if (!res.ok) throw new Error("Failed to fetch seminar");
-        const data = await res.json();
+        const [seminarRes, commRes, tierRes] = await Promise.all([
+          fetch(`/api/seminar/${seminarId}`),
+          fetch("/api/communities/all"),
+          fetch("/api/membership-tier"),
+        ]);
+        if (!seminarRes.ok) throw new Error("Failed to fetch seminar");
+
+        const [data, commData, tierData] = await Promise.all([
+          seminarRes.json(),
+          commRes.json(),
+          tierRes.json(),
+        ]);
+
+        setCommunities(commData || []);
+        setTiers(tierData || []);
+
+        const resolvedAccessRules = (data.accessRules || []).map(
+          (rule: any) => {
+            const matchedCommunity = commData?.find(
+              (c: Community) => c.id === rule.communityId,
+            );
+            const matchedTier = tierData?.find(
+              (t: MembershipTier) => t.id === rule.tierId
+            );
+
+            return {
+              accessScope: rule.accessScope,
+              communityId: matchedCommunity?.id || rule.communityId || "",
+              tierId: matchedTier?.id || rule.tierId || "",
+              price: rule.price?.toString() || "",
+            };
+          },
+        );
 
         // convert date to ISO string
         const dateStr = data.date
@@ -70,9 +116,9 @@ export default function EditSeminarPage() {
           date: dateStr,
           duration: data.duration?.toString() || "",
           zoomLink: data.zoomLink || "",
-          accessType: data.accessType || "public",
           image: data.image || "",
           mediaUrl: data.mediaUrl || "",
+          accessRules: resolvedAccessRules,
         });
       } catch (err) {
         console.error(err);
@@ -92,37 +138,32 @@ export default function EditSeminarPage() {
     setSeminar((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Save changes
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/seminar/${seminarId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...seminar,
-          duration: Number(seminar.duration),
-        }),
-      });
-
-      if (res.ok) {
-        alert("Seminar updated successfully!");
-        router.push("/coaching?tab=Seminars");
-      } else {
-        const err = await res.json();
-        alert(err.error || "Failed to update seminar.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save seminar.");
-    } finally {
-      setSaving(false);
-    }
+  const handleAccessRuleChange = (
+    index: number,
+    field: string,
+    value: string,
+  ) => {
+    const newRules = [...seminar.accessRules];
+    (newRules[index] as any)[field] = value;
+    setSeminar((prev) => ({ ...prev, accessRules: newRules }));
+  };
+  const handleAddRule = () => {
+    setSeminar((prev) => ({
+      ...prev,
+      accessRules: [
+        ...prev.accessRules,
+        { accessScope: "public", communityId: "", tierId: "", price: "" },
+      ],
+    }));
+  };
+  const handleRemoveRule = (index: number) => {
+    const updated = seminar.accessRules.filter((_, i) => i !== index);
+    setSeminar((prev) => ({ ...prev, accessRules: updated }));
   };
 
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    field: "image" | "mediaUrl"
+    field: "image" | "mediaUrl",
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -153,6 +194,38 @@ export default function EditSeminarPage() {
       alert("File upload failed.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Save changes
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/seminar/${seminarId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...seminar,
+          duration: Number(seminar.duration),
+          accessRules: seminar.accessRules.map((r) => ({
+            ...r,
+            price: r.price ? parseFloat(r.price) : null,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        alert("Seminar updated successfully!");
+        router.push("/coaching?tab=Seminars");
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to update seminar.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save seminar.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -216,17 +289,112 @@ export default function EditSeminarPage() {
           onChange={handleChange}
           fullWidth
         />
-        <TextField
-          select
-          label="Access Type"
-          name="accessType"
-          value={seminar.accessType}
-          onChange={handleChange}
-          fullWidth
-        >
-          <MenuItem value="public">Public</MenuItem>
-          <MenuItem value="private">Private</MenuItem>
-        </TextField>
+        {/* Access Rules */}
+        <Box>
+          <Typography variant="h6" fontWeight={600} mt={2}>
+            Access Rules
+          </Typography>
+          {seminar.accessRules.map((rule, index) => (
+            <Box
+              key={index}
+              p={2}
+              mt={2}
+              border="1px solid #ddd"
+              borderRadius={2}
+              bgcolor="#fafafa"
+            >
+              <Stack spacing={2}>
+                <TextField
+                  select
+                  label="Access Scope"
+                  value={rule.accessScope}
+                  onChange={(e) =>
+                    handleAccessRuleChange(index, "accessScope", e.target.value)
+                  }
+                >
+                  <MenuItem value="public">Public</MenuItem>
+                  <MenuItem value="community">Community Members</MenuItem>
+                  <MenuItem value="membership">Membership Tier</MenuItem>
+                </TextField>
+
+                {rule.accessScope === "community" && (
+                  <TextField
+                    select
+                    label="Select Community"
+                    value={rule.communityId || ""}
+                    onChange={(e) =>
+                      handleAccessRuleChange(
+                        index,
+                        "communityId",
+                        e.target.value,
+                      )
+                    }
+                    fullWidth
+                  >
+                    {communities.length === 0 ? (
+                      <MenuItem disabled>No communities found</MenuItem>
+                    ) : (
+                      communities.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.name}
+                        </MenuItem>
+                      ))
+                    )}
+                  </TextField>
+                )}
+
+                {rule.accessScope === "membership" && (
+                  <TextField
+                    select
+                    label="Select Membership Tier"
+                    value={rule.tierId}
+                    onChange={(e) =>
+                      handleAccessRuleChange(index, "tierId", e.target.value)
+                    }
+                  >
+                    {tiers.length === 0 ? (
+                      <MenuItem disabled>No membership tiers found</MenuItem>
+                    ) : (
+                      tiers.map((t) => (
+                        <MenuItem key={t.id} value={t.id}>
+                          {t.tierName}
+                        </MenuItem>
+                      ))
+                    )}
+                  </TextField>
+                )}
+
+                <TextField
+                  label="Price (optional)"
+                  type="number"
+                  value={rule.price}
+                  onChange={(e) =>
+                    handleAccessRuleChange(index, "price", e.target.value)
+                  }
+                />
+
+                {seminar.accessRules.length > 1 && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => handleRemoveRule(index)}
+                  >
+                    Remove Rule
+                  </Button>
+                )}
+              </Stack>
+            </Box>
+          ))}
+
+          <Button
+            variant="outlined"
+            onClick={handleAddRule}
+            sx={{ mt: 2, textTransform: "none" }}
+          >
+            + Add Another Rule
+          </Button>
+        </Box>
+
         <div>
           <label style={{ fontWeight: 600, color: "#1e293b" }}>
             Cover Image
