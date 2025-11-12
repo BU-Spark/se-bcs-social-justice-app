@@ -40,53 +40,95 @@ export default function CreateSeminarPage() {
     setForm({ ...form, date: newValue ? newValue.toISOString() : "" });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
+  //   const formData = new FormData();
+  //   formData.append("file", file);
 
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
+  //   try {
+  //     const res = await fetch("/api/upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+  //     const data = await res.json();
 
-      if (data.url) {
-        setForm((prev) => ({ ...prev, image: data.url }));
-      } else {
-        alert("Image upload failed.");
-      }
-    } catch (err) {
-      console.error("Image upload error:", err);
-      alert("Image upload failed.");
-    }
+  //     if (data.url) {
+  //       setForm((prev) => ({ ...prev, image: data.url }));
+  //     } else {
+  //       alert("Image upload failed.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Image upload error:", err);
+  //     alert("Image upload failed.");
+  //   }
+  // };
+
+  // const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+
+  //   const formData = new FormData();
+  //   formData.append("file", file);
+
+  //   try {
+  //     const res = await fetch("/api/upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+  //     const data = await res.json();
+
+  //     if (data.url) {
+  //       setForm((prev) => ({ ...prev, mediaUrl: data.url }));
+  //     } else {
+  //       alert("Media upload failed.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Media upload error:", err);
+  //     alert("Media upload failed.");
+  //   }
+  // };
+
+  const uploadToS3 = async (file: File) => {
+    const folder = file.type.startsWith("video")
+      ? "seminarVideo"
+      : "seminarImages";
+    const fileName = `${folder}/${Date.now()}-${file.name}`;
+
+    // ask backend for a signed S3 URL
+    const res = await fetch(
+      `/api/upload-url?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+    );
+    const { url } = await res.json();
+
+    // upload directly to S3 (no Next.js body limit)
+    await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+
+    // the public S3 link (without query params)
+    return url.split("?")[0];
   };
 
-  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "image" | "media",
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (data.url) {
-        setForm((prev) => ({ ...prev, mediaUrl: data.url }));
-      } else {
-        alert("Media upload failed.");
-      }
+      const uploadedUrl = await uploadToS3(file);
+      setForm((prev) => ({
+        ...prev,
+        [type === "image" ? "image" : "mediaUrl"]: uploadedUrl,
+      }));
     } catch (err) {
-      console.error("Media upload error:", err);
-      alert("Media upload failed.");
+      console.error(`${type} upload failed:`, err);
+      alert(`${type} upload failed.`);
     }
   };
 
@@ -184,7 +226,11 @@ export default function CreateSeminarPage() {
           <Typography variant="subtitle1" fontWeight={500}>
             Seminar Cover Image
           </Typography>
-          <input type="file" accept="image/*" onChange={handleImageUpload} />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileUpload(e, "image")}
+          />
           {form.image && (
             <Box mt={2}>
               <img
@@ -205,7 +251,7 @@ export default function CreateSeminarPage() {
           <input
             type="file"
             accept="image/*,video/*"
-            onChange={handleMediaUpload}
+            onChange={(e) => handleFileUpload(e, "media")}
           />
           {form.mediaUrl && (
             <Box mt={2}>
