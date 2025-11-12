@@ -62,6 +62,8 @@ model Community {
   CommunityLeader CommunityLeader[]
   members         CommunityMembers[]
   posts           Posting[]
+
+  seminarAccessRules SeminarAccessRule[]
 }
 
 model CommunityMembers {
