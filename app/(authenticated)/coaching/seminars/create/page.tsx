@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   TextField,
   Button,
@@ -8,12 +8,23 @@ import {
   Typography,
   Box,
   Alert,
+  MenuItem,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs, { Dayjs } from "dayjs";
 import { useRouter } from "next/navigation";
+
+export interface Community {
+  id: string;
+  name: string;
+}
+
+export interface MembershipTier {
+  id: string;
+  tierName: string;
+}
 
 export default function CreateSeminarPage() {
   const router = useRouter();
@@ -24,13 +35,49 @@ export default function CreateSeminarPage() {
     hostName: "",
     date: "",
     duration: "",
-    accessType: "public",
     image: "",
     mediaUrl: "",
+    accessRules: [
+      {
+        accessScope: "public", // default
+        communityId: "",
+        tierId: "",
+        price: "",
+      },
+    ],
   });
-
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [tiers, setTiers] = useState<MembershipTier[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // fetch communities and tiers
+  useEffect(() => {
+    async function fetchLists() {
+      try {
+        const [commRes, tierRes] = await Promise.all([
+          fetch("/api/communities/all", { credentials: "include" }),
+          fetch("/api/membership-tier", { credentials: "include" }),
+        ]);
+
+        // peek at response text (for debugging only)
+        const commText = await commRes.text();
+        const tierText = await tierRes.text();
+        console.log("communities raw:", commText.slice(0, 150));
+        console.log("tiers raw:", tierText.slice(0, 150));
+
+        // now try to parse JSON safely
+        const commData = JSON.parse(commText);
+        const tierData = JSON.parse(tierText);
+
+        setCommunities(commData || []);
+        setTiers(tierData || []);
+      } catch (err) {
+        console.error("❌ Error fetching dropdown lists:", err);
+      }
+    }
+    fetchLists();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,6 +85,30 @@ export default function CreateSeminarPage() {
 
   const handleDateChange = (newValue: Dayjs | null) => {
     setForm({ ...form, date: newValue ? newValue.toISOString() : "" });
+  };
+  const handleAccessRuleChange = (
+    index: number,
+    field: string,
+    value: string,
+  ) => {
+    const updatedRules = [...form.accessRules];
+    (updatedRules[index] as any)[field] = value;
+    setForm({ ...form, accessRules: updatedRules });
+  };
+
+  const addAccessRule = () => {
+    setForm({
+      ...form,
+      accessRules: [
+        ...form.accessRules,
+        { accessScope: "public", communityId: "", tierId: "", price: "" },
+      ],
+    });
+  };
+  const removeAccessRule = (index: number) => {
+    const updatedRules = [...form.accessRules];
+    updatedRules.splice(index, 1);
+    setForm({ ...form, accessRules: updatedRules });
   };
 
   // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,26 +167,23 @@ export default function CreateSeminarPage() {
       : "seminarImages";
     const fileName = `${folder}/${Date.now()}-${file.name}`;
 
-    // ask backend for a signed S3 URL
     const res = await fetch(
-      `/api/upload-url?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
     );
     const { url } = await res.json();
 
-    // upload directly to S3 (no Next.js body limit)
     await fetch(url, {
       method: "PUT",
       headers: { "Content-Type": file.type },
       body: file,
     });
 
-    // the public S3 link (without query params)
-    return url.split("?")[0];
+    return url.split("?")[0]; // the public S3 URL
   };
 
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "image" | "media",
+    type: "image" | "media"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -131,6 +199,7 @@ export default function CreateSeminarPage() {
       alert(`${type} upload failed.`);
     }
   };
+
 
   const handleSubmit = async () => {
     if (
@@ -220,6 +289,114 @@ export default function CreateSeminarPage() {
           onChange={handleChange}
           required
         />
+
+        {/* Access Rules */}
+        <Box>
+          <Typography variant="h6" fontWeight={600} mt={2}>
+            Access Rules
+          </Typography>
+
+          {form.accessRules.map((rule, index) => (
+            <Box
+              key={index}
+              p={2}
+              mt={2}
+              border="1px solid #ddd"
+              borderRadius={2}
+              bgcolor="#fafafa"
+            >
+              <Stack spacing={2}>
+                <TextField
+                  select
+                  label="Access Scope"
+                  value={rule.accessScope}
+                  onChange={(e) =>
+                    handleAccessRuleChange(index, "accessScope", e.target.value)
+                  }
+                >
+                  <MenuItem value="public">Public</MenuItem>
+                  <MenuItem value="community">Community Members </MenuItem>
+                  <MenuItem value="membership">Membership Members</MenuItem>
+                </TextField>
+
+                {rule.accessScope === "community" && (
+                  <TextField
+                    key={`community-${communities.length}-${index}`}
+                    select
+                    label="Select Community"
+                    value={rule.communityId}
+                    onChange={(e) =>
+                      handleAccessRuleChange(
+                        index,
+                        "communityId",
+                        e.target.value,
+                      )
+                    }
+                  >
+                    {!communities ? (
+                      <MenuItem disabled>Loading communities...</MenuItem>
+                    ) : communities.length === 0 ? (
+                      <MenuItem disabled>No communities available</MenuItem>
+                    ) : (
+                      communities.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.name}
+                        </MenuItem>
+                      ))
+                    )}
+                  </TextField>
+                )}
+
+                {rule.accessScope === "membership" && (
+                  <TextField
+                    select
+                    label="Select Membership Tier"
+                    value={rule.tierId}
+                    onChange={(e) =>
+                      handleAccessRuleChange(index, "tierId", e.target.value)
+                    }
+                  >
+                    {tiers.length === 0 ? (
+                      <MenuItem disabled>Loading membership tiers...</MenuItem>
+                    ) : (
+                      tiers.map((t) => (
+                        <MenuItem key={t.id} value={t.id}>
+                          {t.tierName}
+                        </MenuItem>
+                      ))
+                    )}
+                  </TextField>
+                )}
+
+                <TextField
+                  label="Price (optional)"
+                  type="number"
+                  value={rule.price}
+                  onChange={(e) =>
+                    handleAccessRuleChange(index, "price", e.target.value)
+                  }
+                />
+
+                {form.accessRules.length > 1 && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => removeAccessRule(index)}
+                  >
+                    Remove Rule
+                  </Button>
+                )}
+              </Stack>
+            </Box>
+          ))}
+          <Button
+            variant="outlined"
+            onClick={addAccessRule}
+            sx={{ mt: 2, textTransform: "none" }}
+          >
+            + Add Another Rule
+          </Button>
+        </Box>
 
         {/* Seminar Cover */}
         <Box>

@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+export const runtime = "nodejs";
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -8,44 +10,30 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
-export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
+    const { searchParams } = new URL(req.url);
+    const fileName = searchParams.get("fileName");
+    const contentType = searchParams.get("contentType");
 
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    if (!fileName || !contentType) {
+      return Response.json({ error: "Missing file info" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const ext = file.name.split(".").pop();
-
-    // Optional: organize by type (e.g. seminarImages or seminarVideo)
-    const folder = file.type.startsWith("video")
-      ? "seminarVideo"
-      : "seminarImages";
-    const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
-
-    // Upload to S3 (no ACL — bucket policy handles public access)
-    const uploadParams = {
+    const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET!,
       Key: fileName,
-      Body: buffer,
-      ContentType: file.type,
-    };
+      ContentType: contentType,
+    });
 
-    const command = new PutObjectCommand(uploadParams);
-    await s3.send(command);
-
-    // Construct public URL manually
-    const fileUrl = `https://${process.env.AWS_S3_BUCKET!}.s3.${process.env.AWS_REGION!}.amazonaws.com/${fileName}`;
-
-    return NextResponse.json({ url: fileUrl });
-  } catch (err) {
-    console.error("S3 upload error:", err);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    return Response.json({ url: signedUrl });
+  } catch (err: any) {
+    console.error("❌ Error generating signed URL:", err);
+    return Response.json(
+      { error: "Failed to generate signed URL" },
+      { status: 500 }
+    );
   }
 }

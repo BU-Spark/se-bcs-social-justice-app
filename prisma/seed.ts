@@ -9,31 +9,18 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Start seeding...");
 
-  // // 1. Clean up existing data to avoid conflicts
-  // // Delete in an order that respects foreign key constraints
-  // console.log("Deleting old data...");
-  // await prisma.tierCourseAccess.deleteMany();
-  // await prisma.userMembership.deleteMany();
-  // await prisma.coursePrerequisite.deleteMany();
-  // await prisma.userCourse.deleteMany();
-  // await prisma.module.deleteMany();
-  // await prisma.course.deleteMany();
-  // await prisma.membershipTier.deleteMany();
-
-  // console.log("Start seeding...");
-
   // 1. Clean up existing data to avoid conflicts
   // Delete in an order that respects foreign key constraints
   // console.log("Deleting old data...");
-  // await prisma.tierCourseAccess.deleteMany();
-  // await prisma.userMembership.deleteMany();
-  // await prisma.coursePrerequisite.deleteMany();
-  // await prisma.userCourse.deleteMany();
-  // await prisma.module.deleteMany();
-  // await prisma.course.deleteMany();
-  // await prisma.membershipTier.deleteMany();
-  // await prisma.appointmentType.deleteMany();
-  // await prisma.interest.deleteMany();
+  await prisma.tierCourseAccess.deleteMany();
+  await prisma.userMembership.deleteMany();
+  await prisma.coursePrerequisite.deleteMany();
+  await prisma.userCourse.deleteMany();
+  await prisma.module.deleteMany();
+  await prisma.course.deleteMany();
+  await prisma.membershipTier.deleteMany();
+  await prisma.appointmentType.deleteMany();
+  await prisma.interest.deleteMany();
 
   // --- Post Dependencies ---
   await prisma.vote.deleteMany();
