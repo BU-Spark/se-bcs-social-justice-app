@@ -349,6 +349,7 @@ enum ContentType {
   VIDEO
   AUDIO
   PDF
+  IMAGE
   LINK
 }
 
