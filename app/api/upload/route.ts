@@ -1,7 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
-export const runtime = "nodejs";
+import { NextResponse } from "next/server";
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -60,12 +59,10 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File | null;
     const customFolder = formData.get("folder") as string | null;
 
-    if (!fileName || !contentType) {
-      return Response.json({ error: "Missing file info" }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ error: "Missing file" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
     const ext = file.name.split(".").pop();
 
     // Determine folder structure based on upload context
@@ -81,20 +78,20 @@ export async function POST(req: Request) {
 
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
 
-    // Upload to S3 (no ACL — bucket policy handles public access)
-    const uploadParams = {
+    // Create command for S3 PUT operation
+    const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET!,
       Key: fileName,
-      ContentType: contentType,
+      ContentType: file.type,
     });
 
     const signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
-    return Response.json({ url: signedUrl });
-  } catch (err: any) {
+    return NextResponse.json({ url: signedUrl });
+  } catch (err) {
     console.error("❌ Error generating signed URL:", err);
-    return Response.json(
+    return NextResponse.json(
       { error: "Failed to generate signed URL" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
