@@ -466,6 +466,28 @@ interface UploadedFile {
   size: number; // File size in bytes
 }
 
+// API response types for course data from database
+interface ApiModuleContent {
+  title: string;
+  externalLink: string;
+  contentType: "IMAGE" | "VIDEO" | "AUDIO" | "PDF" | "TEXT" | "LINK";
+}
+
+interface ApiModule {
+  id: string;
+  title: string;
+  moduleNumber: number;
+  description: string;
+  contents?: ApiModuleContent[];
+}
+
+// Payload types for creating/updating courses
+interface ModuleContentPayload {
+  type: "IMAGE" | "VIDEO" | "AUDIO" | "PDF";
+  name: string;
+  externalLink: string;
+}
+
 // Module interface - represents a single course module
 // id is optional because new modules don't have IDs yet
 interface Module {
@@ -494,14 +516,14 @@ export default function NewCoursePage() {
   // ------------------------------------------------------------------------------
   // STATE MANAGEMENT
   // ------------------------------------------------------------------------------
-  
+
   // Admin verification state
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = checking, true = admin, false = not admin
-  
+
   // Loading states
   const [isLoading, setIsLoading] = useState(false); // True when submitting form
   const [isFetchingCourse, setIsFetchingCourse] = useState(false); // True when loading existing course data
-  
+
   // Message/notification state for user feedback
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -514,17 +536,22 @@ export default function NewCoursePage() {
   const [coursePrice, setCoursePrice] = useState(""); // Course price (stored as string for input)
   const [isStandalone, setIsStandalone] = useState(true); // Whether course can be purchased individually
   const [modules, setModules] = useState<Module[]>([]); // Array of course modules
-  
+
   // File drag state for dropbox
-  const [draggedModule, setDraggedModule] = useState<{ index: number; type: string } | null>(null); // Track which module and media type is being dragged over
-  
+  const [draggedModule, setDraggedModule] = useState<{
+    index: number;
+    type: string;
+  } | null>(null); // Track which module and media type is being dragged over
+
   // Track upload progress for each file
-  const [uploadingFiles, setUploadingFiles] = useState<{ [key: string]: boolean }>({}); // Track which files are uploading
+  const [uploadingFiles, setUploadingFiles] = useState<{
+    [key: string]: boolean;
+  }>({}); // Track which files are uploading
 
   // ------------------------------------------------------------------------------
   // EFFECT HOOKS
   // ------------------------------------------------------------------------------
-  
+
   // Check if current user is an admin
   // Runs once on component mount to verify admin permissions
   useEffect(() => {
@@ -552,7 +579,7 @@ export default function NewCoursePage() {
     const fetchCourse = async () => {
       // Skip if no courseId (create mode) or admin check not complete
       if (!courseId || !isAdmin) return;
-      
+
       setIsFetchingCourse(true); // Show loading state
       try {
         // Fetch course data from API
@@ -560,61 +587,63 @@ export default function NewCoursePage() {
         if (!res.ok) {
           throw new Error("Failed to fetch course");
         }
-        
+
         const data = await res.json();
-        
+
         // Pre-fill all form fields with existing course data
         setCourseName(data.name || "");
         setCourseDescription(data.description || "");
         setCoursePrice(data.price?.toString() || "");
         setIsStandalone(data.isStandalone ?? true);
-        
+
         // Map modules to include all necessary fields and organize contents by type
-        setModules(data.modules.map((m: any) => {
-          // Organize contents by type
-          const imageFiles: UploadedFile[] = [];
-          const videoFiles: UploadedFile[] = [];
-          const audioFiles: UploadedFile[] = [];
-          const textFiles: UploadedFile[] = [];
-          
-          if (m.contents && Array.isArray(m.contents)) {
-            m.contents.forEach((content: any) => {
-              const uploadedFile: UploadedFile = {
-                name: content.title || 'Untitled',
-                url: content.externalLink,
-                size: 0, // Size not stored in DB, set to 0
-              };
-              
-              switch (content.contentType) {
-                case 'IMAGE':
-                  imageFiles.push(uploadedFile);
-                  break;
-                case 'VIDEO':
-                  videoFiles.push(uploadedFile);
-                  break;
-                case 'AUDIO':
-                  audioFiles.push(uploadedFile);
-                  break;
-                case 'PDF':
-                case 'TEXT':
-                case 'LINK':
-                  textFiles.push(uploadedFile);
-                  break;
-              }
-            });
-          }
-          
-          return {
-            id: m.id, // Keep existing module IDs for updates
-            title: m.title,
-            moduleNumber: m.moduleNumber,
-            description: m.description || "",
-            imageFiles,
-            videoFiles,
-            audioFiles,
-            textFiles,
-          };
-        }));
+        setModules(
+          data.modules.map((m: ApiModule) => {
+            // Organize contents by type
+            const imageFiles: UploadedFile[] = [];
+            const videoFiles: UploadedFile[] = [];
+            const audioFiles: UploadedFile[] = [];
+            const textFiles: UploadedFile[] = [];
+
+            if (m.contents && Array.isArray(m.contents)) {
+              m.contents.forEach((content: ApiModuleContent) => {
+                const uploadedFile: UploadedFile = {
+                  name: content.title || "Untitled",
+                  url: content.externalLink,
+                  size: 0, // Size not stored in DB, set to 0
+                };
+
+                switch (content.contentType) {
+                  case "IMAGE":
+                    imageFiles.push(uploadedFile);
+                    break;
+                  case "VIDEO":
+                    videoFiles.push(uploadedFile);
+                    break;
+                  case "AUDIO":
+                    audioFiles.push(uploadedFile);
+                    break;
+                  case "PDF":
+                  case "TEXT":
+                  case "LINK":
+                    textFiles.push(uploadedFile);
+                    break;
+                }
+              });
+            }
+
+            return {
+              id: m.id, // Keep existing module IDs for updates
+              title: m.title,
+              moduleNumber: m.moduleNumber,
+              description: m.description || "",
+              imageFiles,
+              videoFiles,
+              audioFiles,
+              textFiles,
+            };
+          }),
+        );
       } catch (error) {
         console.error("Error fetching course:", error);
         setMessage({ type: "error", text: "Failed to load course data" });
@@ -622,14 +651,14 @@ export default function NewCoursePage() {
         setIsFetchingCourse(false); // Hide loading state
       }
     };
-    
+
     fetchCourse();
   }, [courseId, isAdmin]); // Re-run if courseId or isAdmin changes
 
   // ------------------------------------------------------------------------------
   // MODULE MANAGEMENT FUNCTIONS
   // ------------------------------------------------------------------------------
-  
+
   /**
    * Add a new blank module to the modules array
    * Module number is automatically assigned based on current array length
@@ -658,12 +687,12 @@ export default function NewCoursePage() {
   const removeModule = (index: number) => {
     // Filter out the module at the specified index
     const updatedModules = modules.filter((_, i) => i !== index);
-    
+
     // Re-number all remaining modules sequentially (1, 2, 3, etc.)
     updatedModules.forEach((module, i) => {
       module.moduleNumber = i + 1;
     });
-    
+
     setModules(updatedModules);
   };
 
@@ -676,47 +705,66 @@ export default function NewCoursePage() {
   const updateModule = (
     index: number,
     field: keyof Module,
-    value: string | number
+    value: string | number,
   ) => {
     // Create a copy of modules array
     const updatedModules = [...modules];
-    
+
     // Update the specific field of the module at index
     updatedModules[index] = {
       ...updatedModules[index],
       [field]: value, // Dynamically update the specified field
     };
-    
+
     setModules(updatedModules);
   };
 
   // ------------------------------------------------------------------------------
   // FILE HANDLING FUNCTIONS
   // ------------------------------------------------------------------------------
-  
-  /**
-   * Upload a file to S3
-   * @param file - File to upload
-   * @param folder - S3 folder name
-   * @returns S3 URL or null if failed
-   */
-  const uploadFileToS3 = async (file: File, folder: string): Promise<string | null> => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", folder);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+  /**
+   * Upload a file to S3 using presigned URL approach
+   * This bypasses Next.js body size limits by uploading directly to S3
+   * @param file - File to upload
+   * @param folder - S3 folder name (e.g., courseVideos, courseImage, courseAudio, courseFile)
+   * @returns S3 public URL or null if failed
+   */
+  const uploadFileToS3 = async (
+    file: File,
+    folder: string,
+  ): Promise<string | null> => {
+    try {
+      // Step 1: Generate unique filename
+      const fileName = `${folder}/${Date.now()}-${file.name}`;
+
+      // Step 2: Get presigned URL from backend
+      const response = await fetch(
+        `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${encodeURIComponent(file.type)}`,
+      );
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        throw new Error(`Failed to get presigned URL: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return data.url;
+      const { url: signedUrl } = await response.json();
+
+      // Step 3: Upload file directly to S3 using presigned URL
+      const uploadResponse = await fetch(signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`S3 upload failed: ${uploadResponse.statusText}`);
+      }
+
+      // Step 4: Return public S3 URL (remove query parameters from signed URL)
+      const publicUrl = signedUrl.split("?")[0];
+      return publicUrl;
     } catch (error) {
       console.error(`Error uploading ${file.name}:`, error);
       return null;
@@ -731,90 +779,107 @@ export default function NewCoursePage() {
    * @param mediaType - Type of media (image, video, audio, text)
    */
   const handleMediaFileSelect = async (
-    index: number, 
-    files: FileList | null, 
-    mediaType: 'image' | 'video' | 'audio' | 'text'
+    index: number,
+    files: FileList | null,
+    mediaType: "image" | "video" | "audio" | "text",
   ) => {
     if (!files || files.length === 0) return;
-    
+
     // Convert FileList to Array and filter by media type
-    const acceptedFiles = Array.from(files).filter(file => {
-      const matchesType = file.type.startsWith(`${mediaType}/`) || 
-        (mediaType === 'text' && (file.type === 'application/pdf' || file.name.endsWith('.pdf') || file.name.endsWith('.doc') || file.name.endsWith('.docx')));
+    const acceptedFiles = Array.from(files).filter((file) => {
+      const matchesType =
+        file.type.startsWith(`${mediaType}/`) ||
+        (mediaType === "text" &&
+          (file.type === "application/pdf" ||
+            file.name.endsWith(".pdf") ||
+            file.name.endsWith(".doc") ||
+            file.name.endsWith(".docx")));
       return matchesType;
     });
-    
+
     if (acceptedFiles.length === 0) {
       alert(`Please select valid ${mediaType} files.`);
       return;
     }
-    
+
     // Map media type to S3 folder name
     const folderMap: { [key: string]: string } = {
-      'image': 'courseImage',
-      'video': 'courseVideos',
-      'audio': 'courseAudio',
-      'text': 'courseFile'
+      image: "courseImage",
+      video: "courseVideos",
+      audio: "courseAudio",
+      text: "courseFile",
     };
     const s3Folder = folderMap[mediaType];
-    
+
     // Upload each file to S3
     const uploadPromises = acceptedFiles.map(async (file) => {
       const uploadKey = `${index}-${mediaType}-${file.name}`;
-      setUploadingFiles(prev => ({ ...prev, [uploadKey]: true }));
-      
+      setUploadingFiles((prev) => ({ ...prev, [uploadKey]: true }));
+
       const url = await uploadFileToS3(file, s3Folder);
-      
-      setUploadingFiles(prev => {
+
+      setUploadingFiles((prev) => {
         const updated = { ...prev };
         delete updated[uploadKey];
         return updated;
       });
-      
+
       if (url) {
         return {
           name: file.name,
           url,
-          size: file.size
+          size: file.size,
         };
       }
       return null;
     });
-    
-    const uploadedFiles = (await Promise.all(uploadPromises)).filter((f): f is UploadedFile => f !== null);
-    
+
+    const uploadedFiles = (await Promise.all(uploadPromises)).filter(
+      (f): f is UploadedFile => f !== null,
+    );
+
     if (uploadedFiles.length === 0) {
-      alert('All uploads failed. Please try again.');
+      alert("All uploads failed. Please try again.");
       return;
     }
-    
+
     // Update module with uploaded files
     const updatedModules = [...modules];
-    const fileKey = `${mediaType}Files` as 'imageFiles' | 'videoFiles' | 'audioFiles' | 'textFiles';
+    const fileKey = `${mediaType}Files` as
+      | "imageFiles"
+      | "videoFiles"
+      | "audioFiles"
+      | "textFiles";
     const existingFiles = updatedModules[index][fileKey] || [];
     updatedModules[index] = {
       ...updatedModules[index],
       [fileKey]: [...existingFiles, ...uploadedFiles],
     };
     setModules(updatedModules);
-    
+
     if (uploadedFiles.length < acceptedFiles.length) {
-      alert(`${uploadedFiles.length} of ${acceptedFiles.length} files uploaded successfully.`);
+      alert(
+        `${uploadedFiles.length} of ${acceptedFiles.length} files uploaded successfully.`,
+      );
     }
   };
-  
+
   /**
    * Handle drag over event for media upload box
    * @param e - Drag event
    * @param index - Array index of module
    * @param mediaType - Type of media being dragged
    */
-  const handleMediaDragOver = (e: React.DragEvent, index: number, mediaType: string) => {
+  const handleMediaDragOver = (
+    e: React.DragEvent,
+    index: number,
+    mediaType: string,
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     setDraggedModule({ index, type: mediaType });
   };
-  
+
   /**
    * Handle drag leave event for media upload box
    * @param e - Drag event
@@ -824,22 +889,26 @@ export default function NewCoursePage() {
     e.stopPropagation();
     setDraggedModule(null);
   };
-  
+
   /**
    * Handle file drop event for specific media type
    * @param e - Drag event
    * @param index - Array index of module
    * @param mediaType - Type of media being dropped
    */
-  const handleMediaDrop = (e: React.DragEvent, index: number, mediaType: 'image' | 'video' | 'audio' | 'text') => {
+  const handleMediaDrop = (
+    e: React.DragEvent,
+    index: number,
+    mediaType: "image" | "video" | "audio" | "text",
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     setDraggedModule(null);
-    
+
     const files = e.dataTransfer.files;
     handleMediaFileSelect(index, files, mediaType);
   };
-  
+
   /**
    * Remove a file from module's media file list
    * @param moduleIndex - Array index of module
@@ -847,12 +916,16 @@ export default function NewCoursePage() {
    * @param mediaType - Type of media file to remove
    */
   const removeMediaFile = (
-    moduleIndex: number, 
-    fileIndex: number, 
-    mediaType: 'image' | 'video' | 'audio' | 'text'
+    moduleIndex: number,
+    fileIndex: number,
+    mediaType: "image" | "video" | "audio" | "text",
   ) => {
     const updatedModules = [...modules];
-    const fileKey = `${mediaType}Files` as 'imageFiles' | 'videoFiles' | 'audioFiles' | 'textFiles';
+    const fileKey = `${mediaType}Files` as
+      | "imageFiles"
+      | "videoFiles"
+      | "audioFiles"
+      | "textFiles";
     const files = updatedModules[moduleIndex][fileKey] || [];
     updatedModules[moduleIndex] = {
       ...updatedModules[moduleIndex],
@@ -860,24 +933,24 @@ export default function NewCoursePage() {
     };
     setModules(updatedModules);
   };
-  
+
   /**
    * Format file size for display
    * @param bytes - File size in bytes
    * @returns Formatted string (e.g., "1.5 MB")
    */
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   // ------------------------------------------------------------------------------
   // FORM SUBMISSION HANDLER
   // ------------------------------------------------------------------------------
-  
+
   /**
    * Handle form submission for creating or updating a course
    * Validates all fields, makes API call, and handles response
@@ -890,7 +963,7 @@ export default function NewCoursePage() {
     // --------------
     // VALIDATION
     // --------------
-    
+
     // Validate course name is not empty
     if (!courseName.trim()) {
       setMessage({ type: "error", text: "Course name is required" });
@@ -921,18 +994,18 @@ export default function NewCoursePage() {
       // --------------
       // DETERMINE CREATE VS UPDATE MODE
       // --------------
-      
+
       // If courseId exists, we're updating; otherwise, creating
-      const url = courseId 
+      const url = courseId
         ? `/api/admin/courses/${courseId}` // Update existing course
         : "/api/admin/add-new-course"; // Create new course
-      
+
       const method = courseId ? "PUT" : "POST"; // HTTP method based on mode
 
       // --------------
       // MAKE API REQUEST
       // --------------
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -945,58 +1018,58 @@ export default function NewCoursePage() {
           isStandalone,
           modules: modules.map((module) => {
             // Collect all uploaded files as module content
-            const contents: any[] = [];
-            
+            const contents: ModuleContentPayload[] = [];
+
             // Add images
             if (module.imageFiles && module.imageFiles.length > 0) {
-              module.imageFiles.forEach(file => {
+              module.imageFiles.forEach((file) => {
                 contents.push({
-                  type: 'IMAGE',
+                  type: "IMAGE",
                   name: file.name,
-                  externalLink: file.url
+                  externalLink: file.url,
                 });
               });
             }
-            
+
             // Add videos
             if (module.videoFiles && module.videoFiles.length > 0) {
-              module.videoFiles.forEach(file => {
+              module.videoFiles.forEach((file) => {
                 contents.push({
-                  type: 'VIDEO',
+                  type: "VIDEO",
                   name: file.name,
-                  externalLink: file.url
+                  externalLink: file.url,
                 });
               });
             }
-            
+
             // Add audio
             if (module.audioFiles && module.audioFiles.length > 0) {
-              module.audioFiles.forEach(file => {
+              module.audioFiles.forEach((file) => {
                 contents.push({
-                  type: 'AUDIO',
+                  type: "AUDIO",
                   name: file.name,
-                  externalLink: file.url
+                  externalLink: file.url,
                 });
               });
             }
-            
+
             // Add text/documents
             if (module.textFiles && module.textFiles.length > 0) {
-              module.textFiles.forEach(file => {
+              module.textFiles.forEach((file) => {
                 contents.push({
-                  type: 'PDF',
+                  type: "PDF",
                   name: file.name,
-                  externalLink: file.url
+                  externalLink: file.url,
                 });
               });
             }
-            
+
             return {
               id: module.id, // Include ID for updates (undefined for new modules)
               title: module.title.trim(),
               moduleNumber: module.moduleNumber,
               description: module.description.trim() || null, // null if empty
-              contents: contents.length > 0 ? contents : undefined
+              contents: contents.length > 0 ? contents : undefined,
             };
           }),
         }),
@@ -1007,14 +1080,16 @@ export default function NewCoursePage() {
       // --------------
       // HANDLE RESPONSE
       // --------------
-      
+
       if (response.ok) {
         // Success! Show appropriate message
-        setMessage({ 
-          type: "success", 
-          text: courseId ? "Course updated successfully!" : "Course created successfully!" 
+        setMessage({
+          type: "success",
+          text: courseId
+            ? "Course updated successfully!"
+            : "Course created successfully!",
         });
-        
+
         // Reset form only when creating (not when editing)
         if (!courseId) {
           setCourseName("");
@@ -1032,13 +1107,20 @@ export default function NewCoursePage() {
         // API returned an error
         setMessage({
           type: "error",
-          text: data.error || `Failed to ${courseId ? 'update' : 'create'} course`,
+          text:
+            data.error || `Failed to ${courseId ? "update" : "create"} course`,
         });
       }
     } catch (error) {
       // Network or other error occurred
-      console.error(`Error ${courseId ? 'updating' : 'creating'} course:`, error);
-      setMessage({ type: "error", text: "An error occurred. Please try again." });
+      console.error(
+        `Error ${courseId ? "updating" : "creating"} course:`,
+        error,
+      );
+      setMessage({
+        type: "error",
+        text: "An error occurred. Please try again.",
+      });
     } finally {
       setIsLoading(false); // Hide loading state
     }
@@ -1047,7 +1129,7 @@ export default function NewCoursePage() {
   // ------------------------------------------------------------------------------
   // RENDER GUARDS - Show loading/error states before main content
   // ------------------------------------------------------------------------------
-  
+
   // Show loading spinner while checking admin status or fetching course data
   if (isAdmin === null || isFetchingCourse) {
     return (
@@ -1069,20 +1151,19 @@ export default function NewCoursePage() {
   // ------------------------------------------------------------------------------
   // MAIN RENDER - Course creation/editing form
   // ------------------------------------------------------------------------------
-  
+
   return (
     <StyledMainContent isExpanded={isExpanded}>
       <StyledContainer>
         {/* PAGE HEADER - Changes based on create vs edit mode */}
         <StyledHeader>
           <StyledTitle>
-            {courseId ? 'Edit Course Package' : 'Add New Course Package'}
+            {courseId ? "Edit Course Package" : "Add New Course Package"}
           </StyledTitle>
           <StyledSubtitle>
-            {courseId 
-              ? 'Modify course details and manage modules'
-              : 'Create a new course package with modules for the coaching page'
-            }
+            {courseId
+              ? "Modify course details and manage modules"
+              : "Create a new course package with modules for the coaching page"}
           </StyledSubtitle>
         </StyledHeader>
 
@@ -1242,14 +1323,16 @@ export default function NewCoursePage() {
                   {/* Module Content Files - 4 separate upload areas by media type */}
                   <FormGroup style={{ marginBottom: 0 }}>
                     <Label>Module Content Files</Label>
-                    
+
                     {/* Hidden file inputs for each media type */}
                     <HiddenFileInput
                       id={`image-input-${index}`}
                       type="file"
                       multiple
                       accept="image/*"
-                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'image')}
+                      onChange={(e) =>
+                        handleMediaFileSelect(index, e.target.files, "image")
+                      }
                       disabled={isLoading}
                     />
                     <HiddenFileInput
@@ -1257,7 +1340,9 @@ export default function NewCoursePage() {
                       type="file"
                       multiple
                       accept="video/*"
-                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'video')}
+                      onChange={(e) =>
+                        handleMediaFileSelect(index, e.target.files, "video")
+                      }
                       disabled={isLoading}
                     />
                     <HiddenFileInput
@@ -1265,7 +1350,9 @@ export default function NewCoursePage() {
                       type="file"
                       multiple
                       accept="audio/*"
-                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'audio')}
+                      onChange={(e) =>
+                        handleMediaFileSelect(index, e.target.files, "audio")
+                      }
                       disabled={isLoading}
                     />
                     <HiddenFileInput
@@ -1273,24 +1360,42 @@ export default function NewCoursePage() {
                       type="file"
                       multiple
                       accept="text/*,.txt,.doc,.docx,.pdf"
-                      onChange={(e) => handleMediaFileSelect(index, e.target.files, 'text')}
+                      onChange={(e) =>
+                        handleMediaFileSelect(index, e.target.files, "text")
+                      }
                       disabled={isLoading}
                     />
-                    
+
                     {/* Grid of 4 media upload boxes */}
                     <MediaUploadGrid>
                       {/* IMAGE UPLOAD */}
                       <div>
                         <MediaUploadBox
-                          isDragging={draggedModule?.index === index && draggedModule?.type === 'image'}
-                          onClick={() => !isLoading && document.getElementById(`image-input-${index}`)?.click()}
-                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'image')}
-                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
-                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'image')}
+                          isDragging={
+                            draggedModule?.index === index &&
+                            draggedModule?.type === "image"
+                          }
+                          onClick={() =>
+                            !isLoading &&
+                            document
+                              .getElementById(`image-input-${index}`)
+                              ?.click()
+                          }
+                          onDragOver={(e) =>
+                            !isLoading && handleMediaDragOver(e, index, "image")
+                          }
+                          onDragLeave={(e) =>
+                            !isLoading && handleMediaDragLeave(e)
+                          }
+                          onDrop={(e) =>
+                            !isLoading && handleMediaDrop(e, index, "image")
+                          }
                         >
                           <MediaUploadIcon>🖼️</MediaUploadIcon>
                           <MediaUploadTitle>Images</MediaUploadTitle>
-                          <MediaUploadSubtext>JPG, PNG, GIF, etc.</MediaUploadSubtext>
+                          <MediaUploadSubtext>
+                            JPG, PNG, GIF, etc.
+                          </MediaUploadSubtext>
                         </MediaUploadBox>
                         {/* Display selected image files */}
                         {module.imageFiles && module.imageFiles.length > 0 && (
@@ -1298,12 +1403,18 @@ export default function NewCoursePage() {
                             {module.imageFiles.map((file, fileIndex) => (
                               <FileItem key={fileIndex}>
                                 <FileInfo>
-                                  <FileName title={file.name}>{file.name}</FileName>
-                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                  <FileName title={file.name}>
+                                    {file.name}
+                                  </FileName>
+                                  <FileSize>
+                                    {formatFileSize(file.size)}
+                                  </FileSize>
                                 </FileInfo>
                                 <RemoveFileButton
                                   type="button"
-                                  onClick={() => removeMediaFile(index, fileIndex, 'image')}
+                                  onClick={() =>
+                                    removeMediaFile(index, fileIndex, "image")
+                                  }
                                   disabled={isLoading}
                                 >
                                   ×
@@ -1317,15 +1428,31 @@ export default function NewCoursePage() {
                       {/* VIDEO UPLOAD */}
                       <div>
                         <MediaUploadBox
-                          isDragging={draggedModule?.index === index && draggedModule?.type === 'video'}
-                          onClick={() => !isLoading && document.getElementById(`video-input-${index}`)?.click()}
-                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'video')}
-                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
-                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'video')}
+                          isDragging={
+                            draggedModule?.index === index &&
+                            draggedModule?.type === "video"
+                          }
+                          onClick={() =>
+                            !isLoading &&
+                            document
+                              .getElementById(`video-input-${index}`)
+                              ?.click()
+                          }
+                          onDragOver={(e) =>
+                            !isLoading && handleMediaDragOver(e, index, "video")
+                          }
+                          onDragLeave={(e) =>
+                            !isLoading && handleMediaDragLeave(e)
+                          }
+                          onDrop={(e) =>
+                            !isLoading && handleMediaDrop(e, index, "video")
+                          }
                         >
                           <MediaUploadIcon>🎥</MediaUploadIcon>
                           <MediaUploadTitle>Videos</MediaUploadTitle>
-                          <MediaUploadSubtext>MP4, MOV, AVI, etc.</MediaUploadSubtext>
+                          <MediaUploadSubtext>
+                            MP4, MOV, AVI, etc.
+                          </MediaUploadSubtext>
                         </MediaUploadBox>
                         {/* Display selected video files */}
                         {module.videoFiles && module.videoFiles.length > 0 && (
@@ -1333,12 +1460,18 @@ export default function NewCoursePage() {
                             {module.videoFiles.map((file, fileIndex) => (
                               <FileItem key={fileIndex}>
                                 <FileInfo>
-                                  <FileName title={file.name}>{file.name}</FileName>
-                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                  <FileName title={file.name}>
+                                    {file.name}
+                                  </FileName>
+                                  <FileSize>
+                                    {formatFileSize(file.size)}
+                                  </FileSize>
                                 </FileInfo>
                                 <RemoveFileButton
                                   type="button"
-                                  onClick={() => removeMediaFile(index, fileIndex, 'video')}
+                                  onClick={() =>
+                                    removeMediaFile(index, fileIndex, "video")
+                                  }
                                   disabled={isLoading}
                                 >
                                   ×
@@ -1352,15 +1485,31 @@ export default function NewCoursePage() {
                       {/* AUDIO UPLOAD */}
                       <div>
                         <MediaUploadBox
-                          isDragging={draggedModule?.index === index && draggedModule?.type === 'audio'}
-                          onClick={() => !isLoading && document.getElementById(`audio-input-${index}`)?.click()}
-                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'audio')}
-                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
-                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'audio')}
+                          isDragging={
+                            draggedModule?.index === index &&
+                            draggedModule?.type === "audio"
+                          }
+                          onClick={() =>
+                            !isLoading &&
+                            document
+                              .getElementById(`audio-input-${index}`)
+                              ?.click()
+                          }
+                          onDragOver={(e) =>
+                            !isLoading && handleMediaDragOver(e, index, "audio")
+                          }
+                          onDragLeave={(e) =>
+                            !isLoading && handleMediaDragLeave(e)
+                          }
+                          onDrop={(e) =>
+                            !isLoading && handleMediaDrop(e, index, "audio")
+                          }
                         >
                           <MediaUploadIcon>🎵</MediaUploadIcon>
                           <MediaUploadTitle>Audio</MediaUploadTitle>
-                          <MediaUploadSubtext>MP3, WAV, AAC, etc.</MediaUploadSubtext>
+                          <MediaUploadSubtext>
+                            MP3, WAV, AAC, etc.
+                          </MediaUploadSubtext>
                         </MediaUploadBox>
                         {/* Display selected audio files */}
                         {module.audioFiles && module.audioFiles.length > 0 && (
@@ -1368,12 +1517,18 @@ export default function NewCoursePage() {
                             {module.audioFiles.map((file, fileIndex) => (
                               <FileItem key={fileIndex}>
                                 <FileInfo>
-                                  <FileName title={file.name}>{file.name}</FileName>
-                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                  <FileName title={file.name}>
+                                    {file.name}
+                                  </FileName>
+                                  <FileSize>
+                                    {formatFileSize(file.size)}
+                                  </FileSize>
                                 </FileInfo>
                                 <RemoveFileButton
                                   type="button"
-                                  onClick={() => removeMediaFile(index, fileIndex, 'audio')}
+                                  onClick={() =>
+                                    removeMediaFile(index, fileIndex, "audio")
+                                  }
                                   disabled={isLoading}
                                 >
                                   ×
@@ -1387,15 +1542,31 @@ export default function NewCoursePage() {
                       {/* TEXT/DOCUMENT UPLOAD */}
                       <div>
                         <MediaUploadBox
-                          isDragging={draggedModule?.index === index && draggedModule?.type === 'text'}
-                          onClick={() => !isLoading && document.getElementById(`text-input-${index}`)?.click()}
-                          onDragOver={(e) => !isLoading && handleMediaDragOver(e, index, 'text')}
-                          onDragLeave={(e) => !isLoading && handleMediaDragLeave(e)}
-                          onDrop={(e) => !isLoading && handleMediaDrop(e, index, 'text')}
+                          isDragging={
+                            draggedModule?.index === index &&
+                            draggedModule?.type === "text"
+                          }
+                          onClick={() =>
+                            !isLoading &&
+                            document
+                              .getElementById(`text-input-${index}`)
+                              ?.click()
+                          }
+                          onDragOver={(e) =>
+                            !isLoading && handleMediaDragOver(e, index, "text")
+                          }
+                          onDragLeave={(e) =>
+                            !isLoading && handleMediaDragLeave(e)
+                          }
+                          onDrop={(e) =>
+                            !isLoading && handleMediaDrop(e, index, "text")
+                          }
                         >
                           <MediaUploadIcon>📄</MediaUploadIcon>
                           <MediaUploadTitle>Documents</MediaUploadTitle>
-                          <MediaUploadSubtext>TXT, PDF, DOC, etc.</MediaUploadSubtext>
+                          <MediaUploadSubtext>
+                            TXT, PDF, DOC, etc.
+                          </MediaUploadSubtext>
                         </MediaUploadBox>
                         {/* Display selected text files */}
                         {module.textFiles && module.textFiles.length > 0 && (
@@ -1403,12 +1574,18 @@ export default function NewCoursePage() {
                             {module.textFiles.map((file, fileIndex) => (
                               <FileItem key={fileIndex}>
                                 <FileInfo>
-                                  <FileName title={file.name}>{file.name}</FileName>
-                                  <FileSize>{formatFileSize(file.size)}</FileSize>
+                                  <FileName title={file.name}>
+                                    {file.name}
+                                  </FileName>
+                                  <FileSize>
+                                    {formatFileSize(file.size)}
+                                  </FileSize>
                                 </FileInfo>
                                 <RemoveFileButton
                                   type="button"
-                                  onClick={() => removeMediaFile(index, fileIndex, 'text')}
+                                  onClick={() =>
+                                    removeMediaFile(index, fileIndex, "text")
+                                  }
                                   disabled={isLoading}
                                 >
                                   ×
@@ -1439,12 +1616,17 @@ export default function NewCoursePage() {
             >
               Cancel
             </Button>
-            
+
             {/* Submit Button - Text changes based on mode (create/update) */}
             <Button type="submit" variant="primary" disabled={isLoading}>
-              {isLoading 
-                ? (courseId ? "Updating..." : "Creating...") // Loading state
-                : (courseId ? "Update Course" : "Create Course") // Default state
+              {
+                isLoading
+                  ? courseId
+                    ? "Updating..."
+                    : "Creating..." // Loading state
+                  : courseId
+                    ? "Update Course"
+                    : "Create Course" // Default state
               }
             </Button>
           </ButtonGroup>

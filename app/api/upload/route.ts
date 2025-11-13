@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -13,6 +14,44 @@ const s3 = new S3Client({
 export const runtime = "nodejs"; // Use Node.js runtime (required for large uploads)
 export const maxDuration = 60; // Maximum duration in seconds
 export const dynamic = "force-dynamic"; // Disable static optimization
+
+/**
+ * GET endpoint - Generate presigned URL for direct S3 upload
+ * This approach bypasses Next.js body size limits by allowing direct client-to-S3 uploads
+ * Used primarily for course management with large video files
+ */
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const fileName = searchParams.get("fileName");
+    const contentType = searchParams.get("contentType");
+
+    if (!fileName || !contentType) {
+      return NextResponse.json(
+        { error: "Missing fileName or contentType" },
+        { status: 400 },
+      );
+    }
+
+    // Create command for S3 PUT operation
+    const command = new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET!,
+      Key: fileName,
+      ContentType: contentType,
+    });
+
+    // Generate presigned URL that expires in 1 hour
+    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+
+    return NextResponse.json({ url: signedUrl });
+  } catch (error) {
+    console.error("Error generating presigned URL:", error);
+    return NextResponse.json(
+      { error: "Failed to generate presigned URL" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(req: Request) {
   try {

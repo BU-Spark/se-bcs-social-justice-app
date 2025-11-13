@@ -219,19 +219,19 @@ const MediaContainer = styled.div`
   width: 100%;
   background: #000;
   position: relative;
-  
+
   img {
     width: 100%;
     height: auto;
     display: block;
   }
-  
+
   video {
     width: 100%;
     height: auto;
     display: block;
   }
-  
+
   audio {
     width: 100%;
   }
@@ -312,7 +312,9 @@ export default function CoachingDetailPage() {
   );
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(
+    new Set(),
+  );
 
   const id = params?.id as string;
 
@@ -377,7 +379,7 @@ export default function CoachingDetailPage() {
   };
 
   const toggleModule = (moduleId: string) => {
-    setExpandedModules(prev => {
+    setExpandedModules((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(moduleId)) {
         newSet.delete(moduleId);
@@ -628,10 +630,10 @@ export default function CoachingDetailPage() {
                           <div
                             style={{
                               padding: "16px",
-                              backgroundColor: isLocked 
-                                ? "#f9fafb" 
-                                : isExpanded 
-                                  ? "#f1f5f9" 
+                              backgroundColor: isLocked
+                                ? "#f9fafb"
+                                : isExpanded
+                                  ? "#f1f5f9"
                                   : "#f8fafc",
                               borderRadius: "8px",
                               border: `1px solid ${isLocked ? "#e5e7eb" : isExpanded ? "#cbd5e1" : "#e2e8f0"}`,
@@ -642,13 +644,15 @@ export default function CoachingDetailPage() {
                             }}
                             onMouseEnter={(e) => {
                               if (!isLocked) {
-                                e.currentTarget.style.backgroundColor = "#f1f5f9";
+                                e.currentTarget.style.backgroundColor =
+                                  "#f1f5f9";
                                 e.currentTarget.style.borderColor = "#cbd5e1";
                               }
                             }}
                             onMouseLeave={(e) => {
                               if (!isLocked && !isExpanded) {
-                                e.currentTarget.style.backgroundColor = "#f8fafc";
+                                e.currentTarget.style.backgroundColor =
+                                  "#f8fafc";
                                 e.currentTarget.style.borderColor = "#e2e8f0";
                               }
                             }}
@@ -679,7 +683,9 @@ export default function CoachingDetailPage() {
                                   width: "32px",
                                   height: "32px",
                                   borderRadius: "50%",
-                                  backgroundColor: isLocked ? "#9ca3af" : "#1e3a8a",
+                                  backgroundColor: isLocked
+                                    ? "#9ca3af"
+                                    : "#1e3a8a",
                                   color: "white",
                                   fontSize: "14px",
                                   fontWeight: "600",
@@ -713,7 +719,9 @@ export default function CoachingDetailPage() {
                                     fontSize: "18px",
                                     color: "#64748b",
                                     transition: "transform 0.2s ease",
-                                    transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                                    transform: isExpanded
+                                      ? "rotate(180deg)"
+                                      : "rotate(0deg)",
                                   }}
                                 >
                                   ▼
@@ -733,7 +741,7 @@ export default function CoachingDetailPage() {
                               </p>
                             )}
                           </div>
-                          
+
                           {/* Expanded content card */}
                           {isExpanded && !isLocked && (
                             <ExpandedContent>
@@ -744,62 +752,136 @@ export default function CoachingDetailPage() {
                                       <ContentHeader>
                                         <ContentTitle>
                                           <ContentIcon>
-                                            {content.contentType === 'IMAGE' && '🖼️'}
-                                            {content.contentType === 'VIDEO' && '🎥'}
-                                            {content.contentType === 'AUDIO' && '🎵'}
-                                            {content.contentType === 'PDF' && '📄'}
-                                            {content.contentType === 'LINK' && '🔗'}
-                                            {content.contentType === 'TEXT' && '📝'}
+                                            {content.contentType === "IMAGE" &&
+                                              "🖼️"}
+                                            {content.contentType === "VIDEO" &&
+                                              "🎥"}
+                                            {content.contentType === "AUDIO" &&
+                                              "🎵"}
+                                            {content.contentType === "PDF" &&
+                                              "📄"}
+                                            {content.contentType === "LINK" &&
+                                              "🔗"}
+                                            {content.contentType === "TEXT" &&
+                                              "📝"}
                                           </ContentIcon>
-                                          {content.title || 'Untitled'}
+                                          {content.title || "Untitled"}
                                         </ContentTitle>
                                       </ContentHeader>
                                       <MediaContainer>
-                                        {content.contentType === 'IMAGE' && content.externalLink && (
-                                          <Image 
-                                            src={content.externalLink} 
-                                            alt={content.title || 'Module content'} 
-                                            width={800}
-                                            height={450}
-                                            style={{ width: '100%', height: 'auto' }}
-                                          />
-                                        )}
-                                        {content.contentType === 'VIDEO' && content.externalLink && (
-                                          <video controls>
-                                            <source src={content.externalLink} type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                          </video>
-                                        )}
-                                        {content.contentType === 'AUDIO' && content.externalLink && (
-                                          <audio controls>
-                                            <source src={content.externalLink} type="audio/mpeg" />
-                                            Your browser does not support the audio tag.
-                                          </audio>
-                                        )}
-                                        {content.contentType === 'PDF' && content.externalLink && (
-                                          <iframe 
-                                            src={content.externalLink} 
-                                            style={{ width: '100%', height: '500px', border: 'none' }}
-                                            title={content.title || 'PDF Document'}
-                                          />
-                                        )}
-                                        {content.contentType === 'LINK' && content.externalLink && (
-                                          <div style={{ padding: '20px', textAlign: 'center' }}>
-                                            <a 
-                                              href={content.externalLink} 
-                                              target="_blank" 
-                                              rel="noopener noreferrer"
+                                        {content.contentType === "IMAGE" &&
+                                          content.externalLink && (
+                                            <Image
+                                              src={content.externalLink}
+                                              alt={
+                                                content.title ||
+                                                "Module content"
+                                              }
+                                              width={800}
+                                              height={450}
                                               style={{
-                                                color: '#1e3a8a',
-                                                textDecoration: 'none',
-                                                fontSize: '16px',
-                                                fontWeight: '500'
+                                                width: "100%",
+                                                height: "auto",
+                                              }}
+                                            />
+                                          )}
+                                        {content.contentType === "VIDEO" &&
+                                          content.externalLink && (
+                                            <video controls>
+                                              <source
+                                                src={content.externalLink}
+                                                type="video/mp4"
+                                              />
+                                              Your browser does not support the
+                                              video tag.
+                                            </video>
+                                          )}
+                                        {content.contentType === "AUDIO" &&
+                                          content.externalLink && (
+                                            <audio controls>
+                                              <source
+                                                src={content.externalLink}
+                                                type="audio/mpeg"
+                                              />
+                                              Your browser does not support the
+                                              audio tag.
+                                            </audio>
+                                          )}
+                                        {content.contentType === "PDF" &&
+                                          content.externalLink &&
+                                          (() => {
+                                            // Check if it's a Word document that needs Google Docs Viewer
+                                            const isWordDoc =
+                                              content.externalLink.match(
+                                                /\.(doc|docx)$/i,
+                                              );
+                                            const viewerUrl = isWordDoc
+                                              ? `https://docs.google.com/viewer?url=${encodeURIComponent(content.externalLink)}&embedded=true`
+                                              : content.externalLink;
+
+                                            return (
+                                              <iframe
+                                                src={viewerUrl}
+                                                style={{
+                                                  width: "100%",
+                                                  height: "500px",
+                                                  border: "none",
+                                                }}
+                                                title={
+                                                  content.title || "Document"
+                                                }
+                                              />
+                                            );
+                                          })()}
+                                        {content.contentType === "TEXT" &&
+                                          content.externalLink &&
+                                          (() => {
+                                            // Check if it's a Word document that needs Google Docs Viewer
+                                            const isWordDoc =
+                                              content.externalLink.match(
+                                                /\.(doc|docx)$/i,
+                                              );
+                                            const viewerUrl = isWordDoc
+                                              ? `https://docs.google.com/viewer?url=${encodeURIComponent(content.externalLink)}&embedded=true`
+                                              : content.externalLink;
+
+                                            return (
+                                              <iframe
+                                                src={viewerUrl}
+                                                style={{
+                                                  width: "100%",
+                                                  height: "500px",
+                                                  border: "none",
+                                                }}
+                                                title={
+                                                  content.title || "Document"
+                                                }
+                                              />
+                                            );
+                                          })()}
+                                        {content.contentType === "LINK" &&
+                                          content.externalLink && (
+                                            <div
+                                              style={{
+                                                padding: "20px",
+                                                textAlign: "center",
                                               }}
                                             >
-                                              Open Link →
-                                            </a>
-                                          </div>
-                                        )}
+                                              <a
+                                                href={content.externalLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                  color: "#1e3a8a",
+                                                  textDecoration: "none",
+                                                  fontSize: "16px",
+                                                  fontWeight: "500",
+                                                }}
+                                              >
+                                                Open Link →
+                                              </a>
+                                            </div>
+                                          )}
                                       </MediaContainer>
                                     </ContentItem>
                                   ))}
@@ -807,7 +889,9 @@ export default function CoachingDetailPage() {
                               ) : (
                                 <EmptyState>
                                   <EmptyStateIcon>📦</EmptyStateIcon>
-                                  <div>No content available for this module yet</div>
+                                  <div>
+                                    No content available for this module yet
+                                  </div>
                                 </EmptyState>
                               )}
                             </ExpandedContent>
