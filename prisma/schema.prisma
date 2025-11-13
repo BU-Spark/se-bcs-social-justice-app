@@ -9,30 +9,30 @@ datasource db {
 
 // --- User and Authentication Models ---
 model User {
-  id                      String                @id @default(cuid())
-  clerkUserId             String                @unique
-  email                   String                @unique
-  name                    String?
-  imageUrl                String?
-  username                String?               @unique
-  ethnicity               String?
-  phoneNumber             String?
-  role                    UserRole              @default(member)
-  referrer                String[]
-  createdAt               DateTime              @default(now())
-  updatedAt               DateTime              @updatedAt
-  hostedAppointments      Appointment[]         @relation("hostRelation")
-  appointmentAttendances  AppointmentAttendee[]
-  comments                Comment[]
-  CommunityLeader         CommunityLeader[]
-  memberships             CommunityMembers[]
-  posts                   Posting[]
-  interests               UserInterest[]
-  votes                   Vote[]
-  leaderApplication       LeaderApplication?
-  onboardingComplete      Boolean               @default(false)
-  enrollments             UserCourse[]
-  subscriptions           UserMembership[]
+  id                     String                @id @default(cuid())
+  clerkUserId            String                @unique
+  email                  String                @unique
+  name                   String?
+  imageUrl               String?
+  username               String?               @unique
+  ethnicity              String?
+  phoneNumber            String?
+  role                   UserRole              @default(member)
+  referrer               String[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  hostedAppointments     Appointment[]         @relation("hostRelation")
+  appointmentAttendances AppointmentAttendee[]
+  comments               Comment[]
+  CommunityLeader        CommunityLeader[]
+  memberships            CommunityMembers[]
+  posts                  Posting[]
+  interests              UserInterest[]
+  votes                  Vote[]
+  leaderApplication      LeaderApplication?
+  onboardingComplete     Boolean               @default(false)
+  enrollments            UserCourse[]
+  subscriptions          UserMembership[]
 }
 
 model Interest {
@@ -53,19 +53,18 @@ model UserInterest {
 
 // --- Community Models ---
 model Community {
-  id                 String                @id @default(cuid())
-  name               String                @unique
-  imageUrl           String?
-  type               String
-  description        String?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  interests          CommunityInterest[]
-  CommunityLeader    CommunityLeader[]
-  members            CommunityMembers[]
-  posts              Posting[]
+  id              String              @id @default(cuid())
+  name            String              @unique
+  imageUrl        String?
+  type            String
+  description     String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  interests       CommunityInterest[]
+  CommunityLeader CommunityLeader[]
+  members         CommunityMembers[]
+  posts           Posting[]
 
-  // Relation added from Schema 1 for granular seminar access
   seminarAccessRules SeminarAccessRule[]
 }
 
@@ -76,6 +75,7 @@ model CommunityMembers {
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status CommunityMemberStatus @default(active)
+
 
   @@id([userId, communityId])
 }
@@ -150,19 +150,19 @@ model AppointmentAttendee {
 
 // --- Posting and Engagement Models ---
 model Posting {
-  id          String          @id @default(cuid())
+  id          String        @id @default(cuid())
   title       String
   content     String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   communityId String
   userId      String
   imageUrl    String?
   pdfUrl      String?
-  score       Int             @default(0)
+  score       Int           @default(0)
   comments    Comment[]
-  community   Community       @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  user        User            @relation(fields: [userId], references: [id])
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id])
   votes       Vote[]
   status      PostingStatus @default(active)
 }
@@ -171,6 +171,12 @@ model BannedWord {
   id        String   @id @default(cuid())
   word      String   @unique
   createdAt DateTime @default(now())
+}
+
+enum PostingStatus {
+  active
+  flagged
+  removed
 }
 
 model Comment {
@@ -441,13 +447,198 @@ enum LeaderApplicationStatus {
   REJECTED
 }
 
+model LeaderApplication {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  fullName String
+  email    String
+  phone    String
+  location String
+
+  currentlyInvolved Boolean
+  background        String
+  hasLedGroup       Boolean
+  previousRole      String
+  focusTopics       String
+  motivation        String
+
+  leadershipStyle       String
+  inclusiveEnvironment  String
+  conflictHandling      String
+  comfortableWithTopics Boolean
+  engagementStrategies  String
+
+  meetingFrequency       String
+  availableForOnboarding Boolean
+  willFollowGuidelines   Boolean
+  questions              String?
+
+  referenceName         String
+  referenceContact      String
+  referenceRelationship String
+  videoUrl              String?
+
+  status    LeaderApplicationStatus @default(PENDING)
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+}
+
+model Course {
+  id String @id @default(cuid())
+
+  name String
+
+  description String?
+
+  price Float
+
+  isStandalone Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  modules Module[]
+
+  enrollments UserCourse[]
+
+  unlockedByTiers TierCourseAccess[]
+
+  prerequisites CoursePrerequisite[] @relation("courseWithPrereqs")
+
+  requiredForCourses CoursePrerequisite[] @relation("prerequisiteCourse")
+}
+
+model Module {
+  id           String          @id @default(cuid())
+  title        String
+  moduleNumber Int?
+  description  String?
+  courseId     String
+  course       Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  contents     ModuleContent[] // one module can have many content items
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model ModuleContent {
+  id       String @id @default(cuid())
+  moduleId String
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  title       String? // Optional title for the content
+  description String?
+
+  contentType ContentType // Enum: TEXT, VIDEO, AUDIO
+  isExternal  Boolean     @default(false) // true = external link, false = internal content
+
+  // Only ONE of these should be populated based on isExternal
+  textContent  String? @db.Text // For internal text content (null if external)
+  externalLink String? // For external URLs (null if internal)
+
+  order     Int? // Order within the module
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Add this enum for content types
 enum ContentType {
   TEXT
   VIDEO
   AUDIO
   PDF
+  IMAGE
   LINK
   IMAGE
+}
+
+model UserCourse {
+  userId String
+
+  courseId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrollmentDate DateTime @default(now())
+
+  completionStatus String @default("not_started")
+
+  trialExpiresAt DateTime?
+
+  @@id([userId, courseId])
+}
+
+model CoursePrerequisite {
+  courseId String
+
+  requiredCourseId String
+
+  course Course @relation("courseWithPrereqs", fields: [courseId], references: [id], onDelete: Cascade)
+
+  requiredCourse Course @relation("prerequisiteCourse", fields: [requiredCourseId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, requiredCourseId])
+}
+
+model MembershipTier {
+  id String @id @default(cuid())
+
+  tierName String @unique
+
+  monthlyPrice Float?
+
+  annualPrice Float?
+
+  description String?
+
+  isActive Boolean @default(true)
+
+  subscriptions UserMembership[]
+
+  coursesUnlocked TierCourseAccess[]
+
+  accessRules SeminarAccessRule[]
+}
+
+model UserMembership {
+  id String @id @default(cuid())
+
+  userId String
+
+  tierId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tier MembershipTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+
+  startDate DateTime @default(now())
+
+  endDate DateTime?
+
+  isActive Boolean @default(true)
+
+  paymentType PaymentType
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tierId])
+}
+
+model TierCourseAccess {
+  tierId String
+
+  courseId String
+
+  tier MembershipTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([tierId, courseId])
 }
 
 enum PaymentType {
@@ -456,15 +647,57 @@ enum PaymentType {
   annual
 }
 
-enum PostingStatus {
-  active
-  flagged
-  removed
-}
-
-// Retained granular access scope for Seminars (from Schema 1)
 enum AccessScope {
   public // open to everyone
   community // specific communities
   membership // specific membership tiers
+}
+
+model Seminar {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  hostName    String
+  date        DateTime
+  duration    Int // duration in minutes
+  zoomLink    String?
+  mediaUrl    String?
+  image       String? //for seminarcover
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attendees   SeminarAttendee[]
+  accessRules SeminarAccessRule[]
+}
+
+model SeminarAccessRule {
+  id          String      @id @default(cuid())
+  seminarId   String
+  accessScope AccessScope
+  communityId String?
+  tierId      String?
+  price       Float?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  seminar   Seminar         @relation(fields: [seminarId], references: [id], onDelete: Cascade)
+  community Community?      @relation(fields: [communityId], references: [id])
+  tier      MembershipTier? @relation(fields: [tierId], references: [id])
+
+  @@index([seminarId])
+  @@index([communityId])
+  @@index([tierId])
+}
+
+model SeminarAttendee {
+  id        String   @id @default(cuid())
+  seminarId String
+  name      String?
+  email     String
+  createdAt DateTime @default(now())
+
+  seminar Seminar @relation(fields: [seminarId], references: [id], onDelete: Cascade)
+
+  @@unique([seminarId, email])
 }
