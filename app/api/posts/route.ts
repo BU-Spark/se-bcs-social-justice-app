@@ -1,6 +1,6 @@
-import { checkAdmin } from "@/lib/admin-auth";
+// import { checkAdmin } from "@/lib/admin-auth";
 import { currentUser } from "@clerk/nextjs/server";
-import { PostingStatus, PrismaClient } from "@prisma/client";
+import { PostingStatus, PrismaClient, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -26,7 +26,17 @@ export async function GET(request: Request) {
 
   const skip = (page - 1) * pageSize;
 
-  const isAdmin = await checkAdmin();
+  let isAdmin = false;
+  const clerkUser = await currentUser();
+
+  if (clerkUser) {
+    const localUser = await prisma.user.findUnique({
+      where: { clerkUserId: clerkUser.id },
+      select: { role: true },
+    });
+
+    if (localUser && localUser.role === UserRole.admin) isAdmin = true;
+  }
   const whereClause: any = {
     communityId: communityId,
   };
@@ -53,7 +63,7 @@ export async function GET(request: Request) {
       },
     });
 
-    const totalPosts = await prisma.posting.count({ where: { communityId } });
+    const totalPosts = await prisma.posting.count({ where: whereClause });
     const totalPages = Math.ceil(totalPosts / pageSize);
 
     return NextResponse.json(
