@@ -1,16 +1,22 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import ConfirmPage from '@/app/(authenticated)/scheduling/confirm/page';
-import { useSearchParams, useRouter } from 'next/navigation';
+import React from "react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
+import ConfirmPage from "@/app/(authenticated)/scheduling/confirm/page";
+import { useSearchParams, useRouter } from "next/navigation";
 
 // Mock the useSearchParams and useRouter hooks
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(),
   useRouter: jest.fn(),
 }));
 
 // Mock the SidebarContext
-jest.mock('@/app/components/SidebarContext', () => {
+jest.mock("@/app/components/SidebarContext", () => {
   return {
     useSidebar: () => ({
       isExpanded: true,
@@ -39,14 +45,14 @@ const mockLocalStorage = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: mockLocalStorage,
 });
 
-describe('ConfirmPage', () => {
+describe("ConfirmPage", () => {
   const mockPush = jest.fn();
   const mockGet = jest.fn();
-  
+
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue({
@@ -55,32 +61,33 @@ describe('ConfirmPage', () => {
     (useSearchParams as jest.Mock).mockReturnValue({
       get: mockGet,
     });
-    
+
     // Mock search params
     mockGet.mockImplementation((param) => {
-      if (param === 'type') return '1';
-      if (param === 'date') return '2023-06-01';
-      if (param === 'time') return '09:00';
+      if (param === "type") return "1";
+      if (param === "date") return "2023-06-01";
+      if (param === "time") return "09:00";
       return null;
     });
-    
+
     // Mock fetch for appointment type
     global.fetch = jest.fn().mockImplementation((url) => {
-      if (url === '/api/appointment-types/1') {
+      if (url === "/api/appointment-types/1") {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            id: '1',
-            title: 'One-on-One Coaching',
-            description: 'Personal coaching session',
-            icon: 'Person',
-            accessType: 'private',
-          }),
+          json: () =>
+            Promise.resolve({
+              id: "1",
+              title: "One-on-One Coaching",
+              description: "Personal coaching session",
+              icon: "Person",
+              accessType: "private",
+            }),
         });
-      } else if (url === '/api/appointments') {
+      } else if (url === "/api/appointments") {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ id: 'appointment-1' }),
+          json: () => Promise.resolve({ id: "appointment-1" }),
         });
       }
       return Promise.reject(new Error(`Unhandled fetch mock for URL: ${url}`));
@@ -91,109 +98,122 @@ describe('ConfirmPage', () => {
     jest.clearAllTimers();
   });
 
-  it('displays appointment details after loading', async () => {
+  it("displays appointment details after loading", async () => {
     await act(async () => {
       render(<ConfirmPage />);
     });
-    
+
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Confirm Appointment' })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Confirm Appointment" }),
+      ).toBeInTheDocument();
     });
-    
+
     // Check if appointment type is displayed
-    expect(screen.getByText('One-on-One Coaching')).toBeInTheDocument();
-    
+    expect(screen.getByText("One-on-One Coaching")).toBeInTheDocument();
+
     // Check if date and time are displayed
     expect(screen.getByText(/May 31, 2023/)).toBeInTheDocument();
     expect(screen.getByText(/8:00 PM/)).toBeInTheDocument();
   });
 
-  it('allows filling out the form', async () => {
+  it("allows filling out the form", async () => {
     await act(async () => {
       render(<ConfirmPage />);
     });
-    
+
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Confirm Appointment' })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Confirm Appointment" }),
+      ).toBeInTheDocument();
     });
-    
+
     // Fill out the form - adjust this based on the actual form fields
-    const commentTextarea = screen.getByPlaceholderText(/Add any additional information/i);
-    
+    const commentTextarea = screen.getByPlaceholderText(
+      /Add any additional information/i,
+    );
+
     await act(async () => {
       fireEvent.change(commentTextarea, {
-        target: { value: 'These are test notes' },
+        target: { value: "These are test notes" },
       });
     });
-    
+
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /Confirm Appointment/i });
-    
+    const submitButton = screen.getByRole("button", {
+      name: /Confirm Appointment/i,
+    });
+
     // Mock successful appointment creation
     global.fetch = jest.fn().mockImplementation(() => {
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ id: 'appointment-1' }),
+        json: () => Promise.resolve({ id: "appointment-1" }),
       });
     });
-    
+
     // Act
     await act(async () => {
       fireEvent.click(submitButton);
       // Fast-forward timers to handle any setTimeout calls
       jest.runAllTimers();
     });
-    
+
     // Skip verification since we've already advanced timers
   });
 
-  it('handles API error when submitting form', async () => {
+  it("handles API error when submitting form", async () => {
     await act(async () => {
       render(<ConfirmPage />);
     });
-    
+
     // Wait for data to load
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Confirm Appointment' })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Confirm Appointment" }),
+      ).toBeInTheDocument();
     });
-    
+
     // Mock failed appointment creation
     global.fetch = jest.fn().mockImplementation((url) => {
-      if (url === '/api/appointment-types/1') {
+      if (url === "/api/appointment-types/1") {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({
-            id: '1',
-            title: 'One-on-One Coaching',
-            description: 'Personal coaching session',
-            icon: 'Person',
-            accessType: 'private',
-          }),
+          json: () =>
+            Promise.resolve({
+              id: "1",
+              title: "One-on-One Coaching",
+              description: "Personal coaching session",
+              icon: "Person",
+              accessType: "private",
+            }),
         });
-      } else if (url === '/api/appointments') {
+      } else if (url === "/api/appointments") {
         return Promise.resolve({
           ok: false,
           status: 500,
-          json: () => Promise.resolve({ error: 'Server error' })
+          json: () => Promise.resolve({ error: "Server error" }),
         });
       }
       return Promise.reject(new Error(`Unhandled fetch mock for URL: ${url}`));
     });
-    
+
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /Confirm Appointment/i });
-    
+    const submitButton = screen.getByRole("button", {
+      name: /Confirm Appointment/i,
+    });
+
     await act(async () => {
       fireEvent.click(submitButton);
       // Fast-forward timers to handle any setTimeout calls
       jest.runAllTimers();
     });
-    
+
     // Check for error message - adjust based on how errors are displayed
     await waitFor(() => {
       expect(mockPush).not.toHaveBeenCalled();
     });
   });
-}); 
+});

@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const user = await currentUser();
@@ -35,7 +35,7 @@ export async function POST(
     console.error("Error rejecting application:", error);
     return NextResponse.json(
       { error: "Error rejecting application" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

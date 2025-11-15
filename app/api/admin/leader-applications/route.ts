@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     console.error("Error fetching applications:", error);
     return NextResponse.json(
       { error: "Error fetching applications" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

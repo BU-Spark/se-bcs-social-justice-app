@@ -63,7 +63,7 @@ const CloudinaryImageWidget: React.FC<CloudinaryImageWidgetProps> = ({
           } else if (error) {
             console.error("Cloudinary upload error:", error);
           }
-        }
+        },
       );
     }
   }, [onUpload]);

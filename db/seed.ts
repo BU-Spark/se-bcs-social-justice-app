@@ -24,7 +24,7 @@ async function seed() {
   await prisma.posting.deleteMany();
   if (!community || !user) {
     console.error(
-      "No community or user found. Please seed communities/users first."
+      "No community or user found. Please seed communities/users first.",
     );
     process.exit(1);
   }

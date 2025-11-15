@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     if (!postId) {
       return NextResponse.json(
         { error: "postId query parameter is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     console.error("Error fetching comments:", error);
     return NextResponse.json(
       { error: "Failed to fetch comments" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     if (!postId || !content) {
       return NextResponse.json(
         { error: "postId and content are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     console.error("Error adding comment:", error);
     return NextResponse.json(
       { error: "Failed to add comment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

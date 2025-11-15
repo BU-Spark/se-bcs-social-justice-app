@@ -27,7 +27,7 @@ export async function GET() {
     console.error("Error fetching pending applications count:", error);
     return NextResponse.json(
       { error: "Failed to fetch pending applications count" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

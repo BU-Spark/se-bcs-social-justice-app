@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
+import { CommunityMemberStatus } from "@prisma/client";
 
 export async function joinCommunity(communityId: string) {
   const clerkUser = await currentUser();
@@ -33,6 +34,9 @@ export async function joinCommunity(communityId: string) {
   });
 
   if (existingMembership) {
+    if (existingMembership.status === CommunityMemberStatus.banned) {
+      throw new Error("You are banned from this community and cannot join.");
+    }
     return existingMembership;
   }
 
@@ -40,6 +44,7 @@ export async function joinCommunity(communityId: string) {
     data: {
       userId: localUser.id,
       communityId,
+      status: CommunityMemberStatus.active,
     },
   });
 }

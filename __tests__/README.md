@@ -5,6 +5,7 @@ This directory contains tests for the Social Justice App. The tests are organize
 ## Test Structure
 
 - `communities/`: Tests for community-related features
+
   - `CommunitiesPage.test.tsx`: Tests for the Communities listing page
   - `CommunityDetail.test.tsx`: Tests for the Community detail page
 
@@ -56,4 +57,4 @@ npm run test:watch
 
 ## Known Issues
 
-- Some tests may show React act() warnings in the console. These are related to asynchronous state updates in the components being tested and don't affect the test results. 
+- Some tests may show React act() warnings in the console. These are related to asynchronous state updates in the components being tested and don't affect the test results.

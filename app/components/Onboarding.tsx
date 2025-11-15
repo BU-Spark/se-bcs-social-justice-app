@@ -1,14 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Community } from "@/types/community";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 const Onboarding = () => {
   const { user } = useUser();
   const [isOpen, setIsOpen] = useState(true);
   const [step, setStep] = useState<number>(1);
   const [interestOptions, setInterestOptions] = useState<string[]>([]);
+  const [isLoadingInterests, setIsLoadingInterests] = useState(true);
+  const [availableCommunities, setAvailableCommunities] = useState<
+    Array<Community>
+  >([]);
+  const [isLoadingCommunities, setIsLoadingCommunities] = useState(false);
+  const [selectedCommunities, setSelectedCommunities] = useState<string[]>([]);
   const [formData, setFormData] = useState<{
     username: string;
     phoneNumber: string;
@@ -26,6 +33,7 @@ const Onboarding = () => {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const communitiesRef = useRef(null);
 
   const ethnicityOptions: string[] = [
     "American Indian",
@@ -54,9 +62,9 @@ const Onboarding = () => {
       email: user?.emailAddresses[0]?.emailAddress || "",
     }));
 
-    // Fetch interests from API
     async function fetchInterests() {
       try {
+        setIsLoadingInterests(true);
         const response = await fetch("/api/interests");
         if (response.ok) {
           const data = await response.json();
@@ -66,18 +74,43 @@ const Onboarding = () => {
         }
       } catch (error) {
         console.error("Error fetching interests:", error);
+      } finally {
+        setIsLoadingInterests(false);
+      }
+    }
+
+
+    async function fetchCommunities() {
+      try {
+        const response = await fetch("/api/communities");
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableCommunities(data.recommendedCommunities || []);
+        }
+      } catch (error) {
+        console.error("Error fetching communities:", error);
+      } finally {
+        setIsLoadingCommunities(false);
       }
     }
 
     fetchInterests();
+    fetchCommunities();
   }, [user]);
 
   const validatePhoneNumber = (phone: string): boolean => {
     return /^\d{10}$/.test(phone);
   };
 
+  const handleCommunityToggle = (communityId: string) => {
+    setSelectedCommunities((prev) =>
+      prev.includes(communityId)
+        ? prev.filter((id) => id !== communityId)
+        : [...prev, communityId],
+    );
+  };
+
   const handleNext = () => {
-    // Example validation for step 2
     if (step === 2) {
       const newErrors: { [key: string]: string } = {};
       if (!formData.username) newErrors.username = "Username is required";
@@ -115,7 +148,21 @@ const Onboarding = () => {
 
       if (response.ok) {
         console.log("User data updated successfully.");
+
+        if (selectedCommunities.length) {
+          await Promise.all(
+            selectedCommunities.map((communityId) =>
+              fetch("/api/join-community", {
+                method: "POST",
+                body: JSON.stringify({ communityId }),
+                headers: { "Content-Type": "application/json" },
+              }),
+            ),
+          );
+        }
+
         setIsOpen(false);
+        window.location.href = "/dashboard";
       } else {
         console.error("Failed to update user.");
       }
@@ -138,16 +185,14 @@ const Onboarding = () => {
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-lg w-[600px] h-[500px] md:w-[700px] md:h-[550px] lg:w-[700px] lg:h-[550px] flex flex-col relative">
         <div className="absolute top-4 w-full px-6 flex justify-between items-center">
-          {/* Step Indicator - Only visible for steps 2, 3, and 4 */}
           {step > 1 && step < 5 ? (
             <span className="text-blue-600 font-bold text-md">
               Step {step - 1}/3
             </span>
           ) : (
-            <div></div> // Empty div to maintain layout consistency
+            <div></div>
           )}
 
-          {/* Close Button - Always stays on the right */}
           <button
             className="text-gray-500 hover:text-gray-800 text-2xl font-bold"
             onClick={handleClose}
@@ -156,7 +201,6 @@ const Onboarding = () => {
           </button>
         </div>
 
-        {/* Content area with fixed height to allow for scrolling if needed */}
         <div className="flex-1 p-12 overflow-y-auto">
           {step === 1 && (
             <div className="flex flex-col h-full">
@@ -302,7 +346,9 @@ const Onboarding = () => {
                 Select your preferred topics.
               </p>
               <div className="mt-12 flex flex-wrap gap-2">
-                {interestOptions.length > 0 ? (
+                {isLoadingInterests ? (
+                  <p className="text-gray-500">Loading interests...</p>
+                ) : interestOptions.length > 0 ? (
                   interestOptions.map((interest) => (
                     <button
                       key={interest}
@@ -320,15 +366,76 @@ const Onboarding = () => {
                             )
                           : [...formData.interests, interest];
                         handleChange("interests", updatedInterests);
+
+                        if (interest === "Community") {
+                          setTimeout(() => {
+                            communitiesRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                          }, 0);
+                        }
                       }}
                     >
                       {interest}
                     </button>
                   ))
                 ) : (
-                  <p className="text-gray-500">Loading interests...</p>
+                  <p className="text-gray-500">
+                    No interests available. Please contact support.
+                  </p>
                 )}
               </div>
+
+              {formData.interests.includes("Community") && (
+                <div ref={communitiesRef} className="mt-6 border-t pt-6">
+                  <h3 className="text-lg font-bold mb-4">
+                    Available Communities
+                  </h3>
+                  {isLoadingCommunities ? (
+                    <p className="text-gray-500">Loading communities...</p>
+                  ) : availableCommunities.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {availableCommunities.map((community) => (
+                        <label
+                          key={community.id}
+                          className="flex items-start gap-3 p-3 bg-gray-200 hover:bg-gray-300 border rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 peer"
+                            checked={selectedCommunities.includes(community.id)}
+                            onChange={() => handleCommunityToggle(community.id)}
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              {community.imageUrl && (
+                                <img
+                                  src={community.imageUrl}
+                                  alt={community.name}
+                                  className="w-8 h-8 rounded object-cover"
+                                />
+                              )}
+                              <span className="font-medium text-sm">
+                                {community.name}
+                              </span>
+                            </div>
+                            {community.description && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {community.description}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">
+                      No communities available yet.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -351,7 +458,6 @@ const Onboarding = () => {
           )}
         </div>
 
-        {/* Fixed button area at the bottom */}
         <div className="p-6 border-t">
           <div className="flex justify-between items-center">
             {step > 1 ? (
