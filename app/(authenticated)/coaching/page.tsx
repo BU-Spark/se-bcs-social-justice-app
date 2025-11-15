@@ -15,7 +15,7 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import LockIcon from "@mui/icons-material/Lock";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@mui/material";
-import SeminarDetail, { Seminar } from "./seminars/seminarPage";
+import { Seminar } from "./seminars/[id]/SeminarDetail";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -248,7 +248,6 @@ export default function CoachingPage() {
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>(
     {},
   );
-  const [selectedSeminar, setSelectedSeminar] = useState<Seminar | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [seminars, setSeminars] = useState<Seminar[]>([]);
   const [loading, setLoading] = useState(true);
@@ -301,14 +300,6 @@ export default function CoachingPage() {
   //   };
   //   checkAdmin();
   // }, []);
-
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      setSelectedSeminar(null);
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
 
   // Fetch courses from API
   useEffect(() => {
@@ -475,20 +466,6 @@ export default function CoachingPage() {
 
   // Seminars grid
   const renderSeminarsGrid = () => {
-    if (selectedSeminar) {
-      return (
-        <SeminarDetail
-          seminar={selectedSeminar}
-          onBack={() => {
-            setSelectedSeminar(null);
-            if (window.history.state && window.history.state.seminarId) {
-              window.history.back();
-            }
-          }}
-        />
-      );
-    }
-
     if (loading) {
       return (
         <p style={{ textAlign: "center", color: "#64748b" }}>
@@ -535,7 +512,7 @@ export default function CoachingPage() {
             {seminars.map((seminar) => (
               <CoachingCard
                 key={seminar.id}
-                onClick={() => setSelectedSeminar(seminar)}
+                onClick={() => router.push(`/coaching/seminars/${seminar.id}`)}
                 style={{ cursor: "pointer" }}
               >
                 <CardImageContainer>
@@ -592,7 +569,6 @@ export default function CoachingPage() {
       </>
     );
   };
-
   // Download grid with placeholder cards
   const renderDownloadGrid = () => (
     <CoachingGrid>
@@ -676,7 +652,6 @@ export default function CoachingPage() {
             active={activeTab === "Course"}
             onClick={() => {
               setActiveTab("Course");
-              setSelectedSeminar(null);
             }}
           >
             Course
@@ -685,7 +660,6 @@ export default function CoachingPage() {
             active={activeTab === "Seminars"}
             onClick={() => {
               setActiveTab("Seminars");
-              setSelectedSeminar(null);
               router.push("?tab=Seminars");
             }}
           >
@@ -695,7 +669,6 @@ export default function CoachingPage() {
             active={activeTab === "Download"}
             onClick={() => {
               setActiveTab("Download");
-              setSelectedSeminar(null);
             }}
           >
             Download
@@ -704,7 +677,6 @@ export default function CoachingPage() {
             active={activeTab === "My Purchases"}
             onClick={() => {
               setActiveTab("My Purchases");
-              setSelectedSeminar(null);
             }}
           >
             My Purchases

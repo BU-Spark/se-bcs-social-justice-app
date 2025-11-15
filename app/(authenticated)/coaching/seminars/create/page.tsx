@@ -60,20 +60,16 @@ export default function CreateSeminarPage() {
           fetch("/api/membership-tier", { credentials: "include" }),
         ]);
 
-        // peek at response text (for debugging only)
         const commText = await commRes.text();
         const tierText = await tierRes.text();
-        console.log("communities raw:", commText.slice(0, 150));
-        console.log("tiers raw:", tierText.slice(0, 150));
 
-        // now try to parse JSON safely
         const commData = JSON.parse(commText);
         const tierData = JSON.parse(tierText);
 
         setCommunities(commData || []);
         setTiers(tierData || []);
       } catch (err) {
-        console.error("❌ Error fetching dropdown lists:", err);
+        console.error("Error fetching dropdown lists:", err);
       }
     }
     fetchLists();
@@ -111,79 +107,46 @@ export default function CreateSeminarPage() {
     setForm({ ...form, accessRules: updatedRules });
   };
 
-  // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-
-  //   const formData = new FormData();
-  //   formData.append("file", file);
-
-  //   try {
-  //     const res = await fetch("/api/upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-  //     const data = await res.json();
-
-  //     if (data.url) {
-  //       setForm((prev) => ({ ...prev, image: data.url }));
-  //     } else {
-  //       alert("Image upload failed.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Image upload error:", err);
-  //     alert("Image upload failed.");
-  //   }
-  // };
-
-  // const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-
-  //   const formData = new FormData();
-  //   formData.append("file", file);
-
-  //   try {
-  //     const res = await fetch("/api/upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-  //     const data = await res.json();
-
-  //     if (data.url) {
-  //       setForm((prev) => ({ ...prev, mediaUrl: data.url }));
-  //     } else {
-  //       alert("Media upload failed.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Media upload error:", err);
-  //     alert("Media upload failed.");
-  //   }
-  // };
+  const removeFile = (type: "image" | "media") => {
+    setForm((prev) => ({
+      ...prev,
+      [type === "image" ? "image" : "mediaUrl"]: "",
+    }));
+  };
 
   const uploadToS3 = async (file: File) => {
     const folder = file.type.startsWith("video")
       ? "seminarVideo"
       : "seminarImages";
+
     const fileName = `${folder}/${Date.now()}-${file.name}`;
 
+    // Get uploadUrl + publicUrl from backend
     const res = await fetch(
-      `/api/upload-url?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
     );
-    const { url } = await res.json();
 
-    await fetch(url, {
+    const { uploadUrl, publicUrl } = await res.json();
+
+    if (!uploadUrl || !publicUrl) {
+      throw new Error("Failed to get signed upload URL");
+    }
+
+    // Upload directly to S3
+    await fetch(uploadUrl, {
       method: "PUT",
-      headers: { "Content-Type": file.type },
+      headers: {
+        "Content-Type": file.type,
+      },
       body: file,
     });
 
-    return url.split("?")[0]; // the public S3 URL
+    return publicUrl;
   };
 
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: "image" | "media"
+    type: "image" | "media",
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -199,7 +162,6 @@ export default function CreateSeminarPage() {
       alert(`${type} upload failed.`);
     }
   };
-
 
   const handleSubmit = async () => {
     if (
@@ -407,6 +369,7 @@ export default function CreateSeminarPage() {
             type="file"
             accept="image/*"
             onChange={(e) => handleFileUpload(e, "image")}
+            onClick={(e) => e.stopPropagation()}
           />
           {form.image && (
             <Box mt={2}>
@@ -416,6 +379,19 @@ export default function CreateSeminarPage() {
                 width="100%"
                 style={{ borderRadius: 8 }}
               />
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{
+                  mt: 2,
+                  textTransform: "none",
+                  width: "200px",
+                }}
+                onClick={() => removeFile("image")}
+              >
+                Remove Image
+              </Button>
             </Box>
           )}
         </Box>
@@ -429,14 +405,28 @@ export default function CreateSeminarPage() {
             type="file"
             accept="image/*,video/*"
             onChange={(e) => handleFileUpload(e, "media")}
+            onClick={(e) => e.stopPropagation()}
           />
           {form.mediaUrl && (
             <Box mt={2}>
-              {/\.(mp4|mov|avi|webm)$/i.test(form.mediaUrl) ? (
+              {/\.mp4|\.mov|\.avi|\.webm$/i.test(form.mediaUrl) ? (
                 <video src={form.mediaUrl} controls width="100%" />
               ) : (
                 <img src={form.mediaUrl} alt="Seminar Preview" width="100%" />
               )}
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{
+                  mt: 2,
+                  textTransform: "none",
+                  width: "200px",
+                }}
+                onClick={() => removeFile("media")}
+              >
+                Remove Media
+              </Button>
             </Box>
           )}
         </Box>

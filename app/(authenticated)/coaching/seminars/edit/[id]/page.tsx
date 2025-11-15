@@ -169,26 +169,37 @@ export default function EditSeminarPage() {
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      // Determine the correct folder
+      const folder = file.type.startsWith("video")
+        ? "seminarVideo"
+        : "seminarImages";
 
-      if (!res.ok) {
-        alert("Upload failed");
-        setUploading(false);
-        return;
+      const fileName = `${folder}/${Date.now()}-${file.name}`;
+
+      const res = await fetch(
+        `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+      );
+
+      const { uploadUrl, publicUrl } = await res.json();
+
+      if (!uploadUrl || !publicUrl) {
+        throw new Error("Failed to generate signed URL");
       }
 
-      const data = await res.json();
-      const fileUrl = data.url;
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
 
-      setSeminar((prev) => ({ ...prev, [field]: fileUrl }));
-      alert(" File uploaded successfully!");
+      setSeminar((prev) => ({
+        ...prev,
+        [field]: publicUrl,
+      }));
+
+      alert("File uploaded successfully!");
     } catch (err) {
       console.error(err);
       alert("File upload failed.");
@@ -399,6 +410,7 @@ export default function EditSeminarPage() {
           <label style={{ fontWeight: 600, color: "#1e293b" }}>
             Cover Image
           </label>
+
           {seminar.image ? (
             <div style={{ marginTop: 8 }}>
               <img
@@ -411,27 +423,45 @@ export default function EditSeminarPage() {
                   border: "1px solid #ddd",
                 }}
               />
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{ mt: 2, textTransform: "none", width: 200 }}
+                onClick={() =>
+                  setSeminar((prev) => ({
+                    ...prev,
+                    image: "",
+                  }))
+                }
+              >
+                Remove
+              </Button>
             </div>
           ) : (
             <p style={{ color: "#64748b" }}>No image uploaded yet.</p>
           )}
+
           <input
             type="file"
             accept="image/*"
             onChange={(e) => handleFileUpload(e, "image")}
             style={{ marginTop: 10 }}
+            onClick={(e) => e.stopPropagation()}
           />
+
           {uploading && <p style={{ color: "#64748b" }}>Uploading...</p>}
         </div>
 
+        {/* INTRO  */}
         <div>
           <label style={{ fontWeight: 600, color: "#1e293b" }}>
             Intro Media (Image/Video)
           </label>
+
           {seminar.mediaUrl ? (
             <div style={{ marginTop: 8 }}>
-              {seminar.mediaUrl.endsWith(".mp4") ||
-              seminar.mediaUrl.includes("video") ? (
+              {seminar.mediaUrl.match(/\.(mp4|mov|avi|webm)$/i) ? (
                 <video
                   src={seminar.mediaUrl}
                   controls
@@ -454,16 +484,33 @@ export default function EditSeminarPage() {
                   }}
                 />
               )}
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{ mt: 2, textTransform: "none", width: 200 }}
+                onClick={() =>
+                  setSeminar((prev) => ({
+                    ...prev,
+                    mediaUrl: "",
+                  }))
+                }
+              >
+                Remove
+              </Button>
             </div>
           ) : (
             <p style={{ color: "#64748b" }}>No media uploaded yet.</p>
           )}
+
           <input
             type="file"
             accept="image/*,video/*"
             onChange={(e) => handleFileUpload(e, "mediaUrl")}
+            onClick={(e) => e.stopPropagation()}
             style={{ marginTop: 10 }}
           />
+
           {uploading && <p style={{ color: "#64748b" }}>Uploading...</p>}
         </div>
       </FormGrid>

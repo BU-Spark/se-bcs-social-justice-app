@@ -16,6 +16,8 @@ import {
 } from "@mui/icons-material";
 import { useUser } from "@clerk/nextjs";
 import SeminarReserve from "@/app/components/SeminarReserve";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const DetailContainer = styled.div`
   max-width: 1200px;
@@ -167,15 +169,21 @@ export interface Seminar {
 
 interface SeminarDetailProps {
   seminar: Seminar;
-  onBack: () => void;
-  onReservationSuccess?: () => void;
+  openReservation: boolean;
+  setOpenReservation: (value: boolean) => void;
 }
 
-export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
-  const [openReservation, setOpenReservation] = useState(false);
+export default function SeminarDetail({
+  seminar,
+  openReservation,
+  setOpenReservation,
+}: SeminarDetailProps) {
+  const searchParams = useSearchParams();
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [attendees, setAttendees] = useState(seminar.attendees || []);
   const [accessRules, setAccessRules] = useState(seminar.accessRules || []);
   const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
   const { user, isLoaded, isSignedIn } = useUser();
   const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
   const [isLocked, setIsLocked] = useState(seminar.locked ?? false);
@@ -211,17 +219,68 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
     fetchSeminarData();
   }, [seminar.id]);
 
-  const handleReservation = () => {
+  const hasReserved = attendees.some(
+    (attendee) => attendee.email.toLowerCase() === userEmail.toLowerCase()
+  );
+
+  // Auto-open reservation modal after Stripe payment
+  useEffect(() => {
+    const paidSeminar = searchParams.get("paidSeminar");
+    if (paidSeminar && String(paidSeminar) === String(seminar.id)) {
+      setOpenReservation(true);
+    }
+  }, [searchParams, seminar.id, setOpenReservation]);
+
+  const handleReservation = async () => {
     if (!isLoaded) return;
     if (!isSignedIn || !user) {
       alert("Please sign in to reserve a spot.");
+      return;
+    }
+    if (hasReserved) {
+      alert("You have already reserved a spot for this seminar.");
       return;
     }
     if (isLocked && !isAdmin) {
       alert("You don’t have access to reserve this seminar.");
       return;
     }
-    setOpenReservation(true);
+
+    const paidRule = accessRules.find((r) => r.price && r.price > 0);
+
+    // Free seminar: open modal directly
+    if (!paidRule) {
+      setOpenReservation(true);
+      return;
+    }
+
+    try {
+      setLoadingCheckout(true);
+
+      const res = await fetch("/api/checkout-seminar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seminarId: seminar.id,
+          title: seminar.title,
+          price: paidRule.price,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        alert("Failed to start payment.");
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      console.error(err);
+      alert("Payment error. Please try again.");
+    } finally {
+      setLoadingCheckout(false);
+    }
   };
 
   const handleCloseReservation = () => setOpenReservation(false);
@@ -239,7 +298,6 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
       }
       alert("Seminar deleted successfully!");
 
-      onBack();
       setTimeout(() => {
         window.location.href = "/coaching?tab=Seminars";
       }, 300);
@@ -304,7 +362,10 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
   return (
     <DetailContainer>
       <HeaderActions>
-        <BackButton startIcon={<ArrowBackIcon />} onClick={onBack}>
+        <BackButton
+          startIcon={<ArrowBackIcon />}
+          onClick={() => router.push("/coaching?tab=Seminars")}
+        >
           Back to Seminars
         </BackButton>
 
@@ -336,6 +397,7 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
           </AdminActions>
         )}
       </HeaderActions>
+
       {isLocked && !isAdmin && (
         <div
           style={{
@@ -448,8 +510,15 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
           </InfoSection>
 
           {!isAdmin && (
-            <ReservationButton onClick={handleReservation} disabled={!isLoaded}>
-              {!isLoaded ? "Loading..." : "Reserve Your Spot"}
+            <ReservationButton
+              onClick={handleReservation}
+              disabled={!isLoaded || loadingCheckout || hasReserved}
+            >
+              {loadingCheckout
+                ? "Redirecting..."
+                : hasReserved
+                  ? "Already Reserved"
+                  : "Reserve Your Spot"}
             </ReservationButton>
           )}
           {isAdmin && seminar.zoomLink && (
