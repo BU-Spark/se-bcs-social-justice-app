@@ -329,18 +329,18 @@ const LoadingSpinner = styled.div`
 // `;
 
 // Dropbox text styling
-const DropboxText = styled.p`
-  font-size: 14px;
-  color: #495057;
-  margin: 0;
-`;
+// const DropboxText = styled.p`
+//   font-size: 14px;
+//   color: #495057;
+//   margin: 0;
+// `;
 
 // Dropbox subtext for file types
-const DropboxSubtext = styled.p`
-  font-size: 12px;
-  color: #6c757d;
-  margin: 4px 0 0 0;
-`;
+// const DropboxSubtext = styled.p`
+//   font-size: 12px;
+//   color: #6c757d;
+//   margin: 4px 0 0 0;
+// `;
 
 // Hidden file input
 const HiddenFileInput = styled.input`
