@@ -1265,7 +1265,8 @@ export default function NewCoursePage() {
             {/* Empty State - Show when no modules exist */}
             {modules.length === 0 ? (
               <p style={{ color: "#6c757d", fontSize: "14px" }}>
-                No modules added yet. Click "Add Module" to get started.
+                No modules added yet. Click &quot;Add Module&quot; to get
+                started.
               </p>
             ) : (
               /* Module List - Map through all modules and render cards */
