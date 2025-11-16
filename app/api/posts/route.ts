@@ -1,4 +1,4 @@
-import { checkAdmin } from "@/lib/admin-auth";
+import { can } from "@/lib/permissions";
 import { currentUser } from "@clerk/nextjs/server";
 import { PostingStatus, PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -26,13 +26,26 @@ export async function GET(request: Request) {
 
   const skip = (page - 1) * pageSize;
 
-  const isAdmin = await checkAdmin();
+  let canModerate = false;
+  const clerkUser = await currentUser();
+
+  if (clerkUser) {
+    const localUser = await prisma.user.findUnique({
+      where: { clerkUserId: clerkUser.id },
+      select: { id: true },
+    });
+
+    if (localUser) {
+      canModerate = await can(localUser.id, communityId, "canModerate");
+    }
+  }
+
   const whereClause: any = {
     communityId: communityId,
   };
 
   //admin can see flagged posts while normal user can't
-  if (!isAdmin) {
+  if (!canModerate) {
     whereClause.status = PostingStatus.active;
   } else {
     whereClause.status = {
@@ -53,7 +66,7 @@ export async function GET(request: Request) {
       },
     });
 
-    const totalPosts = await prisma.posting.count({ where: { communityId } });
+    const totalPosts = await prisma.posting.count({ where: whereClause });
     const totalPages = Math.ceil(totalPosts / pageSize);
 
     return NextResponse.json(
@@ -93,6 +106,19 @@ export async function POST(request: Request) {
           name: clerkUser.fullName || "",
         },
       });
+    }
+
+    const hasPermission = await can(
+      localUser.id,
+      parsedData.communityId,
+      "canPost",
+    );
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "You do not have permission to post in this community." },
+        { status: 403 },
+      );
     }
 
     const bannedWords = await prisma.bannedWord.findMany();

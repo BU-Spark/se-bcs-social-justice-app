@@ -1,5 +1,7 @@
+import { can } from "@/lib/permissions";
+import prisma from "@/lib/prisma";
+import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
@@ -28,8 +30,6 @@ export async function GET(request: Request) {
   }
 }
 
-import { currentUser } from "@clerk/nextjs/server";
-
 export async function POST(request: Request) {
   try {
     const clerkUser = await currentUser();
@@ -50,6 +50,28 @@ export async function POST(request: Request) {
     });
     if (!userRecord) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const post = await prisma.posting.findUnique({
+      where: { id: postId },
+      select: { communityId: true },
+    });
+
+    if (!post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    const hasPermission = await can(
+      userRecord.id,
+      post.communityId,
+      "canComment",
+    );
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "You do not have permission to comment in this community." },
+        { status: 403 },
+      );
     }
 
     const comment = await prisma.comment.create({

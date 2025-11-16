@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
+import { currentUser } from "@clerk/nextjs/server";
+import { CommunityMemberStatus } from "@prisma/client";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
@@ -56,6 +57,33 @@ export async function POST(req: Request) {
           interestId: i.id,
         })),
       });
+    }
+
+    //Enroll all users into  Announcements community
+    try {
+      const announcementsCommunity = await prisma.community.findUnique({
+        where: { name: "Announcements" },
+        select: { id: true },
+      });
+
+      if (announcementsCommunity) {
+        await prisma.communityMembers.upsert({
+          where: {
+            userId_communityId: {
+              userId: updatedUser.id,
+              communityId: announcementsCommunity.id,
+            },
+          },
+          update: { status: "active" },
+          create: {
+            userId: updatedUser.id,
+            communityId: announcementsCommunity.id,
+            status: CommunityMemberStatus.active,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to auto-enroll user in announcements:", error);
     }
 
     return NextResponse.json(

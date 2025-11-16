@@ -153,15 +153,22 @@ type Post = {
   };
 };
 
+interface CommunityPermissions {
+  canView: boolean;
+  canPost: boolean;
+  canComment: boolean;
+  canModerate: boolean;
+}
 interface BlogPostsSectionProps {
   communityId: string;
+  permissions: CommunityPermissions;
 }
 
-const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
+const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
+  communityId,
+  permissions,
+}) => {
   const { user: clerkUser, isLoaded: clerkIsLoaded } = useUser();
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isAuthCheckLoaded, setIsAuthCheckLoaded] = useState(false);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -169,27 +176,6 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        const res = await fetch("/api/check-admin");
-        if (res.ok) {
-          const data = await res.json();
-          setIsAdmin(data.isAdmin);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error("Failed to check admin status", error);
-        setIsAdmin(false);
-      } finally {
-        setIsAuthCheckLoaded(true);
-      }
-    };
-
-    checkAdminStatus();
-  }, []);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -256,23 +242,16 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
     return filename.length > 25 ? filename.substring(0, 22) + "..." : filename;
   };
 
-  const isAuthReady = clerkIsLoaded && isAuthCheckLoaded;
-  if (!isAuthReady) {
-    return (
-      <StyledContainer>
-        <p>Loading user data...</p>
-      </StyledContainer>
-    );
-  }
-
   return (
     <StyledContainer>
       <StyledSectionHeader>Community Posts</StyledSectionHeader>
       <StyledTopBar>
         <h3>Create a post!</h3>
-        <StyledButton onClick={() => setIsFormVisible(!isFormVisible)}>
-          {isFormVisible ? "Cancel" : "Write a Post"}
-        </StyledButton>
+        {permissions.canPost && (
+          <StyledButton onClick={() => setIsFormVisible(!isFormVisible)}>
+            {isFormVisible ? "Cancel" : "Write a Post"}
+          </StyledButton>
+        )}
       </StyledTopBar>
       {isFormVisible && (
         <PostForm
@@ -373,25 +352,27 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
                   >
                     {buttonText}
                   </StyledLikeButton>
-                  {isAuthor && (
-                    <StyledDeleteButton
-                      onClick={() => handleDelete(post.id, false)}
-                      style={{ marginLeft: "auto" }}
-                    >
-                      Delete
-                    </StyledDeleteButton>
-                  )}
-                  {isAdmin && !isAuthor && (
+                  {permissions.canModerate && (
                     <StyledDeleteButton
                       onClick={() => handleDelete(post.id, true)}
                       style={{ marginLeft: "auto", backgroundColor: "#500724" }}
                     >
-                      Delete (Admin)
+                      Delete
                     </StyledDeleteButton>
                   )}
+                  {!permissions.canModerate &&
+                    isAuthor &&
+                    permissions.canPost && (
+                      <StyledDeleteButton
+                        onClick={() => handleDelete(post.id, false)}
+                        style={{ marginLeft: "auto" }}
+                      >
+                        Delete
+                      </StyledDeleteButton>
+                    )}
                 </div>
               </StyledPostFooter>
-              <CommentsSection postId={post.id} />
+              <CommentsSection postId={post.id} permissions={permissions} />
             </StyledPostCard>
           );
         })
@@ -425,4 +406,3 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({ communityId }) => {
 };
 
 export default BlogPostsSection;
-

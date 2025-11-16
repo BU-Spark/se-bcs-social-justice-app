@@ -92,37 +92,25 @@ type Comment = {
   };
 };
 
-interface CommentsSectionProps {
-  postId: string;
+interface CommunityPermissions {
+  canView: boolean;
+  canPost: boolean;
+  canComment: boolean;
+  canModerate: boolean;
 }
 
-const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
+interface CommentsSectionProps {
+  postId: string;
+  permissions: CommunityPermissions;
+}
+
+const CommentsSection: React.FC<CommentsSectionProps> = ({
+  postId,
+  permissions,
+}) => {
   const { user: clerkUser, isLoaded: clerkIsLoaded } = useUser();
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentInput, setCommentInput] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isAuthCheckLoaded, setIsAuthCheckLoaded] = useState(false);
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        const res = await fetch("/api/check-admin");
-        if (res.ok) {
-          const data = await res.json();
-          setIsAdmin(data.isAdmin);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error("Failed to check admin status", error);
-        setIsAdmin(false);
-      } finally {
-        setIsAuthCheckLoaded(true);
-      }
-    };
-
-    checkAdminStatus();
-  }, []);
 
   const fetchComments = async () => {
     try {
@@ -179,7 +167,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
     }
   };
 
-  const isAuthReady = clerkIsLoaded && isAuthCheckLoaded;
+  const isAuthReady = clerkIsLoaded;
   if (!isAuthReady) {
     return (
       <CommentsContainer>
@@ -216,35 +204,40 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
                 {comment.user?.name || "Anonymous"}
               </CommentUserName>
               <CommentTime>{formattedTime}</CommentTime>
-              {isCommenter && (
+              {permissions.canModerate && (
                 <DeleteCommentButton
-                  onClick={() => handleDeleteComment(comment.id, false)}
+                  onClick={() => handleDeleteComment(comment.id, true)}
                 >
                   Delete
                 </DeleteCommentButton>
               )}
-              {isAdmin && !isCommenter && (
-                <DeleteCommentButton
-                  onClick={() => handleDeleteComment(comment.id, true)}
-                >
-                  Delete(Admin)
-                </DeleteCommentButton>
-              )}
+
+              {!permissions.canModerate &&
+                isCommenter &&
+                permissions.canComment && (
+                  <DeleteCommentButton
+                    onClick={() => handleDeleteComment(comment.id, false)}
+                  >
+                    Delete
+                  </DeleteCommentButton>
+                )}
             </CommentHeader>
             <CommentContent>{comment.content}</CommentContent>
           </CommentItem>
         );
       })}
-      <CommentForm onSubmit={handleCommentSubmit}>
-        <CommentInput
-          type="text"
-          placeholder="Write a comment..."
-          value={commentInput}
-          onChange={(e) => setCommentInput(e.target.value)}
-          required
-        />
-        <CommentButton type="submit">Submit</CommentButton>
-      </CommentForm>
+      {permissions.canComment && (
+        <CommentForm onSubmit={handleCommentSubmit}>
+          <CommentInput
+            type="text"
+            placeholder="Write a comment..."
+            value={commentInput}
+            onChange={(e) => setCommentInput(e.target.value)}
+            required
+          />
+          <CommentButton type="submit">Submit</CommentButton>
+        </CommentForm>
+      )}
     </CommentsContainer>
   );
 };

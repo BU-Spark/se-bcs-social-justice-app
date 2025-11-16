@@ -13,6 +13,13 @@ type Community = {
   imageUrl?: string | null;
 };
 
+type CommunityPermissions = {
+  canView: boolean;
+  canPost: boolean;
+  canComment: boolean;
+  canModerate: boolean;
+};
+
 const StyledContainer = styled.div`
   display: flex;
   min-height: 100vh;
@@ -65,20 +72,32 @@ const StyledButton = styled.button`
 
 const CommunityPage = ({ params }: { params: { communityid: string } }) => {
   const [community, setCommunity] = useState<Community | null>(null);
-
+  const [permissions, setPermissions] = useState<CommunityPermissions | null>(
+    null,
+  );
   useEffect(() => {
-    const fetchCommunity = async () => {
-      const res = await fetch(`/api/communities/${params.communityid}`);
-      if (res.ok) {
-        const data = await res.json();
+    const fetchData = async () => {
+      const [communityRes, permissionsRes] = await Promise.all([
+        fetch(`/api/communities/${params.communityid}`),
+        fetch(`/api/communities/${params.communityid}/permissions`),
+      ]);
+
+      if (communityRes.ok) {
+        const data = await communityRes.json();
         setCommunity(data);
       }
+
+      if (permissionsRes.ok) {
+        const data = await permissionsRes.json();
+        setPermissions(data);
+      }
     };
-    fetchCommunity();
+    fetchData();
   }, [params.communityid]);
 
-  if (!community) return <p>Loading...</p>;
-
+  if (!community || !permissions) {
+    return <p>Loading</p>;
+  }
   return (
     <StyledContainer>
       <StyledSidebarContainer>
@@ -94,7 +113,10 @@ const CommunityPage = ({ params }: { params: { communityid: string } }) => {
         <Link href="/dashboard">
           <StyledButton>Back</StyledButton>
         </Link>
-        <BlogPostsSection communityId={community.id} />
+        <BlogPostsSection
+          communityId={community.id}
+          permissions={permissions}
+        />
       </StyledMainContent>
     </StyledContainer>
   );
