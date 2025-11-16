@@ -299,34 +299,34 @@ const LoadingSpinner = styled.div`
 `;
 
 // File dropbox container with drag-and-drop styling
-const FileDropbox = styled.div<{ isDragging?: boolean }>`
-  border: 2px dashed ${({ isDragging }) => (isDragging ? "#667eea" : "#dee2e6")};
-  border-radius: 8px;
-  padding: 24px;
-  text-align: center;
-  background: ${({ isDragging }) => (isDragging ? "#f0f3ff" : "#f8f9fa")};
-  transition: all 0.3s;
-  cursor: pointer;
+// const FileDropbox = styled.div<{ isDragging?: boolean }>`
+//   border: 2px dashed ${({ isDragging }) => (isDragging ? "#667eea" : "#dee2e6")};
+//   border-radius: 8px;
+//   padding: 24px;
+//   text-align: center;
+//   background: ${({ isDragging }) => (isDragging ? "#f0f3ff" : "#f8f9fa")};
+//   transition: all 0.3s;
+//   cursor: pointer;
 
-  &:hover {
-    border-color: #667eea;
-    background: #f0f3ff;
-  }
-`;
+//   &:hover {
+//     border-color: #667eea;
+//     background: #f0f3ff;
+//   }
+// `;
 
 // Icon and text container for dropbox
-const DropboxContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-`;
+// const DropboxContent = styled.div`
+//   display: flex;
+//   flex-direction: column;
+//   align-items: center;
+//   gap: 8px;
+// `;
 
 // Dropbox icon styling
-const DropboxIcon = styled.div`
-  font-size: 36px;
-  color: #667eea;
-`;
+// const DropboxIcon = styled.div`
+//   font-size: 36px;
+//   color: #667eea;
+// `;
 
 // Dropbox text styling
 const DropboxText = styled.p`
