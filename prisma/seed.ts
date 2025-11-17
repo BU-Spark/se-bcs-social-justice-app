@@ -1,468 +1,488 @@
-import {
-  AppointmentAccessType,
-  CommunityMemberStatus,
-  PrismaClient,
-} from "@prisma/client";
-import { communities } from "../db/mock-data.ts";
-const prisma = new PrismaClient();
-
-async function main() {
-  console.log("Start seeding...");
-
-  // // 1. Clean up existing data to avoid conflicts
-  // // Delete in an order that respects foreign key constraints
-  // console.log("Deleting old data...");
-  // await prisma.tierCourseAccess.deleteMany();
-  // await prisma.userMembership.deleteMany();
-  // await prisma.coursePrerequisite.deleteMany();
-  // await prisma.userCourse.deleteMany();
-  // await prisma.module.deleteMany();
-  // await prisma.course.deleteMany();
-  // await prisma.membershipTier.deleteMany();
-
-  // console.log("Start seeding...");
-
-  // 1. Clean up existing data to avoid conflicts
-  // Delete in an order that respects foreign key constraints
-  console.log("Deleting old data...");
-  await prisma.tierCourseAccess.deleteMany();
-  await prisma.userMembership.deleteMany();
-  await prisma.coursePrerequisite.deleteMany();
-  await prisma.userCourse.deleteMany();
-  await prisma.module.deleteMany();
-  await prisma.course.deleteMany();
-  await prisma.membershipTier.deleteMany();
-  await prisma.appointmentType.deleteMany();
-  await prisma.interest.deleteMany();
-
-  // --- Post Dependencies ---
-  await prisma.vote.deleteMany();
-  await prisma.comment.deleteMany();
-
-  // --- Appointment Dependencies ---
-  await prisma.appointmentAttendee.deleteMany();
-
-  // --- Community/Interest Dependencies ---
-  await prisma.userInterest.deleteMany();
-  await prisma.communityInterest.deleteMany();
-
-  // --- Course/Tier Dependencies ---
-  await prisma.tierCourseAccess.deleteMany();
-  await prisma.coursePrerequisite.deleteMany();
-  await prisma.userCourse.deleteMany();
-  await prisma.module.deleteMany();
-
-  // --- User/Membership Dependencies ---
-  await prisma.userMembership.deleteMany();
-
-  // --- delete "child" tables ---
-  await prisma.posting.deleteMany();
-  await prisma.appointment.deleteMany();
-  await prisma.communityMembers.deleteMany();
-  await prisma.communityLeader.deleteMany();
-  await prisma.leaderApplication.deleteMany();
-
-  // --- delete "parent" tables ---
-  await prisma.course.deleteMany();
-  await prisma.membershipTier.deleteMany();
-  await prisma.appointmentType.deleteMany();
-  await prisma.interest.deleteMany();
-  await prisma.community.deleteMany();
-  // --- delete users last ---
-  await prisma.user.deleteMany();
-
-  console.log("Old data deleted successfully.");
-  // 2. Create interests
-  console.log("Creating interests...");
-  const interests = [
-    "Community",
-    "Chat",
-    "Coaching",
-    "Events",
-    "Courses",
-    "Social Justice",
-    "Environmental Justice",
-    "Racial Justice",
-    "Identity",
-    "Culture",
-    "Diversity",
-    "Respect",
-    "Gender",
-    "Addinity Groups",
-    "Transformational Soul Coaching",
-    "Research",
-    "Social Justice Hub",
-    "Partnerships",
-    "Healthcare Justice",
-    "Structural Inequality",
-    "Academica",
-    "K-12 Education",
-    "Corporate",
-    "Nonprofit Organizations",
-    "Grassriits Organizations",
-  ];
-
-  for (const interestName of interests) {
-    await prisma.interest.create({
-      data: { name: interestName },
-    });
-  }
-
-  console.log("Sample interests have been created");
-
-  // 3. Create appointment types
-  console.log("Creating appointment types...");
-  const appointmentTypes = [
-    {
-      title: "One-on-One Consultation",
-      description:
-        "Personalized coaching session for individual support and guidance",
-      icon: "Person",
-      accessType: AppointmentAccessType.private,
-    },
-    {
-      title: "Group Consultation",
-      description:
-        "Group coaching session for collaborative learning and support",
-      icon: "Groups",
-      accessType: AppointmentAccessType.private,
-    },
-    {
-      title: "Mental Health Support",
-      description: "Therapeutic session for mental health and well-being",
-      icon: "Psychology",
-      accessType: AppointmentAccessType.private,
-    },
-    {
-      title: "Legal Consultation",
-      description: "Legal advice and support session",
-      icon: "Gavel",
-      accessType: AppointmentAccessType.private,
-    },
-    {
-      title: "Events",
-      description: "Organize public events for larger audiences",
-      icon: "Gavel",
-      accessType: AppointmentAccessType.public,
-    },
-    {
-      title: "Seminars",
-      description: "Seminars for educational information",
-      icon: "Gavel",
-      accessType: AppointmentAccessType.public,
-    },
-  ];
-
-  for (const type of appointmentTypes) {
-    await prisma.appointmentType.create({
-      data: {
-        title: type.title,
-        description: type.description,
-        icon: type.icon,
-        accessType: type.accessType as AppointmentAccessType,
-      },
-    });
-  }
-
-  console.log("Sample appointment types have been created");
-
-  console.log("Creating users...");
-  const user1 = await prisma.user.create({
-    data: {
-      id: "user1",
-      clerkUserId: "clerk_seed_user_1",
-      email: "host@example.com",
-      name: "Sample Host",
-      username: "samplehost",
-      role: "leader",
-      onboardingComplete: true,
-    },
-  });
-
-  const user3 = await prisma.user.create({
-    data: {
-      id: "user3",
-      clerkUserId: "clerk_seed_user_3",
-      email: "host3@example.com",
-      name: "Sample Host3",
-      username: "samplehost3",
-      role: "leader",
-      onboardingComplete: true,
-    },
-  });
-
-  const user2 = await prisma.user.create({
-    data: {
-      id: "user2",
-      clerkUserId: "clerk_seed_user_2",
-      email: "bob@example.com",
-      name: "Bob",
-      username: "bob",
-      role: "member",
-      onboardingComplete: true,
-    },
-  });
-
-  console.log("Sample users have been created");
-
-  // Create a community
-  console.log("Creating community...");
-  const community = await prisma.community.create({
-    data: {
-      id: "seed_comm_1",
-      name: "General Discussion",
-      type: "Social",
-      description: "A place to talk about anything and everything.",
-    },
-  });
-
-  console.log("Community has been created");
-
-  //add both seed users to community
-  console.log("Adding new users to community...");
-  await prisma.communityMembers.createMany({
-    data: [
-      {
-        userId: user3.id,
-        communityId: community.id,
-        status: CommunityMemberStatus.active,
-      },
-      {
-        userId: user2.id,
-        communityId: community.id,
-        status: CommunityMemberStatus.active,
-      },
-    ],
-  });
-
-  console.log("Successfully added members to the community.");
-
-  // Create a post in that community by Alice
-  console.log("Adding post to community...");
-  const post = await prisma.posting.create({
-    data: {
-      id: "seed_post_1",
-      title: "Hello world!",
-      content: "This is the first post in the general discussion community.",
-      communityId: "seed_comm_1",
-      userId: "user3",
-    },
-  });
-
-  console.log(`Created post: "${post.title}" by ${user3.name}`);
-
-  //create reply on post
-  console.log("Adding reply to post...");
-  const comment = await prisma.comment.create({
-    data: {
-      id: "seed_comment_1",
-      content: "Great to be here! Nice post, Alice.",
-      postId: post.id,
-      userId: "user2",
-    },
-  });
-
-  console.log("Adding reply to post");
-
-  const eventType = await prisma.appointmentType.findFirst({
-    where: { title: "Events" },
-  });
-
-  // 4. Create Membership Tiers
-  console.log("Creating membership tiers...");
-  const starterTier = await prisma.membershipTier.create({
-    data: {
-      tierName: "The Starter Messenger",
-      monthlyPrice: 0,
-      annualPrice: 0,
-      description:
-        "Public-facing email list and private, entry-level community forum access.",
-    },
-  });
-
-  const actionTier = await prisma.membershipTier.create({
-    data: {
-      tierName: "The Action Messenger",
-      monthlyPrice: 19,
-      annualPrice: 197,
-      description:
-        "Includes private forum, monthly Q&A, and exclusive monthly resources.",
-    },
-  });
-
-  const multiplierTier = await prisma.membershipTier.create({
-    data: {
-      tierName: "The Multiplier Messenger",
-      monthlyPrice: 97,
-      annualPrice: 1067,
-      description:
-        "All Tier 2 benefits plus bi-weekly masterclasses, hot seat coaching, and the first core pillar course.",
-    },
-  });
-
-  // 5. Create Courses and Modules
-  console.log("Creating courses and modules...");
-  const entryCourse = await prisma.course.create({
-    data: {
-      name: "Courageous Hearts Companion: The 7-Day Messenger Launch",
-      price: 57.0,
-      isStandalone: true,
-      modules: {
-        create: [
-          { title: "The 7-Minute Journal: Beyond the Prompt." },
-          { title: "BTM Pillar Preview: Finding Your Core Courage." },
-          {
-            title:
-              "Practical Practice: How to Have a Hard Conversation This Week.",
-          },
-          { title: "Your First Messenger Move." },
-        ],
-      },
-    },
-  });
-
-  const course1 = await prisma.course.create({
-    data: {
-      name: "Mastering Identity: From Survival to the Self-Conscious Messenger",
-      price: 297.0,
-      isStandalone: true,
-      description:
-        "Healing core wounds and deconstructing limiting beliefs to claim authentic personal power.",
-      modules: {
-        create: [
-          {
-            title:
-              "The Criminology of Self: How Systems Shape Your Self-Worth.",
-          },
-          { title: "Healing Internal Injustice." },
-          { title: "Boundary Setting as a Radical Act of Self-Respect." },
-        ],
-      },
-    },
-  });
-
-  const course2 = await prisma.course.create({
-    data: {
-      name: "Decoding Culture: Systems, Power, and the Path to Equity",
-      price: 297.0,
-      isStandalone: true,
-      description:
-        "Moving from internal work to analyzing and influencing external environments.",
-      modules: {
-        create: [
-          {
-            title:
-              "Organizational Culture Audit: Spotting the Micro-Injustices.",
-          },
-          { title: "The Restorative Lens: Shifting from Blame to Repair." },
-          {
-            title:
-              "Systems Thinking for the Soul: Moving Beyond Individual Guilt.",
-          },
-        ],
-      },
-    },
-  });
-
-  const course3 = await prisma.course.create({
-    data: {
-      name: "The Diversity & Difference Dividend: Harnessing Intersectionality for Impact",
-      price: 297.0,
-      isStandalone: true,
-      description:
-        "Practical, high-level training on embracing difference and moving past fear.",
-      modules: {
-        create: [
-          { title: "The Empathy Gap: Bridging the Divide." },
-          { title: "Intent vs. Impact: A Communication Toolkit." },
-          { title: "Navigating Conflict as an Opportunity for Growth." },
-        ],
-      },
-    },
-  });
-
-  const course4 = await prisma.course.create({
-    data: {
-      name: "Respect & Reciprocity: The Ethics of Advocacy and Leadership",
-      price: 297.0,
-      isStandalone: true,
-      description:
-        "Practical communication and implementation for advocacy and leadership.",
-      modules: {
-        create: [
-          {
-            title:
-              "The Respect Toolkit: Non-Violent Communication (NVC) for Advocates.",
-          },
-          { title: "Leading with Integrity: Accountability and Forgiveness." },
-          {
-            title:
-              "Preventing Burnout: Sustainable Boundaries for the Messenger.",
-          },
-        ],
-      },
-    },
-  });
-
-  const cohortCourse = await prisma.course.create({
-    data: {
-      name: "52-Week Annual Cohort",
-      price: 997.0,
-      isStandalone: false,
-      description: "52 Structured Group Sessions per year focused on the book.",
-    },
-  });
-
-  const certCourse = await prisma.course.create({
-    data: {
-      name: "Be The Messenger Certified Practitioner (BTMC)",
-      price: 4997.0,
-      isStandalone: false,
-      description: "Certification & Professional Development program.",
-    },
-  });
-
-  // 6. Set up Relationships
-  console.log("Setting up relationships...");
-  console.log("Creating sample communities...");
-  for (const c of communities) {
-    await prisma.community.create({
-      data: {
-        name: c.name,
-        description: c.description,
-        imageUrl: c.imageUrl,
-        type: c.type,
-      },
-    });
-  }
-  console.log("✅ Communities created successfully");
-
-  // The Multiplier Messenger tier includes the 'Mastering Identity' course
-  await prisma.tierCourseAccess.create({
-    data: {
-      tierId: multiplierTier.id,
-      courseId: course1.id,
-    },
-  });
-
-  // The BTMC certification requires all 4 core pillar courses
-  await prisma.coursePrerequisite.createMany({
-    data: [
-      { courseId: certCourse.id, requiredCourseId: course1.id },
-      { courseId: certCourse.id, requiredCourseId: course2.id },
-      { courseId: certCourse.id, requiredCourseId: course3.id },
-      { courseId: certCourse.id, requiredCourseId: course4.id },
-    ],
-  });
-
-  console.log("Seeding finished.");
+generator client {
+  provider = "prisma-client-js"
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- User and Authentication Models ---
+model User {
+  id                     String                @id @default(cuid())
+  clerkUserId            String                @unique
+  email                  String                @unique
+  name                   String?
+  imageUrl               String?
+  username               String?               @unique
+  ethnicity              String?
+  phoneNumber            String?
+  role                   UserRole              @default(member)
+  referrer               String[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  hostedAppointments     Appointment[]         @relation("hostRelation")
+  appointmentAttendances AppointmentAttendee[]
+  comments               Comment[]
+  CommunityLeader        CommunityLeader[]
+  memberships            CommunityMembers[]
+  posts                  Posting[]
+  interests              UserInterest[]
+  votes                  Vote[]
+  leaderApplication      LeaderApplication?
+  onboardingComplete     Boolean               @default(false)
+  enrollments            UserCourse[]
+  subscriptions          UserMembership[]
+}
+
+model Interest {
+  id          String              @id @default(cuid())
+  name        String              @unique
+  communities CommunityInterest[]
+  users       UserInterest[]
+}
+
+model UserInterest {
+  userId     String
+  interestId String
+  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, interestId])
+}
+
+// --- Community Models ---
+model Community {
+  id              String              @id @default(cuid())
+  name            String              @unique
+  imageUrl        String?
+  type            String?       
+  accessType      CommunityType       @default(GENERAL)
+  description     String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  interests       CommunityInterest[]
+  CommunityLeader CommunityLeader[]
+  members         CommunityMembers[]
+  posts           Posting[]
+
+  seminarAccessRules SeminarAccessRule[]
+}
+
+model CommunityMembers {
+  userId      String
+  communityId String
+  community   Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status      CommunityMemberStatus @default(active)
+  role        CommunityRole         @default(MEMBER)
+
+  @@id([userId, communityId])
+}
+
+model CommunityInterest {
+  communityId String
+  interestId  String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  interest    Interest  @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([communityId, interestId])
+}
+
+model CommunityLeader {
+  id          String    @id @default(cuid()) // Changed to default cuid to match other models if 'id' is intended as the primary key
+  userId      String
+  communityId String
+  Community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  User        User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, communityId])
+}
+
+// --- Appointment Models ---
+model AppointmentType {
+  id          String                  @id @default(cuid())
+  title       String                  @db.VarChar(100)
+  description String?
+  icon        String                  @db.VarChar(50)
+  accessType  AppointmentAccessType @default(private)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  appointments Appointment[]
+}
+
+model Appointment {
+  id                  String                @id @default(cuid())
+  appointmentTypeId   String
+  hostId              String
+  startTime           DateTime
+  endTime             DateTime
+  timeZone            String                @default("UTC") @db.VarChar(50)
+  locationOrLink      String?               @db.VarChar(255)
+  status              AppointmentStatus     @default(scheduled)
+  isRecurring         Boolean               @default(false)
+  recurrencePattern   RecurrencePattern?
+  recurrenceEndDate   DateTime?
+  parentAppointmentId String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  appointmentType     AppointmentType       @relation(fields: [appointmentTypeId], references: [id])
+  host                User                  @relation("hostRelation", fields: [hostId], references: [id])
+  parentAppointment   Appointment?          @relation("RecurringAppointments", fields: [parentAppointmentId], references: [id])
+  childAppointments   Appointment[]         @relation("RecurringAppointments")
+  attendees           AppointmentAttendee[]
+}
+
+model AppointmentAttendee {
+  id                 String       @default(cuid())
+  appointmentId      String
+  userId             String?
+  email              String
+  role               AttendeeRole @default(client)
+  additionalComments String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  appointment        Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user               User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([appointmentId, email])
+}
+
+// --- Posting and Engagement Models ---
+model Posting {
+  id          String        @id @default(cuid())
+  title       String
+  content     String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  communityId String
+  userId      String
+  imageUrl    String?
+  pdfUrl      String?
+  score       Int           @default(0)
+  comments    Comment[]
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id])
+  votes       Vote[]
+  status      PostingStatus @default(active)
+}
+
+model BannedWord {
+  id        String   @id @default(cuid())
+  word      String   @unique
+  createdAt DateTime @default(now())
+}
+
+enum PostingStatus {
+  active
+  flagged
+  removed
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  postId    String
+  userId    String
+  post      Posting  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  type      VoteType
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Posting  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+// --- Leader Application Model ---
+model LeaderApplication {
+  id                      String                  @id @default(cuid())
+  userId                  String                  @unique
+  user                    User                    @relation(fields: [userId], references: [id])
+
+  fullName                String
+  email                   String
+  phone                   String
+  location                String
+
+  currentlyInvolved       Boolean
+  background              String
+  hasLedGroup             Boolean
+  previousRole            String
+  focusTopics             String
+  motivation              String
+
+  leadershipStyle         String
+  inclusiveEnvironment    String
+  conflictHandling        String
+  comfortableWithTopics   Boolean
+  engagementStrategies    String
+
+  meetingFrequency        String
+  availableForOnboarding  Boolean
+  willFollowGuidelines    Boolean
+  questions               String?
+
+  referenceName           String
+  referenceContact        String
+  referenceRelationship   String
+  videoUrl                String?
+
+  status                  LeaderApplicationStatus @default(PENDING)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+
+// --- Course and Education Models ---
+model Course {
+  id                     String               @id @default(cuid())
+  name                   String
+  description            String?
+  price                  Float
+  isStandalone           Boolean              @default(true)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  modules                Module[]
+  enrollments            UserCourse[]
+  unlockedByTiers        TierCourseAccess[]
+  prerequisites          CoursePrerequisite[] @relation("courseWithPrereqs")
+  requiredForCourses     CoursePrerequisite[] @relation("prerequisiteCourse")
+}
+
+model Module {
+  id           String          @id @default(cuid())
+  title        String
+  moduleNumber Int?
+  description  String?
+  courseId     String
+  course       Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  contents     ModuleContent[] // one module can have many content items
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model ModuleContent {
+  id            String      @id @default(cuid())
+  moduleId      String
+  module        Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  title         String?     // Optional title for the content
+  description   String?
+
+  contentType   ContentType // Enum: TEXT, VIDEO, AUDIO
+  isExternal    Boolean     @default(false) // true = external link, false = internal content
+
+  // Only ONE of these should be populated based on isExternal
+  textContent   String?     @db.Text // For internal text content (null if external)
+  externalLink  String?     // For external URLs (null if internal)
+
+  order         Int?        // Order within the module
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model UserCourse {
+  userId           String
+  courseId         String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollmentDate   DateTime @default(now())
+  completionStatus String   @default("not_started")
+  trialExpiresAt   DateTime?
+
+  @@id([userId, courseId])
+}
+
+model CoursePrerequisite {
+  courseId         String
+  requiredCourseId String
+  course           Course @relation("courseWithPrereqs", fields: [courseId], references: [id], onDelete: Cascade)
+  requiredCourse   Course @relation("prerequisiteCourse", fields: [requiredCourseId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, requiredCourseId])
+}
+
+// --- Membership Models ---
+model MembershipTier {
+  id             String               @id @default(cuid())
+  tierName       String               @unique
+  monthlyPrice   Float?
+  annualPrice    Float?
+  description    String?
+  isActive       Boolean              @default(true)
+  subscriptions  UserMembership[]
+  coursesUnlocked TierCourseAccess[]
+  // Relation added from Schema 1 for granular seminar access
+  accessRules    SeminarAccessRule[]
+}
+
+model UserMembership {
+  id          String         @id @default(cuid())
+  userId      String
+  tierId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier        MembershipTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  startDate   DateTime       @default(now())
+  endDate     DateTime?
+  isActive    Boolean        @default(true)
+  paymentType PaymentType
+  createdAt   DateTime       @default(now())
+
+  @@index([userId])
+  @@index([tierId])
+}
+
+model TierCourseAccess {
+  tierId   String
+  courseId String
+  tier     MembershipTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([tierId, courseId])
+}
+
+// --- Seminar Models (Using Granular Access from Schema 1) ---
+model Seminar {
+  id          String                @id @default(cuid())
+  title       String
+  description String?
+  hostName    String
+  date        DateTime
+  duration    Int // duration in minutes
+  zoomLink    String?
+  mediaUrl    String?
+  image       String? // for seminarcover
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  attendees   SeminarAttendee[]
+  accessRules SeminarAccessRule[] // Retained granular access
+}
+
+model SeminarAccessRule {
+  id          String          @id @default(cuid())
+  seminarId   String
+  accessScope AccessScope
+  communityId String?
+  tierId      String?
+  price       Float?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  seminar     Seminar         @relation(fields: [seminarId], references: [id], onDelete: Cascade)
+  community   Community?      @relation(fields: [communityId], references: [id])
+  tier        MembershipTier? @relation(fields: [tierId], references: [id])
+
+  @@index([seminarId])
+  @@index([communityId])
+  @@index([tierId])
+}
+
+model SeminarAttendee {
+  id        String   @id @default(cuid())
+  seminarId String
+  name      String?
+  email     String
+  createdAt DateTime @default(now())
+
+  seminar Seminar @relation(fields: [seminarId], references: [id], onDelete: Cascade)
+
+  @@unique([seminarId, email])
+}
+
+// --- Enums ---
+enum CommunityMemberStatus {
+  active
+  banned
+}
+
+enum AppointmentStatus {
+  scheduled
+  completed
+  canceled
+}
+
+enum AttendeeRole {
+  client
+  coach
+  participant
+}
+
+enum RecurrencePattern {
+  daily
+  weekly
+  biweekly
+  monthly
+  custom
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
+}
+
+enum UserRole {
+  member
+  leader
+  admin
+}
+
+enum AppointmentAccessType {
+  private
+  public
+}
+
+enum LeaderApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
+// Add this enum for content types
+enum ContentType {
+  TEXT
+  VIDEO
+  AUDIO
+  PDF
+  IMAGE
+  LINK
+}
+
+
+enum PaymentType {
+  free
+  monthly
+  annual
+}
+
+enum AccessScope {
+  public // open to everyone
+  community // specific communities
+  membership // specific membership tiers
+}
+
+enum CommunityType {
+  GENERAL
+  ANNOUNCEMENT
+}
+
+enum CommunityRole {
+  MEMBER
+  LEADER
+  ADMIN
+}
+
+
+
+

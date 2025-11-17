@@ -88,7 +88,7 @@ export async function GET() {
 
     return NextResponse.json(seminarsWithLockStatus);
   } catch (err) {
-    console.error("❌ Error fetching seminars:", err);
+    console.error("Error fetching seminars:", err);
     return NextResponse.json(
       { error: "Failed to fetch seminars" },
       { status: 500 }

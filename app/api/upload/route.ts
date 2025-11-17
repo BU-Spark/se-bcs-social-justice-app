@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     if (!fileName || !contentType) {
       return NextResponse.json(
         { error: "Missing fileName or contentType" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
