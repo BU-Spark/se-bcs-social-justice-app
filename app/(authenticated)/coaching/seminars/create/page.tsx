@@ -60,30 +60,16 @@ export default function CreateSeminarPage() {
           fetch("/api/membership-tier", { credentials: "include" }),
         ]);
 
-<<<<<<< HEAD
-        // peek at response text (for debugging only)
-        const commText = await commRes.text();
-        const tierText = await tierRes.text();
-        console.log("communities raw:", commText.slice(0, 150));
-        console.log("tiers raw:", tierText.slice(0, 150));
-
-        // now try to parse JSON safely
-=======
         const commText = await commRes.text();
         const tierText = await tierRes.text();
 
->>>>>>> seminars
         const commData = JSON.parse(commText);
         const tierData = JSON.parse(tierText);
 
         setCommunities(commData || []);
         setTiers(tierData || []);
       } catch (err) {
-<<<<<<< HEAD
-        console.error("❌ Error fetching dropdown lists:", err);
-=======
         console.error("Error fetching dropdown lists:", err);
->>>>>>> seminars
       }
     }
     fetchLists();
@@ -104,114 +90,6 @@ export default function CreateSeminarPage() {
     const updatedRules = [...form.accessRules];
     (updatedRules[index] as any)[field] = value;
     setForm({ ...form, accessRules: updatedRules });
-<<<<<<< HEAD
-  };
-
-  const addAccessRule = () => {
-    setForm({
-      ...form,
-      accessRules: [
-        ...form.accessRules,
-        { accessScope: "public", communityId: "", tierId: "", price: "" },
-      ],
-    });
-  };
-  const removeAccessRule = (index: number) => {
-    const updatedRules = [...form.accessRules];
-    updatedRules.splice(index, 1);
-    setForm({ ...form, accessRules: updatedRules });
-  };
-
-  // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-
-  //   const formData = new FormData();
-  //   formData.append("file", file);
-
-  //   try {
-  //     const res = await fetch("/api/upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-  //     const data = await res.json();
-
-  //     if (data.url) {
-  //       setForm((prev) => ({ ...prev, image: data.url }));
-  //     } else {
-  //       alert("Image upload failed.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Image upload error:", err);
-  //     alert("Image upload failed.");
-  //   }
-  // };
-
-  // const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (!file) return;
-
-  //   const formData = new FormData();
-  //   formData.append("file", file);
-
-  //   try {
-  //     const res = await fetch("/api/upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-  //     const data = await res.json();
-
-  //     if (data.url) {
-  //       setForm((prev) => ({ ...prev, mediaUrl: data.url }));
-  //     } else {
-  //       alert("Media upload failed.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Media upload error:", err);
-  //     alert("Media upload failed.");
-  //   }
-  // };
-
-  const uploadToS3 = async (file: File) => {
-    const folder = file.type.startsWith("video")
-      ? "seminarVideo"
-      : "seminarImages";
-    const fileName = `${folder}/${Date.now()}-${file.name}`;
-
-    const res = await fetch(
-      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
-    );
-    const { url } = await res.json();
-
-    await fetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
-
-    return url.split("?")[0]; // the public S3 URL
-  };
-
-  const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: "image" | "media"
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const uploadedUrl = await uploadToS3(file);
-      setForm((prev) => ({
-        ...prev,
-        [type === "image" ? "image" : "mediaUrl"]: uploadedUrl,
-      }));
-    } catch (err) {
-      console.error(`${type} upload failed:`, err);
-      alert(`${type} upload failed.`);
-    }
-  };
-
-=======
   };
 
   const addAccessRule = () => {
@@ -284,7 +162,6 @@ export default function CreateSeminarPage() {
       alert(`${type} upload failed.`);
     }
   };
->>>>>>> seminars
 
   const handleSubmit = async () => {
     if (
@@ -492,10 +369,7 @@ export default function CreateSeminarPage() {
             type="file"
             accept="image/*"
             onChange={(e) => handleFileUpload(e, "image")}
-<<<<<<< HEAD
-=======
             onClick={(e) => e.stopPropagation()}
->>>>>>> seminars
           />
           {form.image && (
             <Box mt={2}>
@@ -531,10 +405,7 @@ export default function CreateSeminarPage() {
             type="file"
             accept="image/*,video/*"
             onChange={(e) => handleFileUpload(e, "media")}
-<<<<<<< HEAD
-=======
             onClick={(e) => e.stopPropagation()}
->>>>>>> seminars
           />
           {form.mediaUrl && (
             <Box mt={2}>

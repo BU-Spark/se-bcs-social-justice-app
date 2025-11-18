@@ -159,7 +159,6 @@ export default function EditSeminarPage() {
   const handleRemoveRule = (index: number) => {
     const updated = seminar.accessRules.filter((_, i) => i !== index);
     setSeminar((prev) => ({ ...prev, accessRules: updated }));
-<<<<<<< HEAD
   };
 
   const handleFileUpload = async (
@@ -230,89 +229,6 @@ export default function EditSeminarPage() {
     }
   };
 
-=======
-  };
-
-  const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: "image" | "mediaUrl",
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-
-    try {
-      // Determine the correct folder
-      const folder = file.type.startsWith("video")
-        ? "seminarVideo"
-        : "seminarImages";
-
-      const fileName = `${folder}/${Date.now()}-${file.name}`;
-
-      const res = await fetch(
-        `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
-      );
-
-      const { uploadUrl, publicUrl } = await res.json();
-
-      if (!uploadUrl || !publicUrl) {
-        throw new Error("Failed to generate signed URL");
-      }
-
-      await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-
-      setSeminar((prev) => ({
-        ...prev,
-        [field]: publicUrl,
-      }));
-
-      alert("File uploaded successfully!");
-    } catch (err) {
-      console.error(err);
-      alert("File upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // Save changes
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/seminar/${seminarId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...seminar,
-          duration: Number(seminar.duration),
-          accessRules: seminar.accessRules.map((r) => ({
-            ...r,
-            price: r.price ? parseFloat(r.price) : null,
-          })),
-        }),
-      });
-
-      if (res.ok) {
-        alert("Seminar updated successfully!");
-        router.push("/coaching?tab=Seminars");
-      } else {
-        const err = await res.json();
-        alert(err.error || "Failed to update seminar.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save seminar.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
->>>>>>> seminars
   if (loading) {
     return (
       <Container>
