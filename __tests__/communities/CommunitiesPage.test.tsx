@@ -1,4 +1,3 @@
-import React from "react";
 import {
   render,
   screen,
@@ -7,7 +6,6 @@ import {
   act,
 } from "@testing-library/react";
 import CommunitiesPage from "@/app/(authenticated)/communities/page";
-import { SidebarProvider } from "@/app/components/SidebarContext";
 
 // Mock the SidebarContext
 jest.mock("@/app/components/SidebarContext", () => {

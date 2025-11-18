@@ -16,20 +16,19 @@ import {
 } from "@mui/icons-material";
 import { useUser } from "@clerk/nextjs";
 import SeminarReserve from "@/app/components/SeminarReserve";
+import { useSearchParams, useRouter } from "next/navigation";
 
 const DetailContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
 `;
-
 const HeaderActions = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 `;
-
 const BackButton = styled(Button)`
   color: #6366f1;
   text-transform: none;
@@ -38,12 +37,10 @@ const BackButton = styled(Button)`
     background-color: rgba(99, 102, 241, 0.1);
   }
 `;
-
 const AdminActions = styled.div`
   display: flex;
   gap: 12px;
 `;
-
 const ContentGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -52,40 +49,34 @@ const ContentGrid = styled.div`
     grid-template-columns: 1fr;
   }
 `;
-
 const LeftSection = styled.div`
   display: flex;
   flex-direction: column;
 `;
-
 const WorkshopTitle = styled.h1`
   font-size: 36px;
   font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 24px;
 `;
-
 const WorkshopDescription = styled.p`
   font-size: 16px;
   line-height: 1.8;
   color: #4a5568;
   margin-bottom: 32px;
 `;
-
 const InfoSection = styled.div`
   background: #f8f9fa;
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
 `;
-
 const InfoTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 16px;
 `;
-
 const InfoItem = styled.div`
   display: flex;
   align-items: center;
@@ -93,7 +84,6 @@ const InfoItem = styled.div`
   margin-bottom: 12px;
   color: #4a5568;
   font-size: 15px;
-
   svg {
     color: #6366f1;
   }
@@ -101,7 +91,6 @@ const InfoItem = styled.div`
     margin-bottom: 0;
   }
 `;
-
 const ReservationButton = styled(Button)`
   background-color: #1e3a8a;
   color: white;
@@ -119,13 +108,11 @@ const ReservationButton = styled(Button)`
     color: #64748b;
   }
 `;
-
 const RightSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
 `;
-
 const VideoTitle = styled.h3`
   font-size: 18px;
   font-weight: 600;
@@ -133,7 +120,6 @@ const VideoTitle = styled.h3`
   margin-bottom: 12px;
   text-align: center;
 `;
-
 const AttendeeInfo = styled.div`
   background: #f1f5f9;
   border-radius: 12px;
@@ -144,8 +130,10 @@ const AttendeeInfo = styled.div`
 
 export interface AccessRule {
   id: string;
-  accessScope: "public" | "community" | "tier";
+  accessScope: "public" | "community" | "membership";
   price?: number | null;
+  communityId?: string | null;
+  tierId?: string | null;
   community?: { name: string } | null;
   tier?: { tierName: string } | null;
 }
@@ -162,94 +150,187 @@ export interface Seminar {
   image?: string;
   attendees?: { id: string; name: string; email: string }[];
   accessRules?: AccessRule[];
-  locked?: boolean;
 }
 
 interface SeminarDetailProps {
   seminar: Seminar;
-  onBack: () => void;
-  onReservationSuccess?: () => void;
+  openReservation: boolean;
+  setOpenReservation: (value: boolean) => void;
 }
 
-export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
-  const [openReservation, setOpenReservation] = useState(false);
+export default function SeminarDetail({
+  seminar,
+  openReservation,
+  setOpenReservation,
+}: SeminarDetailProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user, isLoaded, isSignedIn } = useUser();
+
   const [attendees, setAttendees] = useState(seminar.attendees || []);
   const [accessRules, setAccessRules] = useState(seminar.accessRules || []);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const { user, isLoaded, isSignedIn } = useUser();
-  const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
-  const [isLocked, setIsLocked] = useState(seminar.locked ?? false);
+  const [isLocked, setIsLocked] = useState(false);
 
-  // Check admin
+  // New added states for rule-based locking
+  const [userCommunities, setUserCommunities] = useState<string[]>([]);
+  const [userTiers, setUserTiers] = useState<string[]>([]);
+
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
+
   useEffect(() => {
     async function fetchAdminStatus() {
       try {
         const res = await fetch("/api/check-admin");
         setIsAdmin(res.ok);
       } catch (err) {
-        console.error("Error checking admin:", err);
+        console.error("Failed to check admin:", err);
       }
     }
     fetchAdminStatus();
   }, []);
 
-  // Fetch latest seminar data
   useEffect(() => {
-    async function fetchSeminarData() {
-      try {
-        const res = await fetch(`/api/seminar/${seminar.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setAttendees(data.attendees || []);
-          setAccessRules(data.accessRules || []);
-          if (typeof data.locked !== "undefined") setIsLocked(data.locked);
-        }
-      } catch (err) {
-        console.error("Error fetching seminar:", err);
-      }
+    async function loadSeminar() {
+      const res = await fetch(`/api/seminar/${seminar.id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      setAttendees(data.attendees || []);
+      setAccessRules(data.accessRules || []);
     }
-    fetchSeminarData();
+    loadSeminar();
   }, [seminar.id]);
 
-  const handleReservation = () => {
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    async function loadUserAccess() {
+      const res = await fetch("/api/user-profile");
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setUserCommunities(data.communities.map((c: any) => c.id));
+      setUserTiers(data.tiers.map((t: any) => t.id));
+    }
+
+    loadUserAccess();
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!isLoaded || !accessRules) return;
+
+    if (isAdmin) {
+      setIsLocked(false);
+      return;
+    }
+
+    let locked = false;
+
+    for (const rule of accessRules) {
+      switch (rule.accessScope) {
+        case "public":
+          break;
+
+        case "community":
+          if (rule.communityId && !userCommunities.includes(rule.communityId)) {
+            locked = true;
+          }
+          break;
+
+        case "membership":
+          if (rule.tierId && !userTiers.includes(rule.tierId)) {
+            locked = true;
+          }
+          break;
+
+        default:
+          locked = true;
+      }
+    }
+
+    setIsLocked(locked);
+  }, [accessRules, userCommunities, userTiers, isAdmin, isLoaded]);
+
+  const hasReserved = attendees.some(
+    (att) => att.email.toLowerCase() === userEmail.toLowerCase()
+  );
+
+  useEffect(() => {
+    const paidSeminar = searchParams.get("paidSeminar");
+    if (paidSeminar && String(paidSeminar) === seminar.id) {
+      setOpenReservation(true);
+    }
+  }, [searchParams]);
+
+  const handleReservation = async () => {
     if (!isLoaded) return;
-    if (!isSignedIn || !user) {
-      alert("Please sign in to reserve a spot.");
+
+    if (!isSignedIn) {
+      alert("Please sign in to reserve.");
       return;
     }
-    if (isLocked && !isAdmin) {
-      alert("You don’t have access to reserve this seminar.");
+
+    if (isLocked) {
+      alert("You do not meet access requirements for this seminar.");
       return;
     }
-    setOpenReservation(true);
-  };
 
-  const handleCloseReservation = () => setOpenReservation(false);
+    if (hasReserved) {
+      alert("You already reserved this seminar.");
+      return;
+    }
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this seminar?")) return;
+    const paidRule = accessRules.find((r) => r.price && r.price > 0);
+
+    if (!paidRule) {
+      setOpenReservation(true);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/seminar/${seminar.id}`, {
-        method: "DELETE",
+      setLoadingCheckout(true);
+      const res = await fetch("/api/checkout-seminar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seminarId: seminar.id,
+          title: seminar.title,
+          price: paidRule.price,
+        }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.error || "Failed to delete seminar.");
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        alert("Failed to start checkout.");
         return;
       }
-      alert("Seminar deleted successfully!");
 
-      onBack();
-      setTimeout(() => {
-        window.location.href = "/coaching?tab=Seminars";
-      }, 300);
-    } catch (err) {
-      console.error(err);
+      window.location.href = data.url;
+    } finally {
+      setLoadingCheckout(false);
     }
   };
 
-  const handleEdit = () => {
-    window.location.href = `/coaching/seminars/edit/${seminar.id}`;
+  const handleEdit = () =>
+    (window.location.href = `/coaching/seminars/edit/${seminar.id}`);
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this seminar?")) return;
+
+    const res = await fetch(`/api/seminar/${seminar.id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      alert("Failed to delete seminar.");
+      return;
+    }
+
+    alert("Seminar deleted.");
+
+    window.location.href = "/coaching?tab=Seminars";
   };
 
   const handleExport = () => {
@@ -257,19 +338,20 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
       alert("No attendees to export.");
       return;
     }
-    const csvContent = [
-      ["Name", "Email"].join(","),
-      ...attendees.map((a) => [a.name, a.email].join(",")),
+
+    const csv = [
+      "Name,Email",
+      ...attendees.map((a) => `${a.name},${a.email}`),
     ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${seminar.title}_attendees.csv`;
     link.click();
   };
 
-  const renderMedia = (url?: string) => {
+  const renderMedia = (url: string | undefined) => {
     if (!url) return null;
     const isVideo = /\.(mp4|mov|avi|webm)$/i.test(url);
     const fullUrl = url.startsWith("/uploads")
@@ -291,7 +373,7 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
     ) : (
       <img
         src={fullUrl}
-        alt="Seminar media"
+        alt=""
         style={{
           width: "100%",
           borderRadius: "12px",
@@ -304,7 +386,10 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
   return (
     <DetailContainer>
       <HeaderActions>
-        <BackButton startIcon={<ArrowBackIcon />} onClick={onBack}>
+        <BackButton
+          startIcon={<ArrowBackIcon />}
+          onClick={() => router.push("/coaching?tab=Seminars")}
+        >
           Back to Seminars
         </BackButton>
 
@@ -331,11 +416,13 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
               variant="contained"
               onClick={handleExport}
             >
-              Export Attendees
+              Export
             </Button>
           </AdminActions>
         )}
       </HeaderActions>
+
+      {/* 🔒 LOCKED BANNER */}
       {isLocked && !isAdmin && (
         <div
           style={{
@@ -366,13 +453,10 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
       )}
 
       <ContentGrid>
-        {/* LEFT SECTION */}
+        {/* LEFT */}
         <LeftSection>
           <WorkshopTitle>{seminar.title}</WorkshopTitle>
-          <WorkshopDescription>
-            {seminar.description ||
-              "Join us for an engaging workshop experience designed to help you grow and develop new skills."}
-          </WorkshopDescription>
+          <WorkshopDescription>{seminar.description}</WorkshopDescription>
 
           <InfoSection>
             <InfoTitle>Seminar Details</InfoTitle>
@@ -388,94 +472,90 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
                   : "TBA"}
               </span>
             </InfoItem>
+
             <InfoItem>
               <AccessTimeIcon />
               <span>Duration: {seminar.duration || "TBA"} mins</span>
             </InfoItem>
+
             <InfoItem>
               <RecordVoiceOverOutlinedIcon />
               <span>Host: {seminar.hostName}</span>
             </InfoItem>
+
             <InfoItem>
               <GroupsIcon />
               <span>Attendees: {attendees.length}</span>
             </InfoItem>
-            {accessRules.length > 0 &&
-              accessRules.map((rule, i) => {
-                const communityName = rule.community?.name;
-                const tierName = rule.tier?.tierName;
 
-                let ruleText;
-                if (rule.accessScope === "public")
-                  ruleText = <>Open to everyone</>;
-                else if (rule.accessScope === "community")
-                  ruleText = (
-                    <>
-                      Only open for members in the community{" "}
-                      <strong style={{ color: "#1e3a8a" }}>
-                        {communityName || "this community"}
-                      </strong>
-                    </>
-                  );
-                else if (rule.accessScope === "tier")
-                  ruleText = (
-                    <>
-                      Only open for{" "}
-                      <strong style={{ color: "#1e3a8a" }}>
-                        {tierName || "this tier"}
-                      </strong>{" "}
-                      members
-                    </>
-                  );
-                else ruleText = <>Restricted access</>;
+            {accessRules.map((rule) => {
+              const communityName = rule.community?.name;
+              const tierName = rule.tier?.tierName;
 
-                return (
-                  <div key={rule.id || i} style={{ marginBottom: 12 }}>
-                    <InfoItem>
-                      <GroupsIcon />
-                      <span>{ruleText}</span>
-                    </InfoItem>
-
-                    {rule.price && rule.price > 0 && (
-                      <InfoItem>
-                        <AttachMoneyIcon />
-                        <span>Price: ${rule.price.toFixed(2)}</span>
-                      </InfoItem>
+              return (
+                <div key={rule.id}>
+                  <InfoItem>
+                    <GroupsIcon />
+                    {rule.accessScope === "public" && (
+                      <span>Open to everyone</span>
                     )}
-                  </div>
-                );
-              })}
+                    {rule.accessScope === "community" && (
+                      <span>
+                        Only open to community: <strong>{communityName}</strong>
+                      </span>
+                    )}
+                    {rule.accessScope === "membership" && (
+                      <span>
+                        Only for membership tier: <strong>{tierName}</strong>
+                      </span>
+                    )}
+                  </InfoItem>
+
+                  {rule.price && (
+                    <InfoItem>
+                      <AttachMoneyIcon />
+                      <span>Price: ${rule.price.toFixed(2)}</span>
+                    </InfoItem>
+                  )}
+                </div>
+              );
+            })}
           </InfoSection>
 
           {!isAdmin && (
-            <ReservationButton onClick={handleReservation} disabled={!isLoaded}>
-              {!isLoaded ? "Loading..." : "Reserve Your Spot"}
+            <ReservationButton
+              onClick={handleReservation}
+              disabled={loadingCheckout || hasReserved}
+            >
+              {loadingCheckout
+                ? "Redirecting..."
+                : hasReserved
+                  ? "Already Reserved"
+                  : "Reserve Your Spot"}
             </ReservationButton>
           )}
+
           {isAdmin && seminar.zoomLink && (
             <InfoSection>
-              <InfoTitle>Zoom Meeting</InfoTitle>
+              <InfoTitle>Zoom Link</InfoTitle>
               <InfoItem>
                 <AccessTimeIcon />
-                <span>
-                  <strong>Meeting Link:</strong>{" "}
-                  <a
-                    href={seminar.zoomLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "#6366f1", fontWeight: 500 }}
-                  >
-                    {seminar.zoomLink}
-                  </a>
-                </span>
+                <a
+                  href={seminar.zoomLink}
+                  target="_blank"
+                  style={{ color: "#6366f1" }}
+                  rel="noreferrer"
+                >
+                  {seminar.zoomLink}
+                </a>
               </InfoItem>
             </InfoSection>
           )}
 
           {isAdmin && attendees.length > 0 && (
             <AttendeeInfo>
-              <strong>Attendee List:</strong>
-              <ul style={{ marginTop: 10, paddingLeft: 20 }}>
+              <strong>Attendees:</strong>
+              <ul>
                 {attendees.map((a) => (
                   <li key={a.id}>
                     {a.name} — {a.email}
@@ -486,7 +566,7 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
           )}
         </LeftSection>
 
-        {/* RIGHT SECTION */}
+        {/* RIGHT */}
         {(seminar.mediaUrl || seminar.image) && (
           <RightSection>
             <VideoTitle>Seminar Introduction</VideoTitle>
@@ -495,11 +575,11 @@ export default function SeminarDetail({ seminar, onBack }: SeminarDetailProps) {
         )}
       </ContentGrid>
 
-      {/* RESERVATION DIALOG */}
+      {/* Reservation modal */}
       {isLoaded && isSignedIn && (
         <SeminarReserve
           open={openReservation}
-          onClose={handleCloseReservation}
+          onClose={() => setOpenReservation(false)}
           seminar={seminar}
           userEmail={userEmail}
         />

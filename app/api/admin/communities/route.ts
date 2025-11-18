@@ -13,8 +13,10 @@ export async function POST(req: Request) {
     const community = await prisma.community.create({ data: { name, type } });
     return NextResponse.json(community, { status: 201 });
   } catch (error: any) {
-    if (error.code === 'P2002') {
-      return new NextResponse("A community with this name already exists", { status: 409 });
+    if (error.code === "P2002") {
+      return new NextResponse("A community with this name already exists", {
+        status: 409,
+      });
     }
     if (error.message === "Forbidden: Not an admin") {
       return new NextResponse("Forbidden", { status: 403 });
