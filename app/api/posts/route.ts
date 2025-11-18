@@ -1,7 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { checkAdmin } from "@/lib/admin-auth";
+import { currentUser } from "@clerk/nextjs/server";
+import { PostingStatus, PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { currentUser } from "@clerk/nextjs/server";
 
 const prisma = new PrismaClient();
 
@@ -25,9 +26,23 @@ export async function GET(request: Request) {
 
   const skip = (page - 1) * pageSize;
 
+  const isAdmin = await checkAdmin();
+  const whereClause: any = {
+    communityId: communityId,
+  };
+
+  //admin can see flagged posts while normal user can't
+  if (!isAdmin) {
+    whereClause.status = PostingStatus.active;
+  } else {
+    whereClause.status = {
+      in: [PostingStatus.active, PostingStatus.flagged],
+    };
+  }
+
   try {
     const posts = await prisma.posting.findMany({
-      where: { communityId },
+      where: whereClause,
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
@@ -48,13 +63,13 @@ export async function GET(request: Request) {
         totalPosts,
         hasMore: page < totalPages,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching posts:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -79,6 +94,18 @@ export async function POST(request: Request) {
         },
       });
     }
+
+    const bannedWords = await prisma.bannedWord.findMany();
+    const blocklist = bannedWords.map((bw) => bw.word.toLowerCase());
+
+    const postContent = (
+      parsedData.title +
+      " " +
+      (parsedData.content || "")
+    ).toLowerCase();
+    const isFlagged = blocklist.some((word) => postContent.includes(word));
+    const postStatus = isFlagged ? PostingStatus.flagged : PostingStatus.active;
+
     const newPost = await prisma.posting.create({
       data: {
         communityId: parsedData.communityId,
@@ -87,6 +114,7 @@ export async function POST(request: Request) {
         imageUrl: parsedData.imageUrl || null,
         pdfUrl: parsedData.pdfUrl || null,
         userId: localUser.id,
+        status: postStatus,
       },
       include: {
         user: {
@@ -94,6 +122,15 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    if (isFlagged) {
+      return NextResponse.json(
+        {
+          message: "Your post has been submitted for review.",
+        },
+        { status: 202 },
+      );
+    }
     return NextResponse.json(newPost, { status: 201 });
   } catch (error: any) {
     console.error("Error creating post:", error);
@@ -102,7 +139,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

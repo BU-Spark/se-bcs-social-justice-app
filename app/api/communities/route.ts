@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
+import { currentUser } from "@clerk/nextjs/server";
+import { CommunityMemberStatus } from "@prisma/client";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function GET() {
     const joinedCommunities = await prisma.community.findMany({
       where: {
         members: {
-          some: { userId: localUser.id },
+          some: { userId: localUser.id, status: CommunityMemberStatus.active },
         },
       },
       select: {
@@ -35,6 +36,20 @@ export async function GET() {
         description: true,
         imageUrl: true,
         type: true,
+        _count: {
+          select: { members: true },
+        },
+        members: {
+          take: 3,
+          include: {
+            user: {
+              select: {
+                username: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -52,6 +67,9 @@ export async function GET() {
         description: true,
         imageUrl: true,
         type: true,
+        _count: {
+          select: { members: true },
+        },
       },
     });
 

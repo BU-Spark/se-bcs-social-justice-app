@@ -4,7 +4,7 @@ import { currentUser } from "@clerk/nextjs/server";
 
 export async function DELETE(
   request: Request,
-  context: { params: { commentid: string } }
+  context: { params: { commentid: string } },
 ) {
   try {
     const clerkUser = await currentUser();
@@ -26,7 +26,7 @@ export async function DELETE(
     if (comment.user.clerkUserId !== clerkUser.id) {
       return NextResponse.json(
         { error: "Not authorized to delete this comment" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -36,13 +36,13 @@ export async function DELETE(
 
     return NextResponse.json(
       { message: "Comment deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error deleting comment:", error);
     return NextResponse.json(
       { error: "Failed to delete comment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

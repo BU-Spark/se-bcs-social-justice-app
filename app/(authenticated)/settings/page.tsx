@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import styled from "@emotion/styled";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useSidebar } from "../../components/SidebarContext";
 import LeaderApplicationModal from "./LeaderApplicationModal";
-import { useUser } from "@clerk/nextjs";
-import Link from "next/link";
 
 const StyledMainContent = styled.div<{ isExpanded: boolean }>`
   flex: 1;
@@ -236,6 +236,48 @@ export default function Settings() {
                         {pendingApplicationsCount}
                       </span>
                     )}
+                  </StyledButton>
+                </Link>
+              </div>
+            </div>
+            <div className="space-y-4" style={{ marginTop: "32px" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-700 font-medium"> User Interests</p>
+                  <p className="text-sm text-gray-600"> View user interests</p>
+                </div>
+                <Link href="/admin/user-interest" passHref>
+                  <StyledButton className="flex items-center">
+                    <span>View Interests</span>
+                  </StyledButton>
+                </Link>
+              </div>
+            </div>
+
+            <div className="space-y-4" style={{ marginTop: "32px" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-700 font-medium"> Courses Settings</p>
+                  <p className="text-sm text-gray-600"> Management of courses, modules, and enrollments</p>
+                </div>
+                <Link href="/admin/courses" passHref>
+                  <StyledButton className="flex items-center">
+                    <span>Manage Courses</span>
+                  </StyledButton>
+                </Link>
+              </div>
+            </div>
+            <div className="space-y-4" style={{ marginTop: "32px" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-700 font-medium">
+                    Communities Management
+                  </p>
+                  <p className="text-sm text-gray-600"> View Communities</p>
+                </div>
+                <Link href="/admin/communities" passHref>
+                  <StyledButton className="flex items-center">
+                    <span>View Communities</span>
                   </StyledButton>
                 </Link>
               </div>

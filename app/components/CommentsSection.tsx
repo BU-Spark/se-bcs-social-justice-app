@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import styled from "@emotion/styled";
 import { useUser } from "@clerk/nextjs";
+import styled from "@emotion/styled";
+import React, { useEffect, useState } from "react";
 
 const CommentsContainer = styled.div`
   margin-top: 16px;
@@ -97,9 +97,32 @@ interface CommentsSectionProps {
 }
 
 const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser, isLoaded: clerkIsLoaded } = useUser();
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentInput, setCommentInput] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthCheckLoaded, setIsAuthCheckLoaded] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const res = await fetch("/api/check-admin");
+        if (res.ok) {
+          const data = await res.json();
+          setIsAdmin(data.isAdmin);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error("Failed to check admin status", error);
+        setIsAdmin(false);
+      } finally {
+        setIsAuthCheckLoaded(true);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
 
   const fetchComments = async () => {
     try {
@@ -133,25 +156,42 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
     }
   };
 
-  const handleDeleteComment = async (commentid: string) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
+  const handleDeleteComment = async (commentid: string, asAdmin: boolean) => {
+    const confirmMessage = asAdmin
+      ? "Are you sure you want to delete this comment as an Admin?"
+      : "Are you sure you want to delete this comment?";
+    if (!confirm(`${confirmMessage}`)) return;
+
+    const url = asAdmin
+      ? `/api/admin/comments/${commentid}`
+      : `/api/comments/${commentid}`;
     try {
-      const res = await fetch(`/api/comments/${commentid}`, {
+      const res = await fetch(`${url}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete comment");
 
       setComments((prevComments) =>
-        prevComments.filter((c) => c.id !== commentid)
+        prevComments.filter((c) => c.id !== commentid),
       );
     } catch (error) {
       console.error("Error deleting comment:", error);
     }
   };
 
+  const isAuthReady = clerkIsLoaded && isAuthCheckLoaded;
+  if (!isAuthReady) {
+    return (
+      <CommentsContainer>
+        <p>Loading user data...</p>
+      </CommentsContainer>
+    );
+  }
   return (
     <CommentsContainer>
       {comments.map((comment) => {
+        const isCommenter =
+          clerkUser && comment.user?.clerkUserId === clerkUser.id;
         const formattedTime = new Date(comment.createdAt).toLocaleString(
           "en-US",
           {
@@ -160,7 +200,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
             hour: "numeric",
             minute: "numeric",
             hour12: true,
-          }
+          },
         );
         return (
           <CommentItem key={comment.id}>
@@ -176,11 +216,18 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
                 {comment.user?.name || "Anonymous"}
               </CommentUserName>
               <CommentTime>{formattedTime}</CommentTime>
-              {clerkUser && comment.user?.clerkUserId === clerkUser.id && (
+              {isCommenter && (
                 <DeleteCommentButton
-                  onClick={() => handleDeleteComment(comment.id)}
+                  onClick={() => handleDeleteComment(comment.id, false)}
                 >
                   Delete
+                </DeleteCommentButton>
+              )}
+              {isAdmin && !isCommenter && (
+                <DeleteCommentButton
+                  onClick={() => handleDeleteComment(comment.id, true)}
+                >
+                  Delete(Admin)
                 </DeleteCommentButton>
               )}
             </CommentHeader>

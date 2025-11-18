@@ -132,10 +132,20 @@ export async function createZoomMeeting(meetingDetails: ZoomMeetingDetails) {
         },
       }
     );
+    console.log("Zoom meeting API response:", response.data);
+
+    // Handle success or partial error
+    if (!response.data?.join_url) {
+      console.warn("⚠️ Zoom API did not return a join_url:", response.data);
+      return { join_url: "Zoom meeting unavailable" };
+    }
 
     return response.data;
-  } catch (error) {
-    console.error("Error creating Zoom meeting:", error);
+  } catch (error: any) {
+    console.error(
+      "Error creating Zoom meeting:",
+      error.response?.data || error.message
+    );
     throw new Error("Failed to create Zoom meeting");
   }
 }
@@ -147,7 +157,7 @@ export async function createZoomMeeting(meetingDetails: ZoomMeetingDetails) {
  */
 export function formatRecurrenceData(
   pattern: string,
-  recurrenceData: ZoomRecurrenceData
+  recurrenceData: ZoomRecurrenceData,
 ) {
   // Default to recurring with fixed time (type 3)
   const zoomRecurrence: {
