@@ -56,7 +56,8 @@ model Community {
   id              String              @id @default(cuid())
   name            String              @unique
   imageUrl        String?
-  type            String
+  type            String?       
+  accessType      CommunityType       @default(GENERAL)
   description     String?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
@@ -74,8 +75,8 @@ model CommunityMembers {
   community   Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  status CommunityMemberStatus @default(active)
-
+  status      CommunityMemberStatus @default(active)
+  role        CommunityRole         @default(MEMBER)
 
   @@id([userId, communityId])
 }
@@ -349,7 +350,6 @@ model TierCourseAccess {
   @@id([tierId, courseId])
 }
 
-// --- Seminar Models (Using Granular Access from Schema 1) ---
 model Seminar {
   id          String                @id @default(cuid())
   title       String
@@ -471,4 +471,14 @@ enum AccessScope {
   membership // specific membership tiers
 }
 
+enum CommunityType {
+  GENERAL
+  ANNOUNCEMENT
+}
+
+enum CommunityRole {
+  MEMBER
+  LEADER
+  ADMIN
+}
 

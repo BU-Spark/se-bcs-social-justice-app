@@ -1,6 +1,7 @@
 import {
   AppointmentAccessType,
   CommunityMemberStatus,
+  CommunityType,
   PrismaClient,
 } from "@prisma/client";
 import { communities } from "../db/mock-data.ts";
@@ -153,6 +154,7 @@ async function main() {
 
   console.log("Sample appointment types have been created");
 
+  //2. Creating testing users
   console.log("Creating users...");
   const user1 = await prisma.user.create({
     data: {
@@ -192,8 +194,58 @@ async function main() {
 
   console.log("Sample users have been created");
 
-  // Create a community
-  console.log("Creating community...");
+  //3. Creating Communities
+  console.log("Creating Global Announcement Community");
+
+  const announcementsCommunity = await prisma.community.upsert({
+    where: { name: "Announcements" },
+    update: {
+      type: CommunityType.ANNOUNCEMENT,
+    },
+    create: {
+      name: "Announcements",
+      description: "Official announcements from Dr.Chad Starks.",
+      accessType: CommunityType.ANNOUNCEMENT,
+    },
+  });
+
+  console.log("Successfully Created Global Announcement Community");
+
+  const allUsers = await prisma.user.findMany({
+    select: { id: true },
+  });
+
+  const existingMembers = await prisma.communityMembers.findMany({
+    where: { communityId: announcementsCommunity.id },
+    select: { userId: true },
+  });
+
+  const existingMemberIds = new Set(existingMembers.map((m) => m.userId));
+
+  // Filter out users who are already members
+  const newMembersData = allUsers
+    .filter((user) => !existingMemberIds.has(user.id))
+    .map((user) => {
+      return {
+        userId: user.id,
+        communityId: announcementsCommunity.id,
+        status: CommunityMemberStatus.active,
+        role: "MEMBER",
+      };
+    });
+
+  if (newMembersData.length > 0) {
+    await prisma.communityMembers.createMany({
+      data: newMembersData,
+    });
+    console.log(
+      `Added ${newMembersData.length} existing users to 'Announcements'.`,
+    );
+  } else {
+    console.log("All existing users are already in 'Announcements'.");
+  }
+
+  console.log("Creating General Discussion community...");
   const community = await prisma.community.create({
     data: {
       id: "seed_comm_1",
@@ -203,9 +255,8 @@ async function main() {
     },
   });
 
-  console.log("Community has been created");
+  console.log("Communities has been created");
 
-  //add both seed users to community
   console.log("Adding new users to community...");
   await prisma.communityMembers.createMany({
     data: [

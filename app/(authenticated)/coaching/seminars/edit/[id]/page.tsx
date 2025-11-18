@@ -159,6 +159,7 @@ export default function EditSeminarPage() {
   const handleRemoveRule = (index: number) => {
     const updated = seminar.accessRules.filter((_, i) => i !== index);
     setSeminar((prev) => ({ ...prev, accessRules: updated }));
+<<<<<<< HEAD
   };
 
   const handleFileUpload = async (
@@ -229,6 +230,89 @@ export default function EditSeminarPage() {
     }
   };
 
+=======
+  };
+
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "image" | "mediaUrl",
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+
+    try {
+      // Determine the correct folder
+      const folder = file.type.startsWith("video")
+        ? "seminarVideo"
+        : "seminarImages";
+
+      const fileName = `${folder}/${Date.now()}-${file.name}`;
+
+      const res = await fetch(
+        `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+      );
+
+      const { uploadUrl, publicUrl } = await res.json();
+
+      if (!uploadUrl || !publicUrl) {
+        throw new Error("Failed to generate signed URL");
+      }
+
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      setSeminar((prev) => ({
+        ...prev,
+        [field]: publicUrl,
+      }));
+
+      alert("File uploaded successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("File upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Save changes
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/seminar/${seminarId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...seminar,
+          duration: Number(seminar.duration),
+          accessRules: seminar.accessRules.map((r) => ({
+            ...r,
+            price: r.price ? parseFloat(r.price) : null,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        alert("Seminar updated successfully!");
+        router.push("/coaching?tab=Seminars");
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to update seminar.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save seminar.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+>>>>>>> seminars
   if (loading) {
     return (
       <Container>
@@ -399,6 +483,7 @@ export default function EditSeminarPage() {
           <label style={{ fontWeight: 600, color: "#1e293b" }}>
             Cover Image
           </label>
+
           {seminar.image ? (
             <div style={{ marginTop: 8 }}>
               <img
@@ -411,27 +496,45 @@ export default function EditSeminarPage() {
                   border: "1px solid #ddd",
                 }}
               />
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{ mt: 2, textTransform: "none", width: 200 }}
+                onClick={() =>
+                  setSeminar((prev) => ({
+                    ...prev,
+                    image: "",
+                  }))
+                }
+              >
+                Remove
+              </Button>
             </div>
           ) : (
             <p style={{ color: "#64748b" }}>No image uploaded yet.</p>
           )}
+
           <input
             type="file"
             accept="image/*"
             onChange={(e) => handleFileUpload(e, "image")}
             style={{ marginTop: 10 }}
+            onClick={(e) => e.stopPropagation()}
           />
+
           {uploading && <p style={{ color: "#64748b" }}>Uploading...</p>}
         </div>
 
+        {/* INTRO  */}
         <div>
           <label style={{ fontWeight: 600, color: "#1e293b" }}>
             Intro Media (Image/Video)
           </label>
+
           {seminar.mediaUrl ? (
             <div style={{ marginTop: 8 }}>
-              {seminar.mediaUrl.endsWith(".mp4") ||
-              seminar.mediaUrl.includes("video") ? (
+              {seminar.mediaUrl.match(/\.(mp4|mov|avi|webm)$/i) ? (
                 <video
                   src={seminar.mediaUrl}
                   controls
@@ -454,16 +557,33 @@ export default function EditSeminarPage() {
                   }}
                 />
               )}
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{ mt: 2, textTransform: "none", width: 200 }}
+                onClick={() =>
+                  setSeminar((prev) => ({
+                    ...prev,
+                    mediaUrl: "",
+                  }))
+                }
+              >
+                Remove
+              </Button>
             </div>
           ) : (
             <p style={{ color: "#64748b" }}>No media uploaded yet.</p>
           )}
+
           <input
             type="file"
             accept="image/*,video/*"
             onChange={(e) => handleFileUpload(e, "mediaUrl")}
+            onClick={(e) => e.stopPropagation()}
             style={{ marginTop: 10 }}
           />
+
           {uploading && <p style={{ color: "#64748b" }}>Uploading...</p>}
         </div>
       </FormGrid>

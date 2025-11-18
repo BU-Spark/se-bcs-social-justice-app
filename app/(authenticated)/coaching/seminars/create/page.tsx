@@ -60,6 +60,7 @@ export default function CreateSeminarPage() {
           fetch("/api/membership-tier", { credentials: "include" }),
         ]);
 
+<<<<<<< HEAD
         // peek at response text (for debugging only)
         const commText = await commRes.text();
         const tierText = await tierRes.text();
@@ -67,13 +68,22 @@ export default function CreateSeminarPage() {
         console.log("tiers raw:", tierText.slice(0, 150));
 
         // now try to parse JSON safely
+=======
+        const commText = await commRes.text();
+        const tierText = await tierRes.text();
+
+>>>>>>> seminars
         const commData = JSON.parse(commText);
         const tierData = JSON.parse(tierText);
 
         setCommunities(commData || []);
         setTiers(tierData || []);
       } catch (err) {
+<<<<<<< HEAD
         console.error("❌ Error fetching dropdown lists:", err);
+=======
+        console.error("Error fetching dropdown lists:", err);
+>>>>>>> seminars
       }
     }
     fetchLists();
@@ -94,6 +104,7 @@ export default function CreateSeminarPage() {
     const updatedRules = [...form.accessRules];
     (updatedRules[index] as any)[field] = value;
     setForm({ ...form, accessRules: updatedRules });
+<<<<<<< HEAD
   };
 
   const addAccessRule = () => {
@@ -200,6 +211,80 @@ export default function CreateSeminarPage() {
     }
   };
 
+=======
+  };
+
+  const addAccessRule = () => {
+    setForm({
+      ...form,
+      accessRules: [
+        ...form.accessRules,
+        { accessScope: "public", communityId: "", tierId: "", price: "" },
+      ],
+    });
+  };
+  const removeAccessRule = (index: number) => {
+    const updatedRules = [...form.accessRules];
+    updatedRules.splice(index, 1);
+    setForm({ ...form, accessRules: updatedRules });
+  };
+
+  const removeFile = (type: "image" | "media") => {
+    setForm((prev) => ({
+      ...prev,
+      [type === "image" ? "image" : "mediaUrl"]: "",
+    }));
+  };
+
+  const uploadToS3 = async (file: File) => {
+    const folder = file.type.startsWith("video")
+      ? "seminarVideo"
+      : "seminarImages";
+
+    const fileName = `${folder}/${Date.now()}-${file.name}`;
+
+    // Get uploadUrl + publicUrl from backend
+    const res = await fetch(
+      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+    );
+
+    const { uploadUrl, publicUrl } = await res.json();
+
+    if (!uploadUrl || !publicUrl) {
+      throw new Error("Failed to get signed upload URL");
+    }
+
+    // Upload directly to S3
+    await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type,
+      },
+      body: file,
+    });
+
+    return publicUrl;
+  };
+
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "image" | "media",
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const uploadedUrl = await uploadToS3(file);
+      setForm((prev) => ({
+        ...prev,
+        [type === "image" ? "image" : "mediaUrl"]: uploadedUrl,
+      }));
+    } catch (err) {
+      console.error(`${type} upload failed:`, err);
+      alert(`${type} upload failed.`);
+    }
+  };
+>>>>>>> seminars
 
   const handleSubmit = async () => {
     if (
@@ -407,6 +492,10 @@ export default function CreateSeminarPage() {
             type="file"
             accept="image/*"
             onChange={(e) => handleFileUpload(e, "image")}
+<<<<<<< HEAD
+=======
+            onClick={(e) => e.stopPropagation()}
+>>>>>>> seminars
           />
           {form.image && (
             <Box mt={2}>
@@ -416,6 +505,19 @@ export default function CreateSeminarPage() {
                 width="100%"
                 style={{ borderRadius: 8 }}
               />
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{
+                  mt: 2,
+                  textTransform: "none",
+                  width: "200px",
+                }}
+                onClick={() => removeFile("image")}
+              >
+                Remove Image
+              </Button>
             </Box>
           )}
         </Box>
@@ -429,14 +531,31 @@ export default function CreateSeminarPage() {
             type="file"
             accept="image/*,video/*"
             onChange={(e) => handleFileUpload(e, "media")}
+<<<<<<< HEAD
+=======
+            onClick={(e) => e.stopPropagation()}
+>>>>>>> seminars
           />
           {form.mediaUrl && (
             <Box mt={2}>
-              {/\.(mp4|mov|avi|webm)$/i.test(form.mediaUrl) ? (
+              {/\.mp4|\.mov|\.avi|\.webm$/i.test(form.mediaUrl) ? (
                 <video src={form.mediaUrl} controls width="100%" />
               ) : (
                 <img src={form.mediaUrl} alt="Seminar Preview" width="100%" />
               )}
+
+              <Button
+                variant="outlined"
+                color="error"
+                sx={{
+                  mt: 2,
+                  textTransform: "none",
+                  width: "200px",
+                }}
+                onClick={() => removeFile("media")}
+              >
+                Remove Media
+              </Button>
             </Box>
           )}
         </Box>
