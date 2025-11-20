@@ -47,6 +47,7 @@ export async function GET(
       include: {
         enrollments: {
           where: { courseId: id },
+          select: { trialExpiresAt: true },
         },
         subscriptions: {
           where: { isActive: true },
@@ -74,11 +75,47 @@ export async function GET(
       );
     }
 
-    // Check if user has access
-    const hasDirectEnrollment = user.enrollments.length > 0;
+    // Check if user has access via subscription
     const hasViaSubscription = user.subscriptions.some(
       (sub) => sub.tier.coursesUnlocked.length > 0
     );
+
+    // Check direct enrollment and trial status
+    const now = new Date();
+    let hasDirectEnrollment = false;
+    let isTrialActive = false;
+    let trialExpiresAt = null;
+
+    if (user.enrollments.length > 0) {
+      const enrollment = user.enrollments[0];
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - trialExpiresAt is a new field not yet in types
+      if (enrollment.trialExpiresAt === null) {
+        // No trial expiration = permanent purchase
+        hasDirectEnrollment = true;
+      } else {
+        // Has trial expiration date
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - trialExpiresAt is a new field not yet in types
+        trialExpiresAt = enrollment.trialExpiresAt;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - trialExpiresAt is a new field not yet in types
+        const enrollmentDate =
+          enrollment.trialExpiresAt instanceof Date
+            ? enrollment.trialExpiresAt
+            : new Date(enrollment.trialExpiresAt);
+        if (enrollmentDate > now) {
+          // Trial still active
+          hasDirectEnrollment = true;
+          isTrialActive = true;
+        } else {
+          // Trial expired
+          hasDirectEnrollment = false;
+          isTrialActive = false;
+        }
+      }
+    }
+
     const hasAccess = hasDirectEnrollment || hasViaSubscription;
 
     return NextResponse.json(
@@ -88,8 +125,11 @@ export async function GET(
         accessType: hasAccess
           ? hasViaSubscription
             ? "subscription"
-            : "purchased"
+            : isTrialActive
+              ? "trial"
+              : "purchased"
           : "locked",
+        trialExpiresAt: isTrialActive ? trialExpiresAt : null,
       },
       { status: 200 }
     );

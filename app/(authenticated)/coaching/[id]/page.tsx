@@ -311,7 +311,7 @@ export default function CoachingDetailPage() {
     {},
   );
   const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(
     new Set(),
   );
@@ -340,41 +340,58 @@ export default function CoachingDetailPage() {
     }
   }, [id]);
 
-  const handleStartTrial = async () => {
+  // Handle payment success/cancelled query parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const payment = searchParams.get("payment");
+    
+    if (payment === "success") {
+      // Refresh course data to update access status
+      async function refreshCourse() {
+        const response = await fetch(`/api/courses/${id}`);
+        if (response.ok) {
+          const updatedCourse = await response.json();
+          setCourse(updatedCourse);
+        }
+      }
+      refreshCourse();
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "cancelled") {
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [id]);
+
+  const handlePurchase = async () => {
     if (!course) return;
 
     try {
-      setEnrolling(true);
-      const response = await fetch("/api/courses", {
+      setPurchasing(true);
+      const response = await fetch(`/api/courses/${id}/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          courseId: course.id,
-        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        alert(
-          `✓ Your 7-day free trial has started! Access expires on ${new Date(data.trialExpiresAt).toLocaleDateString()}`,
-        );
-        // Refresh course data to update access status
-        const refreshResponse = await fetch(`/api/courses/${id}`);
-        if (refreshResponse.ok) {
-          const updatedCourse = await refreshResponse.json();
-          setCourse(updatedCourse);
+        // Redirect to Stripe Checkout
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert("Failed to create checkout session. Please try again.");
         }
       } else {
         const error = await response.json();
-        alert(`Failed to start trial: ${error.error}`);
+        alert(`Failed to start purchase: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error starting trial:", error);
-      alert("An error occurred while starting the trial. Please try again.");
+      console.error("Error starting purchase:", error);
+      alert("An error occurred while starting the purchase. Please try again.");
     } finally {
-      setEnrolling(false);
+      setPurchasing(false);
     }
   };
 
@@ -1031,8 +1048,8 @@ export default function CoachingDetailPage() {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={hasAccess ? undefined : handleStartTrial}
-                    disabled={enrolling}
+                    onClick={hasAccess ? undefined : handlePurchase}
+                    disabled={purchasing}
                     sx={{
                       background: hasAccess ? "#059669" : "#1e7fbf",
                       "&:hover": {
@@ -1045,11 +1062,11 @@ export default function CoachingDetailPage() {
                       fontWeight: "600",
                     }}
                   >
-                    {enrolling
-                      ? "Starting trial..."
+                    {purchasing
+                      ? "Processing..."
                       : hasAccess
                         ? "Access Course"
-                        : "Start your 7-day free trial"}
+                        : "Purchase"}
                   </Button>
                 </>
               ) : (
