@@ -241,10 +241,10 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
 
     if (!confirm(confirmMessage)) return;
 
-    const url = asAdmin ? `/api/admin/posts/${postId}` : `/api/posts/${postId}`;
+    // const url = asAdmin ? `/api/admin/posts/${postId}` : `/api/posts/${postId}`;
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`/api/posts/${postId}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete post");
