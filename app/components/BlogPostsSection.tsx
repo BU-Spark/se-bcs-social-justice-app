@@ -1,110 +1,173 @@
 "use client";
 
+import { CommunityPermissions } from "@/types/community";
+import { Post } from "@/types/posts";
 import { useUser } from "@clerk/nextjs";
 import styled from "@emotion/styled";
 import React, { useEffect, useState } from "react";
-import { FaFilePdf, FaHeart, FaRegHeart } from "react-icons/fa";
-import CommentsSection from "./CommentsSection";
-import PostForm from "./PostForm";
+
+import {
+  FaFilePdf,
+  FaHeart,
+  FaRegCommentAlt,
+  FaRegHeart,
+} from "react-icons/fa";
 
 const StyledContainer = styled.div`
-  margin-top: 28px;
-  padding: 0 16px;
+  padding: 0;
 `;
-const StyledSectionHeader = styled.h1`
-  color: charcoal;
-  font-size: 39px;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 24px;
-`;
-const StyledTopBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-`;
+
 const StyledButton = styled.button`
-  padding: 12px 20px;
-  background-color: blue;
+  padding: 10px 16px;
+  background-color: #2563eb;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  margin-right: 8px;
   transition: background-color 0.2s ease;
   &:hover {
-    background-color: red;
+    background-color: #1d4ed8;
+  }
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
   }
 `;
+
 const StyledPostCard = styled.div`
   background-color: white;
-  border: 1px solid black;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 16px;
   margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
   text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
 `;
-const StyledPostTitle = styled.h2`
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: bold;
-`;
-const StyledPostContent = styled.p`
-  font-size: 16px;
-  color: black;
-  line-height: 1.5;
-  margin: 0;
-`;
-const StyledPostFooter = styled.div`
-  margin-top: 12px;
+
+const StyledPostHeader = styled.div`
   display: flex;
   align-items: center;
-  font-size: 13px;
-  color: silver;
+  padding: 16px 20px 12px;
 `;
-const StyledDateTime = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-`;
+
 const StyledProfileImage = styled.img`
   width: 40px;
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  margin-right: 8px;
+  margin-right: 12px;
 `;
-const StyledLikes = styled.span`
-  font-size: 18px;
-  color: orange;
-  margin-right: 16px;
-  font-weight: bold;
+
+const StyledAuthorInfo = styled.div`
+  display: flex;
+  flex-direction: column;
 `;
-const StyledLikeButton = styled(StyledButton)`
-  background-color: green;
+
+const StyledAuthorName = styled.span`
+  font-weight: 600;
+  color: #333;
+  font-size: 15px;
+`;
+
+const StyledDateTime = styled.span`
+  font-size: 13px;
+  color: #777;
+`;
+
+const StyledPostContentContainer = styled.div`
+  padding: 0 20px 16px;
+`;
+
+const StyledPostTitle = styled.h2`
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111;
+`;
+
+const StyledPostContent = styled.p`
+  font-size: 16px;
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; 
+  -webkit-box-orient: vertical;
+  */
+`;
+
+const StyledImageContainer = styled.div`
+  max-width: 100%;
+  overflow: hidden;
+  max-height: 500px;
+`;
+
+const StyledPostFooter = styled.div`
+  margin-top: 12px;
+  padding: 8px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #555;
+`;
+
+const StyledIconButton = styled.button`
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+
   &:hover {
-    background-color: darkgreen;
+    background-color: #f4f4f4;
+  }
+
+  &.liked {
+    color: #ef4444;
   }
 `;
-const StyledDeleteButton = styled(StyledButton)`
-  background-color: darkred;
+
+const StyledFooterActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const StyledDeleteButton = styled.button`
+  padding: 6px 12px;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: auto;
+  transition: background-color 0.2s;
   &:hover {
-    background-color: red;
+    background-color: #b91c1c;
   }
 `;
+
 const StyledAttachments = styled.div`
   margin-top: 16px;
-  border-top: 1px solid lightgray;
   padding-top: 12px;
 `;
-const StyledAttachmentHeader = styled.h4`
-  font-size: 16px;
-  margin-bottom: 8px;
-  color: darkgray;
-`;
+
 const StyledPdfLink = styled.a`
   display: flex;
   align-items: center;
@@ -130,49 +193,21 @@ const StyledPdfIcon = styled.div`
   border-radius: 4px;
   margin-right: 8px;
 `;
-const StyledImageContainer = styled.div`
-  margin-top: 16px;
-  max-width: 100%;
-  overflow: hidden;
-`;
-
-type Post = {
-  id: string;
-  title: string;
-  content: string | null;
-  createdAt: string;
-  score: number;
-  imageUrl: string | null;
-  pdfUrl: string | null;
-  currentUserVote?: "UPVOTE" | "DOWNVOTE" | null;
-  user?: {
-    id: string;
-    clerkUserId: string;
-    name: string | null;
-    imageUrl?: string | null;
-  };
-};
-
-interface CommunityPermissions {
-  canView: boolean;
-  canPost: boolean;
-  canComment: boolean;
-  canModerate: boolean;
-}
 interface BlogPostsSectionProps {
   communityId: string;
   permissions: CommunityPermissions;
+  onPostSelect: (post: Post) => void;
 }
 
 const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
   communityId,
   permissions,
+  onPostSelect,
 }) => {
-  const { user: clerkUser, isLoaded: clerkIsLoaded } = useUser();
+  const { user: clerkUser } = useUser();
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isFormVisible, setIsFormVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -189,7 +224,7 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
       setTotalPages(data.totalPages);
     } catch (error) {
       console.error("Error fetching posts:", error);
-      setError("Error fetching posts. Please try again later.");
+      setError("Error fetching posts.");
     } finally {
       setLoading(false);
     }
@@ -244,25 +279,6 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
 
   return (
     <StyledContainer>
-      <StyledSectionHeader>Community Posts</StyledSectionHeader>
-      <StyledTopBar>
-        <h3>Create a post!</h3>
-        {permissions.canPost && (
-          <StyledButton onClick={() => setIsFormVisible(!isFormVisible)}>
-            {isFormVisible ? "Cancel" : "Write a Post"}
-          </StyledButton>
-        )}
-      </StyledTopBar>
-      {isFormVisible && (
-        <PostForm
-          communityId={communityId}
-          onPostCreated={() => {
-            fetchPosts();
-            setIsFormVisible(false);
-          }}
-          onCancel={() => setIsFormVisible(false)}
-        />
-      )}
       {loading ? (
         <p>Loading posts...</p>
       ) : posts.length === 0 ? (
@@ -277,106 +293,108 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
             "en-US",
             { hour: "numeric", minute: "numeric", hour12: true },
           );
+
           const currentVote = post.currentUserVote;
           const newVoteType: "UPVOTE" | "DOWNVOTE" =
             !currentVote || currentVote === "DOWNVOTE" ? "UPVOTE" : "DOWNVOTE";
-          const buttonText =
-            !currentVote || currentVote === "DOWNVOTE" ? "Like" : "Dislike";
-
           const isAuthor = clerkUser && post.user?.clerkUserId === clerkUser.id;
+          const isLiked = currentVote === "UPVOTE";
 
           return (
-            <StyledPostCard key={post.id}>
-              <StyledDateTime>
+            <StyledPostCard key={post.id} onClick={() => onPostSelect(post)}>
+              <StyledPostHeader>
                 <StyledProfileImage
-                  src={
-                    post.user?.imageUrl ||
-                    "https://as2.ftcdn.net/v2/jpg/03/31/69/91/1000_F_331699188_lRpvqxO5QRtwOM05gR50ImaaJgBx68vi.jpg"
-                  }
+                  src={post.user?.imageUrl || undefined} //replace with default image url later
                   alt={post.user?.name || "Profile"}
                 />
-                <span>
-                  {formattedDate} at {formattedTime} -{" "}
-                  {post.user?.name || "Unknown"}
-                </span>
-              </StyledDateTime>
-              <br />
-              <hr />
-              <StyledPostTitle>{post.title}</StyledPostTitle>
-              <StyledPostContent>{post.content}</StyledPostContent>
+                <StyledAuthorInfo>
+                  <StyledAuthorName>
+                    {post.user?.name || "Unknown"}
+                  </StyledAuthorName>
+                  <StyledDateTime>
+                    {formattedDate} at {formattedTime}
+                  </StyledDateTime>
+                </StyledAuthorInfo>
+              </StyledPostHeader>
 
               {post.imageUrl && (
                 <StyledImageContainer>
                   <img
                     src={post.imageUrl}
                     alt="Post attachment"
-                    style={{ maxWidth: "100%", borderRadius: "4px" }}
+                    style={{ width: "100%", display: "block" }}
                   />
                 </StyledImageContainer>
               )}
 
-              {post.pdfUrl && (
-                <StyledAttachments>
-                  <StyledAttachmentHeader>
-                    Attached Document:
-                  </StyledAttachmentHeader>
-                  <StyledPdfLink
-                    href={post.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <StyledPdfIcon>
-                      <FaFilePdf />
-                    </StyledPdfIcon>
-                    <span>{getFilenameFromUrl(post.pdfUrl)}</span>
-                  </StyledPdfLink>
-                </StyledAttachments>
-              )}
+              <StyledPostContentContainer>
+                <StyledPostTitle>{post.title}</StyledPostTitle>
+                <StyledPostContent>{post.content}</StyledPostContent>
+
+                {post.pdfUrl && (
+                  <StyledAttachments>
+                    <StyledPdfLink
+                      href={post.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <StyledPdfIcon>
+                        <FaFilePdf />
+                      </StyledPdfIcon>
+                      <span>{getFilenameFromUrl(post.pdfUrl)}</span>
+                    </StyledPdfLink>
+                  </StyledAttachments>
+                )}
+              </StyledPostContentContainer>
 
               <StyledPostFooter>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    width: "100%",
-                  }}
-                >
-                  {post.currentUserVote === "UPVOTE" ? (
-                    <FaHeart color="red" style={{ marginRight: "8px" }} />
-                  ) : (
-                    <FaRegHeart style={{ marginRight: "8px" }} />
-                  )}
-                  <StyledLikes>{post.score} Likes</StyledLikes>
-                  <StyledLikeButton
-                    onClick={() => handleVote(post.id, newVoteType)}
+                <StyledFooterActions>
+                  <StyledIconButton
+                    className={isLiked ? "liked" : ""}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVote(post.id, newVoteType);
+                    }}
                   >
-                    {buttonText}
-                  </StyledLikeButton>
-                  {permissions.canModerate && (
+                    {isLiked ? <FaHeart /> : <FaRegHeart />}
+                    <span>{post.score}</span>
+                  </StyledIconButton>
+
+                  <StyledIconButton>
+                    <FaRegCommentAlt />
+                    <span>{post._count?.comments || 0}</span>
+                  </StyledIconButton>
+                </StyledFooterActions>
+
+                {permissions.canModerate && (
+                  <StyledDeleteButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(post.id, true);
+                    }}
+                  >
+                    Delete
+                  </StyledDeleteButton>
+                )}
+                {!permissions.canModerate &&
+                  isAuthor &&
+                  permissions.canPost && (
                     <StyledDeleteButton
-                      onClick={() => handleDelete(post.id, true)}
-                      style={{ marginLeft: "auto", backgroundColor: "#500724" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(post.id, false);
+                      }}
                     >
                       Delete
                     </StyledDeleteButton>
                   )}
-                  {!permissions.canModerate &&
-                    isAuthor &&
-                    permissions.canPost && (
-                      <StyledDeleteButton
-                        onClick={() => handleDelete(post.id, false)}
-                        style={{ marginLeft: "auto" }}
-                      >
-                        Delete
-                      </StyledDeleteButton>
-                    )}
-                </div>
               </StyledPostFooter>
-              <CommentsSection postId={post.id} permissions={permissions} />
             </StyledPostCard>
           );
         })
       )}
+
       <div
         style={{
           display: "flex",
@@ -389,7 +407,7 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
           onClick={() => setPage(Math.max(page - 1, 1))}
           disabled={page === 1}
         >
-          Previous Page
+          Previous
         </StyledButton>
         <span>
           Page {page} of {totalPages}
@@ -398,7 +416,7 @@ const BlogPostsSection: React.FC<BlogPostsSectionProps> = ({
           onClick={() => setPage(page + 1)}
           disabled={page >= totalPages}
         >
-          Next Page
+          Next
         </StyledButton>
       </div>
     </StyledContainer>

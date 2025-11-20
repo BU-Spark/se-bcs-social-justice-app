@@ -63,6 +63,9 @@ export async function GET(request: Request) {
         user: {
           select: { id: true, clerkUserId: true, name: true, imageUrl: true },
         },
+        _count: {
+          select: { comments: true },
+        },
       },
     });
 
