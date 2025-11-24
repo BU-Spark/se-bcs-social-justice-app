@@ -653,10 +653,10 @@ export default function AdminUserInterest() {
     });
   };
 
-  const usersWithInterests = users.filter((u) => u.interests.length > 0).length;
-  const usersInCommunity = users.filter(
-    (u) => u.communities && u.communities.length > 0,
-  ).length;
+  // const usersWithInterests = users.filter((u) => u.interests.length > 0).length;
+  // const usersInCommunity = users.filter(
+  //   (u) => u.communities && u.communities.length > 0,
+  // ).length;
 
   const handleUserClick = (user: UserWithInterests) => {
     setSelectedUser(user);
@@ -664,11 +664,11 @@ export default function AdminUserInterest() {
     setShowModal(true);
   };
 
-  const handleInterestClick = (interest: string) => {
-    setSelectedInterest(interest);
-    setSelectedUser(null);
-    setShowModal(true);
-  };
+  // const handleInterestClick = (interest: string) => {
+  //   setSelectedInterest(interest);
+  //   setSelectedUser(null);
+  //   setShowModal(true);
+  // };
 
   const handleInterestCardClick = (interest: string) => {
     if (filterByInterest === interest) {
