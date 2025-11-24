@@ -727,7 +727,7 @@ export default function AdminCoursesPage() {
           {searchQuery && (
             <SearchInfo>
               <span>
-                Found {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                Found {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
               </span>
               <ClearSearchButton onClick={() => setSearchQuery("")}>
                 Clear search
@@ -886,7 +886,7 @@ export default function AdminCoursesPage() {
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalTitle>Delete Course</ModalTitle>
             <ModalText>
-              Are you sure you want to delete "{deleteModal.courseName}"? This action cannot be undone and will remove all associated modules and enrollments.
+              Are you sure you want to delete &quot;{deleteModal.courseName}&quot;? This action cannot be undone and will remove all associated modules and enrollments.
             </ModalText>
             {/* Modal action buttons */}
             <ModalButtons>
