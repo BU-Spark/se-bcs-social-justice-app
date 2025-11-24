@@ -533,7 +533,7 @@ export default function AdminUserInterest() {
   const [allInterests, setAllInterests] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null); // State setter is used, but value is not currently read
   const [selectedUser, setSelectedUser] = useState<UserWithInterests | null>(
     null,
   );
