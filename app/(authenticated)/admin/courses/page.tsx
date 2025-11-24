@@ -747,7 +747,7 @@ export default function AdminCoursesPage() {
             {searchQuery ? (
               // No search results found
               <>
-                <p>No courses found matching "{searchQuery}"</p>
+                <p>No courses found matching &quot;{searchQuery}&quot;</p>
                 <Button
                   variant="secondary"
                   onClick={() => setSearchQuery("")}
