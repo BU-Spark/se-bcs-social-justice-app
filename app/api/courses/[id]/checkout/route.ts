@@ -1,3 +1,16 @@
+/**
+ * Checkout Session Creation Endpoint
+ * 
+ * This endpoint creates a Stripe Checkout Session for course purchases.
+ * When a user clicks "Purchase" on a course, this endpoint:
+ * 1. Validates the user and course
+ * 2. Checks for existing enrollment
+ * 3. Creates a Stripe Checkout Session
+ * 4. Returns the checkout URL for the user to complete payment
+ * 
+ * After payment, Stripe redirects to the success_url with the session_id,
+ * which is then verified by the verify-payment endpoint.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Stripe from "stripe";
@@ -12,9 +25,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Extract course ID from URL and get authenticated user
     const { id: courseId } = await params;
     const { userId: clerkUserId } = await auth();
 
+    // Authentication check - user must be logged in to purchase
     if (!clerkUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -27,7 +42,7 @@ export async function POST(
       );
     }
 
-    // Get the course
+    // Step 1: Fetch the course from database
     const course = await prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -36,7 +51,8 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    // Get the user
+    // Step 2: Get the user record from database
+    // We need the internal user ID (not Clerk ID) for enrollment
     const user = await prisma.user.findUnique({
       where: { clerkUserId },
     });
@@ -45,7 +61,8 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if user already has enrollment for this course
+    // Step 3: Check if user already has enrollment for this course
+    // Prevents duplicate purchases and unnecessary checkout sessions
     const existingEnrollment = await prisma.userCourse.findUnique({
       where: {
         userId_courseId: {
@@ -62,12 +79,14 @@ export async function POST(
       );
     }
 
-    // Get the base URL for success/cancel URLs
+    // Step 4: Prepare redirect URLs
+    // Get the origin to construct absolute URLs for Stripe redirects
     const origin = req.headers.get("origin") || "http://localhost:3000";
 
-    // Create Stripe Checkout Session
+    // Step 5: Create Stripe Checkout Session
+    // This creates a payment session that the user will be redirected to
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+      payment_method_types: ["card"], // Only accept card payments
       line_items: [
         {
           price_data: {
@@ -76,22 +95,29 @@ export async function POST(
               name: course.name,
               description: course.description || undefined,
             },
-            unit_amount: Math.round(course.price * 100), // Convert to cents
+            // Stripe requires amounts in cents, so multiply by 100
+            unit_amount: Math.round(course.price * 100),
           },
-          quantity: 1,
+          quantity: 1, // One course per purchase
         },
       ],
-      mode: "payment",
-      success_url: `${origin}/coaching/${courseId}?payment=success`,
+      mode: "payment", // One-time payment (not subscription)
+      // Success URL: Stripe will append session_id automatically
+      // The {CHECKOUT_SESSION_ID} placeholder is replaced by Stripe with the actual session ID
+      success_url: `${origin}/coaching/${courseId}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/coaching/${courseId}?payment=cancelled`,
-      client_reference_id: courseId,
+      client_reference_id: courseId, // Store course ID for reference
+      // Metadata: Store user and course info for verification after payment
+      // This is used by the verify-payment endpoint to validate the session
       metadata: {
-        userId: user.id,
+        userId: user.id, // Internal user ID
         courseId: courseId,
-        clerkUserId: clerkUserId,
+        clerkUserId: clerkUserId, // Clerk user ID for additional verification
       },
     });
 
+    // Return the session ID and checkout URL
+    // Frontend will redirect user to session.url to complete payment
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error) {
     console.error("Error creating checkout session:", error);
