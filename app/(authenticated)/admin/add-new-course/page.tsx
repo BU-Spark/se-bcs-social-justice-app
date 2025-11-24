@@ -544,7 +544,7 @@ export default function NewCoursePage() {
   } | null>(null); // Track which module and media type is being dragged over
 
   // Track upload progress for each file
-  const [uploadingFiles, setUploadingFiles] = useState<{
+  const [_uploadingFiles, setUploadingFiles] = useState<{
     [key: string]: boolean;
   }>({}); // Track which files are uploading
 
