@@ -350,7 +350,6 @@ model TierCourseAccess {
   @@id([tierId, courseId])
 }
 
-// --- Seminar Models (Using Granular Access from Schema 1) ---
 model Seminar {
   id          String                @id @default(cuid())
   title       String
@@ -482,5 +481,4 @@ enum CommunityRole {
   LEADER
   ADMIN
 }
-
 
