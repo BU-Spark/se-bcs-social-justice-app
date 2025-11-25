@@ -311,7 +311,7 @@ export default function CoachingDetailPage() {
     {},
   );
   const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(
     new Set(),
   );
@@ -340,41 +340,124 @@ export default function CoachingDetailPage() {
     }
   }, [id]);
 
-  const handleStartTrial = async () => {
+  /**
+   * Payment Redirect Handler
+   * 
+   * This effect handles the redirect from Stripe Checkout after payment.
+   * 
+   * Flow:
+   * 1. User completes payment on Stripe Checkout
+   * 2. Stripe redirects to: /coaching/{courseId}?payment=success&session_id={sessionId}
+   * 3. This effect detects the success parameter and session_id
+   * 4. Calls verify-payment endpoint to confirm payment and create enrollment
+   * 5. Refreshes course data to show updated access status
+   * 6. Cleans up URL parameters
+   */
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const payment = searchParams.get("payment");
+    const sessionId = searchParams.get("session_id");
+    
+    // Handle successful payment redirect
+    if (payment === "success" && sessionId) {
+      // Verify payment and create enrollment
+      async function verifyPayment() {
+        try {
+          // Call the verify-payment endpoint to:
+          // - Verify the Stripe session payment status
+          // - Validate session metadata matches course and user
+          // - Create the UserCourse enrollment record
+          const response = await fetch(`/api/courses/${id}/verify-payment`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ sessionId }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Payment verified:", data.message);
+            
+            // Refresh course data to update access status
+            // This ensures the UI shows the user now has access to the course
+            const courseResponse = await fetch(`/api/courses/${id}`);
+            if (courseResponse.ok) {
+              const updatedCourse = await courseResponse.json();
+              setCourse(updatedCourse);
+            }
+          } else {
+            // Payment verification failed - show error to user
+            const error = await response.json();
+            console.error("Payment verification failed:", error.error);
+            alert(`Payment verification failed: ${error.error}`);
+          }
+        } catch (error) {
+          // Network or other error during verification
+          console.error("Error verifying payment:", error);
+          alert("An error occurred while verifying payment. Please contact support.");
+        }
+      }
+      verifyPayment();
+      
+      // Clean up URL parameters after processing
+      // Removes ?payment=success&session_id=... from the URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "cancelled") {
+      // User cancelled payment - just clean up the URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [id]);
+
+  /**
+   * Purchase Handler
+   * 
+   * Initiates the course purchase flow by creating a Stripe Checkout Session.
+   * 
+   * Flow:
+   * 1. User clicks "Purchase" button
+   * 2. Calls checkout API to create Stripe session
+   * 3. Redirects user to Stripe Checkout page
+   * 4. After payment, Stripe redirects back with session_id
+   * 5. Payment verification happens in the useEffect above
+   */
+  const handlePurchase = async () => {
     if (!course) return;
 
     try {
-      setEnrolling(true);
-      const response = await fetch("/api/courses", {
+      setPurchasing(true); // Show loading state on purchase button
+      
+      // Create Stripe Checkout Session
+      // This endpoint validates the user, checks for existing enrollment,
+      // and creates a payment session
+      const response = await fetch(`/api/courses/${id}/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          courseId: course.id,
-        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        alert(
-          `✓ Your 7-day free trial has started! Access expires on ${new Date(data.trialExpiresAt).toLocaleDateString()}`,
-        );
-        // Refresh course data to update access status
-        const refreshResponse = await fetch(`/api/courses/${id}`);
-        if (refreshResponse.ok) {
-          const updatedCourse = await refreshResponse.json();
-          setCourse(updatedCourse);
+        // Redirect to Stripe Checkout page
+        // User will complete payment on Stripe's hosted page
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert("Failed to create checkout session. Please try again.");
         }
       } else {
+        // Handle errors from checkout endpoint
+        // Common errors: already enrolled, course not found, unauthorized
         const error = await response.json();
-        alert(`Failed to start trial: ${error.error}`);
+        alert(`Failed to start purchase: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error starting trial:", error);
-      alert("An error occurred while starting the trial. Please try again.");
+      // Network error or other exception
+      console.error("Error starting purchase:", error);
+      alert("An error occurred while starting the purchase. Please try again.");
     } finally {
-      setEnrolling(false);
+      setPurchasing(false); // Reset loading state
     }
   };
 
@@ -1031,8 +1114,8 @@ export default function CoachingDetailPage() {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={hasAccess ? undefined : handleStartTrial}
-                    disabled={enrolling}
+                    onClick={hasAccess ? undefined : handlePurchase}
+                    disabled={purchasing}
                     sx={{
                       background: hasAccess ? "#059669" : "#1e7fbf",
                       "&:hover": {
@@ -1045,11 +1128,11 @@ export default function CoachingDetailPage() {
                       fontWeight: "600",
                     }}
                   >
-                    {enrolling
-                      ? "Starting trial..."
+                    {purchasing
+                      ? "Processing..."
                       : hasAccess
                         ? "Access Course"
-                        : "Start your 7-day free trial"}
+                        : "Purchase"}
                   </Button>
                 </>
               ) : (

@@ -533,7 +533,7 @@ export default function AdminUserInterest() {
   const [allInterests, setAllInterests] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null); // State setter is used, but value is not currently read
   const [selectedUser, setSelectedUser] = useState<UserWithInterests | null>(
     null,
   );
@@ -653,10 +653,10 @@ export default function AdminUserInterest() {
     });
   };
 
-  const usersWithInterests = users.filter((u) => u.interests.length > 0).length;
-  const usersInCommunity = users.filter(
-    (u) => u.communities && u.communities.length > 0,
-  ).length;
+  // const usersWithInterests = users.filter((u) => u.interests.length > 0).length;
+  // const usersInCommunity = users.filter(
+  //   (u) => u.communities && u.communities.length > 0,
+  // ).length;
 
   const handleUserClick = (user: UserWithInterests) => {
     setSelectedUser(user);
@@ -664,11 +664,11 @@ export default function AdminUserInterest() {
     setShowModal(true);
   };
 
-  const handleInterestClick = (interest: string) => {
-    setSelectedInterest(interest);
-    setSelectedUser(null);
-    setShowModal(true);
-  };
+  // const handleInterestClick = (interest: string) => {
+  //   setSelectedInterest(interest);
+  //   setSelectedUser(null);
+  //   setShowModal(true);
+  // };
 
   const handleInterestCardClick = (interest: string) => {
     if (filterByInterest === interest) {

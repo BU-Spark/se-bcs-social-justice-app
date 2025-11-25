@@ -112,6 +112,9 @@ This is a Next.js-based social justice application which is an all in one platfo
     # CLOUDINARY SECRET KEYS
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..."
     NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="..."
+    # STRIPE SECRET KEYS
+    STRIPE_SECRET_KEY="sk_test_..." # or sk_live_... for production
+    STRIPE_WEBHOOK_SECRET="whsec_..." # Webhook signing secret from Stripe Dashboard
 
    ```
 

@@ -136,6 +136,8 @@ export default function AdminLeaderApplications() {
           router.push("/dashboard");
         }
       } catch (error) {
+        // Log error for future log recording implementation
+        console.error("Admin check failed:", error);
         setIsAdmin(false);
         router.push("/dashboard");
       }

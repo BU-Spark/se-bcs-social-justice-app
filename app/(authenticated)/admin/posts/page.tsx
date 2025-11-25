@@ -7,6 +7,8 @@ export default async function PostReviewQueuePage() {
   try {
     await checkAdmin();
   } catch (error) {
+    // Log error for future log recording implementation
+    console.error("Admin check failed:", error);
     redirect("/app/(authenticated)/dashboard");
   }
 

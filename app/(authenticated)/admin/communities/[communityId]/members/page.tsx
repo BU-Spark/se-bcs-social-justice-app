@@ -12,6 +12,8 @@ export default async function ManageMembersPage({
   try {
     await checkAdmin();
   } catch (error) {
+    // Log error for future log recording implementation
+    console.error("Admin check failed:", error);
     redirect("/");
   }
 
