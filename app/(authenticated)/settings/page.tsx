@@ -270,6 +270,19 @@ export default function Settings() {
             <div className="space-y-4" style={{ marginTop: "32px" }}>
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="text-gray-700 font-medium"> Removed Enrollments</p>
+                  <p className="text-sm text-gray-600"> View history of removed course enrollments</p>
+                </div>
+                <Link href="/admin/removed-enrollments" passHref>
+                  <StyledButton className="flex items-center">
+                    <span>View Removed Enrollments</span>
+                  </StyledButton>
+                </Link>
+              </div>
+            </div>
+            <div className="space-y-4" style={{ marginTop: "32px" }}>
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-gray-700 font-medium">
                     Communities Management
                   </p>
