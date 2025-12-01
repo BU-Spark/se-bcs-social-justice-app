@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     console.error("Error creating Stripe Checkout Session:", err);
     return NextResponse.json(
       { error: "Unable to create checkout session" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
