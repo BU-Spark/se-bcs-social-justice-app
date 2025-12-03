@@ -36,6 +36,7 @@ async function main() {
 
   // --- Course/Tier Dependencies ---
   await prisma.tierCourseAccess.deleteMany();
+  await prisma.removedEnrollment.deleteMany();
   await prisma.coursePrerequisite.deleteMany();
   await prisma.userCourse.deleteMany();
   await prisma.module.deleteMany();

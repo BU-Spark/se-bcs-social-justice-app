@@ -30,12 +30,20 @@ export async function DELETE(
       );
     }
 
-    // Check if enrollment exists
+    // Check if enrollment exists - include user info to store
     const enrollment = await prisma.userCourse.findUnique({
       where: {
         userId_courseId: {
           userId: userId,
           courseId: courseId,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
         },
       },
     });
@@ -46,6 +54,22 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    // Create a record of this removal before deleting
+    // Store user info so it persists even if user is deleted later
+    await prisma.removedEnrollment.create({
+      data: {
+        userId: enrollment.userId,
+        courseId: enrollment.courseId,
+        userName: enrollment.user?.name || null,
+        userEmail: enrollment.user?.email || null,
+        originalEnrollmentDate: enrollment.enrollmentDate,
+        completionStatusAtRemoval: enrollment.completionStatus,
+        trialExpiresAt: enrollment.trialExpiresAt,
+        removedBy: dbUser.id, // Track which admin removed the enrollment
+        // reason can be added later if you want to capture it from request body
+      },
+    });
 
     // Delete the enrollment - this removes access
     await prisma.userCourse.delete({

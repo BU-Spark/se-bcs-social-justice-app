@@ -33,6 +33,33 @@ model User {
   onboardingComplete     Boolean               @default(false)
   enrollments            UserCourse[]
   subscriptions          UserMembership[]
+  removedEnrollments     RemovedEnrollment[]
+}
+
+model RemovedEnrollment{
+  id String @id @default(cuid())
+  userId String
+  courseId String
+  user User? @relation(fields: [userId], references:[id], onDelete: SetNull)
+  course Course @relation(fields: [courseId], references: [id], onDelete:Cascade)
+  
+  // Store user info at time of removal (preserved even if user is deleted)
+  userName String?  // User's name at time of removal
+  userEmail String? // User's email at time of removal
+  
+  //Original enrollment data at the time of removal
+  originalEnrollmentDate DateTime
+  completionStatusAtRemoval String
+  trialExpiresAt DateTime?
+
+  // Removal tracking - each removal creates a new record
+  removedAt DateTime @default(now())
+  removedBy String // admin user Id who performed the removal
+  reason String? // optional reason for removal
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([removedAt])
 }
 
 model Interest {
@@ -256,6 +283,7 @@ model Course {
   unlockedByTiers        TierCourseAccess[]
   prerequisites          CoursePrerequisite[] @relation("courseWithPrereqs")
   requiredForCourses     CoursePrerequisite[] @relation("prerequisiteCourse")
+  removedEnrollments     RemovedEnrollment[]
 }
 
 model Module {

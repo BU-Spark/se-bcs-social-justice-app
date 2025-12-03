@@ -161,6 +161,37 @@ export default function EditSeminarPage() {
     setSeminar((prev) => ({ ...prev, accessRules: updated }));
   };
 
+  const uploadToS3 = async (file: File) => {
+    const folder = file.type.startsWith("video")
+      ? "seminarVideo"
+      : "seminarImages";
+    const fileName = `${folder}/${Date.now()}-${file.name}`;
+
+    const res = await fetch(
+      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${encodeURIComponent(file.type)}`
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to get signed upload URL");
+    }
+
+    const { uploadUrl, publicUrl } = await res.json();
+
+    if (!uploadUrl || !publicUrl) {
+      throw new Error("Missing uploadUrl or publicUrl");
+    }
+
+    await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type,
+      },
+      body: file,
+    });
+
+    return publicUrl as string;
+  };
+
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "image" | "mediaUrl",
@@ -169,26 +200,10 @@ export default function EditSeminarPage() {
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        alert("Upload failed");
-        setUploading(false);
-        return;
-      }
-
-      const data = await res.json();
-      const fileUrl = data.url;
-
-      setSeminar((prev) => ({ ...prev, [field]: fileUrl }));
-      alert(" File uploaded successfully!");
+      const uploadedUrl = await uploadToS3(file);
+      setSeminar((prev) => ({ ...prev, [field]: uploadedUrl }));
+      alert("File uploaded successfully!");
     } catch (err) {
       console.error(err);
       alert("File upload failed.");
