@@ -62,12 +62,17 @@ This is a Next.js-based social justice application which is an all in one platfo
   - Headless UI
   - Tailwind CSS
 - **Authentication**: Clerk
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: 
+  - PostgreSQL with Prisma ORM
+  - AWS S3 for media files
 - **Development Tools**:
   - TypeScript
   - ESLint
   - Prettier
   - Husky (for pre-commit hooks)
+- **Payment**
+  - Stripe
+    - Current confirmation is based off redirection, need to link to a webhook, there is code for webhook.
 
 ## Project Setup and Installation
 
@@ -76,6 +81,8 @@ This is a Next.js-based social justice application which is an all in one platfo
 - Node.js (Latest LTS version)
 - PostgreSQL database
 - Clerk account for authentication
+- Stripe for payment 
+- AWS S3 database
 
 ### Environment Setup
 
@@ -115,7 +122,10 @@ This is a Next.js-based social justice application which is an all in one platfo
     # STRIPE SECRET KEYS
     STRIPE_SECRET_KEY="sk_test_..." # or sk_live_... for production
     STRIPE_WEBHOOK_SECRET="whsec_..." # Webhook signing secret from Stripe Dashboard
-
+    EMAIL_USER=...
+    EMAIL_PASSWORD=...
+    SMTP_HOST=...
+    SMTP_PORT=...
    ```
 
 ### Database Setup
@@ -130,10 +140,19 @@ This is a Next.js-based social justice application which is an all in one platfo
    npx tsx ./db/seed
    ```
 
+### AWS S3
+1. No initialization needed
+2. Need to check if the access to the AWS S3 is open for both upload and retrival, contact TPM
+3. Future implementation: need webhook for payment confirmation, currently flawed. 
+
+### Emails
+1. User the admin email/ testing email for sending emails from the platform to users.
+2. view the .env structure.
+
 ### Create and run a migration (Optional)
 
 ```bash
-npx prisma migrate dev --name add_onboarding_complete
+npx prisma migrate dev --name <name of the migration>
 npx prisma generate
 ```
 
