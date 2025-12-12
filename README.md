@@ -58,7 +58,9 @@ This is a Next.js-based social justice application which is an all in one platfo
 - The current CI workflow does not go around the unused variable checks, which will skip the rest of the CI workflows.
 - Tried to add new rule to the CI to show unused variables as warnings instead of erros, did not work.
 - The entire platform is slow, and needs 2-3 seconds to render a new pages/view.
-
+- The communities admin tool has UX flow issues. When adding new words to banned words list, it doesn't go over existing posts to flag them, only for newly submitted posts. When deleting existing words from banned words list, existing flagged posts doesn't update.
+- The community creation form and post creation form has upload sections that use cloudinary, it isn't updated to use amazon s3.
+- Some of the community logic uses old logic via checkAdmin() to see proper permissions, but newer code in permissions.ts is used to see if users have proper permissions for posting and communities. This needs updating.
 ## Technology Stack
 
 - **Frontend Framework**: Next.js 15.2.4
