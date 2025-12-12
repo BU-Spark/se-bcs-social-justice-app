@@ -25,9 +25,6 @@ export default [
         version: "detect",
       },
     },
-    rules: {
-      "@typescript-eslint/no-unused-vars": "warn",
-    },
   },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
