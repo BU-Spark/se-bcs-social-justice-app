@@ -342,9 +342,9 @@ export default function CoachingDetailPage() {
 
   /**
    * Payment Redirect Handler
-   * 
+   *
    * This effect handles the redirect from Stripe Checkout after payment.
-   * 
+   *
    * Flow:
    * 1. User completes payment on Stripe Checkout
    * 2. Stripe redirects to: /coaching/{courseId}?payment=success&session_id={sessionId}
@@ -357,7 +357,7 @@ export default function CoachingDetailPage() {
     const searchParams = new URLSearchParams(window.location.search);
     const payment = searchParams.get("payment");
     const sessionId = searchParams.get("session_id");
-    
+
     // Handle successful payment redirect
     if (payment === "success" && sessionId) {
       // Verify payment and create enrollment
@@ -378,7 +378,7 @@ export default function CoachingDetailPage() {
           if (response.ok) {
             const data = await response.json();
             console.log("Payment verified:", data.message);
-            
+
             // Refresh course data to update access status
             // This ensures the UI shows the user now has access to the course
             const courseResponse = await fetch(`/api/courses/${id}`);
@@ -395,11 +395,13 @@ export default function CoachingDetailPage() {
         } catch (error) {
           // Network or other error during verification
           console.error("Error verifying payment:", error);
-          alert("An error occurred while verifying payment. Please contact support.");
+          alert(
+            "An error occurred while verifying payment. Please contact support.",
+          );
         }
       }
       verifyPayment();
-      
+
       // Clean up URL parameters after processing
       // Removes ?payment=success&session_id=... from the URL
       window.history.replaceState({}, "", window.location.pathname);
@@ -411,9 +413,9 @@ export default function CoachingDetailPage() {
 
   /**
    * Purchase Handler
-   * 
+   *
    * Initiates the course purchase flow by creating a Stripe Checkout Session.
-   * 
+   *
    * Flow:
    * 1. User clicks "Purchase" button
    * 2. Calls checkout API to create Stripe session
@@ -426,7 +428,7 @@ export default function CoachingDetailPage() {
 
     try {
       setPurchasing(true); // Show loading state on purchase button
-      
+
       // Create Stripe Checkout Session
       // This endpoint validates the user, checks for existing enrollment,
       // and creates a payment session

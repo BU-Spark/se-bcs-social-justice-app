@@ -79,7 +79,6 @@ const Onboarding = () => {
       }
     }
 
-
     async function fetchCommunities() {
       try {
         const response = await fetch("/api/communities");

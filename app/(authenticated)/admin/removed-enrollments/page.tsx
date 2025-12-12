@@ -471,7 +471,9 @@ export default function RemovedEnrollmentsPage() {
                       </DateCell>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={enrollment.completionStatusAtRemoval}>
+                      <StatusBadge
+                        status={enrollment.completionStatusAtRemoval}
+                      >
                         {enrollment.completionStatusAtRemoval
                           .replace("_", " ")
                           .toUpperCase()}
@@ -479,7 +481,9 @@ export default function RemovedEnrollmentsPage() {
                     </TableCell>
                     <TableCell>
                       <DateCell>
-                        <DateValue>{formatDate(enrollment.removedAt)}</DateValue>
+                        <DateValue>
+                          {formatDate(enrollment.removedAt)}
+                        </DateValue>
                       </DateCell>
                     </TableCell>
                     <TableCell>
@@ -488,7 +492,8 @@ export default function RemovedEnrollmentsPage() {
                           {enrollment.removedByAdmin?.name || "Unknown Admin"}
                         </UserName>
                         <UserEmail>
-                          {enrollment.removedByAdmin?.email || `ID: ${enrollment.removedBy}`}
+                          {enrollment.removedByAdmin?.email ||
+                            `ID: ${enrollment.removedBy}`}
                         </UserEmail>
                       </UserInfo>
                     </TableCell>
@@ -528,4 +533,3 @@ export default function RemovedEnrollmentsPage() {
     </StyledMainContent>
   );
 }
-

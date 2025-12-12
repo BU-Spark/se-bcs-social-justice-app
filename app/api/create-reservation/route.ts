@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (!seminarId || !user?.email || !user?.name) {
       return NextResponse.json(
         { error: "Missing required fields: seminarId, user.email, user.name" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

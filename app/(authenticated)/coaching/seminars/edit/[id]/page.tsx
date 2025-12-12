@@ -92,7 +92,7 @@ export default function EditSeminarPage() {
               (c: Community) => c.id === rule.communityId,
             );
             const matchedTier = tierData?.find(
-              (t: MembershipTier) => t.id === rule.tierId
+              (t: MembershipTier) => t.id === rule.tierId,
             );
 
             return {
@@ -132,7 +132,7 @@ export default function EditSeminarPage() {
 
   // Handle form input changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setSeminar((prev) => ({ ...prev, [name]: value }));
@@ -168,7 +168,7 @@ export default function EditSeminarPage() {
     const fileName = `${folder}/${Date.now()}-${file.name}`;
 
     const res = await fetch(
-      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${encodeURIComponent(file.type)}`
+      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${encodeURIComponent(file.type)}`,
     );
 
     if (!res.ok) {

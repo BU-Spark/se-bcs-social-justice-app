@@ -12,7 +12,7 @@ function generateCalendarLinks(seminar: any) {
 
   const title = encodeURIComponent(seminar.title);
   const description = encodeURIComponent(
-    `Hosted by ${seminar.hostName}\n${seminar.zoomLink || ""}`
+    `Hosted by ${seminar.hostName}\n${seminar.zoomLink || ""}`,
   );
   const location = encodeURIComponent(seminar.zoomLink || "Online (Zoom)");
 
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     if (!seminar.date) {
       return NextResponse.json(
         { error: "Missing 'date' parameter" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": "text/calendar; charset=utf-8",
         "Content-Disposition": `attachment; filename="${encodeURIComponent(
-          seminar.title
+          seminar.title,
         )}.ics"`,
       },
     });
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     console.error("❌ iCal generation failed:", err);
     return NextResponse.json(
       { error: "Failed to generate iCal file" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     if (!to || !seminar || !user?.name)
       return NextResponse.json(
         { error: "Missing fields: to, seminar, or user" },
-        { status: 400 }
+        { status: 400 },
       );
 
     const host = req.headers.get("host");
@@ -97,11 +97,11 @@ export async function POST(req: NextRequest) {
     const origin = `${protocol}://${host}`;
 
     const icsDownloadUrl = `${origin}/api/create-reservation-email?title=${encodeURIComponent(
-      seminar.title
+      seminar.title,
     )}&date=${encodeURIComponent(seminar.date)}&duration=${
       seminar.duration
     }&hostName=${encodeURIComponent(
-      seminar.hostName
+      seminar.hostName,
     )}&zoomLink=${encodeURIComponent(seminar.zoomLink || "")}`;
 
     const links = generateCalendarLinks(seminar);
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
         error: "Failed to send email",
         details: err instanceof Error ? err.message : String(err),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

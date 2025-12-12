@@ -3,7 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 
 interface ModuleContentData {
-  type: 'VIDEO' | 'AUDIO' | 'PDF' | 'IMAGE' | 'TEXT' | 'LINK';
+  type: "VIDEO" | "AUDIO" | "PDF" | "IMAGE" | "TEXT" | "LINK";
   name: string;
   externalLink: string;
 }
@@ -45,14 +45,14 @@ export async function POST(request: Request) {
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
         { error: "Course name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (price === undefined || price === null || price < 0) {
       return NextResponse.json(
         { error: "Valid price is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,14 +68,17 @@ export async function POST(request: Request) {
             title: module.title.trim(),
             moduleNumber: module.moduleNumber,
             description: module.description?.trim() || null,
-            contents: module.contents && module.contents.length > 0 ? {
-              create: module.contents.map((content) => ({
-                contentType: content.type,
-                title: content.name,
-                externalLink: content.externalLink,
-                isExternal: true,
-              })),
-            } : undefined,
+            contents:
+              module.contents && module.contents.length > 0
+                ? {
+                    create: module.contents.map((content) => ({
+                      contentType: content.type,
+                      title: content.name,
+                      externalLink: content.externalLink,
+                      isExternal: true,
+                    })),
+                  }
+                : undefined,
           })),
         },
       },
@@ -96,13 +99,13 @@ export async function POST(request: Request) {
         message: "Course created successfully",
         course,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error creating course:", error);
     return NextResponse.json(
       { error: "Failed to create course" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -146,7 +149,7 @@ export async function GET(request: Request) {
     console.error("Error fetching courses:", error);
     return NextResponse.json(
       { error: "Failed to fetch courses" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

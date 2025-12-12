@@ -91,7 +91,7 @@ export async function GET() {
     console.error("❌ Error fetching seminars:", err);
     return NextResponse.json(
       { error: "Failed to fetch seminars" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
     if (!data.title || !data.hostName || !data.date || !data.duration) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     //Check S3 URLs are properly formatted
@@ -136,8 +136,8 @@ export async function POST(req: Request) {
       formatInTimeZone(
         data.date,
         "America/New_York",
-        "yyyy-MM-dd'T'HH:mm:ssXXX"
-      )
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+      ),
     );
 
     // create zoom meeting
@@ -212,7 +212,7 @@ export async function POST(req: Request) {
     console.error("Error creating seminar:", err);
     return NextResponse.json(
       { error: "Failed to create seminar" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

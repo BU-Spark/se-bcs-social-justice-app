@@ -254,7 +254,7 @@ export default function SeminarDetail({
   }, [accessRules, userCommunities, userTiers, isAdmin, isLoaded]);
 
   const hasReserved = attendees.some(
-    (att) => att.email.toLowerCase() === userEmail.toLowerCase()
+    (att) => att.email.toLowerCase() === userEmail.toLowerCase(),
   );
 
   useEffect(() => {

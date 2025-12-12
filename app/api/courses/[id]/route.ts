@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // GET single course by ID with modules and access check
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const { id } = await params;
@@ -37,7 +37,7 @@ export async function GET(
           hasAccess: false,
           accessType: "locked",
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -71,13 +71,13 @@ export async function GET(
           hasAccess: false,
           accessType: "locked",
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
     // Check if user has access via subscription
     const hasViaSubscription = user.subscriptions.some(
-      (sub) => sub.tier.coursesUnlocked.length > 0
+      (sub) => sub.tier.coursesUnlocked.length > 0,
     );
 
     // Check direct enrollment and trial status
@@ -131,13 +131,13 @@ export async function GET(
           : "locked",
         trialExpiresAt: isTrialActive ? trialExpiresAt : null,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching course:", error);
     return NextResponse.json(
       { error: "Failed to fetch course" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

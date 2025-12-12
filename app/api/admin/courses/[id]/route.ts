@@ -5,11 +5,11 @@ import prisma from "@/lib/prisma";
 // GET - Fetch single course (admin only)
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    
+
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -44,7 +44,7 @@ export async function GET(
     console.error("Error fetching course:", error);
     return NextResponse.json(
       { error: "Failed to fetch course" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -52,11 +52,11 @@ export async function GET(
 // PUT - Update course and modules (admin only)
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    
+
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -70,7 +70,8 @@ export async function PUT(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const { name, description, price, isStandalone, modules } = await request.json();
+    const { name, description, price, isStandalone, modules } =
+      await request.json();
 
     // Update course
     await prisma.course.update({
@@ -95,7 +96,7 @@ export async function PUT(
 
     // Delete modules that are no longer in the list
     const modulesToDelete = existingModuleIds.filter(
-      (id) => !incomingModuleIds.includes(id)
+      (id) => !incomingModuleIds.includes(id),
     );
 
     if (modulesToDelete.length > 0) {
@@ -116,12 +117,12 @@ export async function PUT(
             description: module.description,
           },
         });
-        
+
         // Delete existing contents for this module
         await prisma.moduleContent.deleteMany({
           where: { moduleId: module.id },
         });
-        
+
         // Create new contents if provided
         if (module.contents && module.contents.length > 0) {
           await prisma.moduleContent.createMany({
@@ -142,14 +143,17 @@ export async function PUT(
             moduleNumber: module.moduleNumber,
             description: module.description,
             courseId: id,
-            contents: module.contents && module.contents.length > 0 ? {
-              create: module.contents.map((content: any) => ({
-                contentType: content.type,
-                title: content.name,
-                externalLink: content.externalLink,
-                isExternal: true,
-              })),
-            } : undefined,
+            contents:
+              module.contents && module.contents.length > 0
+                ? {
+                    create: module.contents.map((content: any) => ({
+                      contentType: content.type,
+                      title: content.name,
+                      externalLink: content.externalLink,
+                      isExternal: true,
+                    })),
+                  }
+                : undefined,
           },
         });
       }
@@ -160,7 +164,7 @@ export async function PUT(
     console.error("Error updating course:", error);
     return NextResponse.json(
       { error: "Failed to update course" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -168,11 +172,11 @@ export async function PUT(
 // DELETE - Delete course (admin only)
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    
+
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -195,7 +199,7 @@ export async function DELETE(
     console.error("Error deleting course:", error);
     return NextResponse.json(
       { error: "Failed to delete course" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

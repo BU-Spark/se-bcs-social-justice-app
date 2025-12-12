@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 // Fetch a single seminar (with attendees)
 export async function GET(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await context.params;
@@ -46,7 +46,7 @@ export async function GET(
     console.error("Error fetching seminar:", err);
     return NextResponse.json(
       { error: "Failed to fetch seminar" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -54,7 +54,7 @@ export async function GET(
 // Update seminar (admin only)
 export async function PUT(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await context.params;
@@ -136,7 +136,7 @@ export async function PUT(
     console.error("❌ Error updating seminar:", err);
     return NextResponse.json(
       { error: "Failed to update seminar" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -144,7 +144,7 @@ export async function PUT(
 // Delete seminar (admin only)
 export async function DELETE(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await context.params;
@@ -171,7 +171,7 @@ export async function DELETE(
     console.error("Error deleting seminar:", err);
     return NextResponse.json(
       { error: "Failed to delete seminar" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

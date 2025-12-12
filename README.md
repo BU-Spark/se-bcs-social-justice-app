@@ -62,7 +62,7 @@ This is a Next.js-based social justice application which is an all in one platfo
   - Headless UI
   - Tailwind CSS
 - **Authentication**: Clerk
-- **Database**: 
+- **Database**:
   - PostgreSQL with Prisma ORM
   - AWS S3 for media files
 - **Development Tools**:
@@ -81,7 +81,7 @@ This is a Next.js-based social justice application which is an all in one platfo
 - Node.js (Latest LTS version)
 - PostgreSQL database
 - Clerk account for authentication
-- Stripe for payment 
+- Stripe for payment
 - AWS S3 database
 
 ### Environment Setup
@@ -141,11 +141,13 @@ This is a Next.js-based social justice application which is an all in one platfo
    ```
 
 ### AWS S3
+
 1. No initialization needed
 2. Need to check if the access to the AWS S3 is open for both upload and retrival, contact TPM
-3. Future implementation: need webhook for payment confirmation, currently flawed. 
+3. Future implementation: need webhook for payment confirmation, currently flawed.
 
 ### Emails
+
 1. User the admin email/ testing email for sending emails from the platform to users.
 2. view the .env structure.
 

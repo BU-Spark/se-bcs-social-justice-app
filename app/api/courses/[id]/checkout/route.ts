@@ -1,13 +1,13 @@
 /**
  * Checkout Session Creation Endpoint
- * 
+ *
  * This endpoint creates a Stripe Checkout Session for course purchases.
  * When a user clicks "Purchase" on a course, this endpoint:
  * 1. Validates the user and course
  * 2. Checks for existing enrollment
  * 3. Creates a Stripe Checkout Session
  * 4. Returns the checkout URL for the user to complete payment
- * 
+ *
  * After payment, Stripe redirects to the success_url with the session_id,
  * which is then verified by the verify-payment endpoint.
  */
@@ -22,7 +22,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Extract course ID from URL and get authenticated user
@@ -38,7 +38,7 @@ export async function POST(
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
         { error: "Stripe is not configured" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -75,7 +75,7 @@ export async function POST(
     if (existingEnrollment) {
       return NextResponse.json(
         { error: "Already enrolled in this course" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -123,8 +123,7 @@ export async function POST(
     console.error("Error creating checkout session:", error);
     return NextResponse.json(
       { error: "Failed to create checkout session" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

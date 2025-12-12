@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   if (!signature) {
     return NextResponse.json(
       { error: "No signature provided" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     console.error("STRIPE_WEBHOOK_SECRET is not set");
     return NextResponse.json(
       { error: "Webhook secret not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -34,13 +34,13 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
     return NextResponse.json(
       { error: "Webhook signature verification failed" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         console.error("Missing metadata in session:", session.id);
         return NextResponse.json(
           { error: "Missing required metadata" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -70,7 +70,12 @@ export async function POST(req: NextRequest) {
       });
 
       if (existingEnrollment) {
-        console.log("Enrollment already exists for user:", userId, "course:", courseId);
+        console.log(
+          "Enrollment already exists for user:",
+          userId,
+          "course:",
+          courseId,
+        );
         return NextResponse.json({ received: true });
       }
 
@@ -84,16 +89,18 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      console.log("Course enrollment created successfully:", { userId, courseId });
+      console.log("Course enrollment created successfully:", {
+        userId,
+        courseId,
+      });
     } catch (error) {
       console.error("Error processing webhook:", error);
       return NextResponse.json(
         { error: "Error processing webhook" },
-        { status: 500 }
+        { status: 500 },
       );
     }
   }
 
   return NextResponse.json({ received: true });
 }
-

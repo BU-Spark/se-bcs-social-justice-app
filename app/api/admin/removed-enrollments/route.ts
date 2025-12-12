@@ -79,14 +79,13 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       { removedEnrollments: enrichedEnrollments },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching removed enrollments:", error);
     return NextResponse.json(
       { error: "Failed to fetch removed enrollments" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

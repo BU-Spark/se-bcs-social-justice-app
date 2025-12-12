@@ -23,7 +23,6 @@ export default async function PostReviewQueuePage() {
 
   const bannedWords = await prisma.bannedWord.findMany();
 
-
   return (
     <div className="container mx-auto py-2 max-w-5xl space-y-8">
       <p className="text-gray-600">

@@ -40,7 +40,6 @@ export function ReviewPostsTable({
     }
   };
 
-
   const handleSelectOne = (postId: string) => {
     const newSelectedIds = new Set(selectedIds);
     if (newSelectedIds.has(postId)) {
@@ -59,7 +58,7 @@ export function ReviewPostsTable({
   };
 
   const handleBulkAction = async () => {
-    if (!modalAction || selectedIds.size === 0 ) return;
+    if (!modalAction || selectedIds.size === 0) return;
     setLoading(true);
     try {
       await fetch(`/api/admin/posts/bulk-actions`, {
@@ -74,20 +73,20 @@ export function ReviewPostsTable({
       setSelectedIds(new Set());
       setModalAction(null);
       router.refresh();
-    } catch ( error ) {
+    } catch (error) {
       console.error("Failed to perform the bulk action", error);
       alert("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
+  };
   if (posts.length === 0) {
     return <p className="text-gray-500">The review queue is empty!</p>;
   }
 
   const wordList = bannedWords.map((bw) => bw.word);
   return (
-     <>
+    <>
       <div className="mb-4 flex justify-end items-center gap-2">
         <span className="text-sm text-gray-600">
           {selectedIds.size} selected

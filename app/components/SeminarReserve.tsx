@@ -40,7 +40,9 @@ export default function SeminarReserve({
     email: "",
     comments: "",
   });
-  const [formErrors, setFormErrors] = useState<Partial<ReservationFormData>>({});
+  const [formErrors, setFormErrors] = useState<Partial<ReservationFormData>>(
+    {},
+  );
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -102,7 +104,8 @@ export default function SeminarReserve({
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to create reservation");
+      if (!response.ok)
+        throw new Error(data.error || "Failed to create reservation");
 
       setShowSuccess(true);
       onReservationSuccess?.();
@@ -112,7 +115,7 @@ export default function SeminarReserve({
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Failed to complete reservation. Please try again later."
+          : "Failed to complete reservation. Please try again later.",
       );
     } finally {
       setSubmitting(false);
@@ -185,7 +188,8 @@ export default function SeminarReserve({
                 variant="body2"
                 sx={{ fontStyle: "italic", color: "text.secondary" }}
               >
-                * You will receive an email with the meeting link after confirmation.
+                * You will receive an email with the meeting link after
+                confirmation.
               </Typography>
             </Box>
           </>

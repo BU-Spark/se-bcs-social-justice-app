@@ -13,7 +13,8 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(newWord);
   } catch (error: any) {
-    if (error.code === "P2002") { //prisma unique constraint error code
+    if (error.code === "P2002") {
+      //prisma unique constraint error code
       return new NextResponse("Word already in list", { status: 409 });
     }
   }

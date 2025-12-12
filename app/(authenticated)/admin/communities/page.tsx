@@ -40,7 +40,6 @@ export default async function AdminDashboardPage() {
         <h2 className="text-2xl font-semibold mb-4">Review Flagged Posts</h2>
         <PostReviewQueuePage />
       </section>
-
     </div>
   );
 }

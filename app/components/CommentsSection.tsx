@@ -175,7 +175,8 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   return (
     <CommentsContainer>
       {comments.map((comment) => {
-        const isCommenter = clerkUser && comment.user?.clerkUserId === clerkUser.id;
+        const isCommenter =
+          clerkUser && comment.user?.clerkUserId === clerkUser.id;
         const formattedTime = new Date(comment.createdAt).toLocaleString(
           "en-US",
           {

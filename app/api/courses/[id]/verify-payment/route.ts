@@ -1,10 +1,10 @@
 /**
  * Payment Verification Endpoint
- * 
+ *
  * This endpoint verifies a Stripe checkout session after payment completion
  * and creates the course enrollment. This is called when the user is redirected
  * back from Stripe Checkout with a success status.
- * 
+ *
  * Flow:
  * 1. User completes payment on Stripe Checkout
  * 2. Stripe redirects to success URL with session_id
@@ -23,7 +23,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Extract course ID from URL params and session ID from request body
@@ -40,7 +40,7 @@ export async function POST(
     if (!sessionId) {
       return NextResponse.json(
         { error: "Session ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,7 +48,7 @@ export async function POST(
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
         { error: "Stripe is not configured" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -61,18 +61,18 @@ export async function POST(
     if (session.payment_status !== "paid") {
       return NextResponse.json(
         { error: "Payment not completed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Step 3: Validate session metadata matches the course
     // The metadata was set when creating the checkout session
     const { userId, courseId: sessionCourseId } = session.metadata || {};
-    
+
     if (!userId || !sessionCourseId) {
       return NextResponse.json(
         { error: "Invalid session metadata" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -80,7 +80,7 @@ export async function POST(
     if (sessionCourseId !== courseId) {
       return NextResponse.json(
         { error: "Session does not match course" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -91,10 +91,7 @@ export async function POST(
     });
 
     if (!user || user.id !== userId) {
-      return NextResponse.json(
-        { error: "User mismatch" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "User mismatch" }, { status: 403 });
     }
 
     // Step 5: Check for existing enrollment to prevent duplicates
@@ -111,9 +108,9 @@ export async function POST(
     if (existingEnrollment) {
       // Already enrolled - return success (idempotent operation)
       // This is safe because the user has already paid and been enrolled
-      return NextResponse.json({ 
-        success: true, 
-        message: "Already enrolled" 
+      return NextResponse.json({
+        success: true,
+        message: "Already enrolled",
       });
     }
 
@@ -130,16 +127,15 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Enrollment created successfully" 
+    return NextResponse.json({
+      success: true,
+      message: "Enrollment created successfully",
     });
   } catch (error) {
     console.error("Error verifying payment:", error);
     return NextResponse.json(
       { error: "Failed to verify payment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

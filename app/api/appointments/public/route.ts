@@ -33,7 +33,7 @@ export async function GET() {
     console.error("Error fetching public appointments:", error);
     return NextResponse.json(
       { error: "Failed to fetch public appointments" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

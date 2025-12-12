@@ -258,7 +258,10 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-700 font-medium"> Courses Settings</p>
-                  <p className="text-sm text-gray-600"> Management of courses, modules, and enrollments</p>
+                  <p className="text-sm text-gray-600">
+                    {" "}
+                    Management of courses, modules, and enrollments
+                  </p>
                 </div>
                 <Link href="/admin/courses" passHref>
                   <StyledButton className="flex items-center">
@@ -270,8 +273,14 @@ export default function Settings() {
             <div className="space-y-4" style={{ marginTop: "32px" }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-700 font-medium"> Removed Enrollments</p>
-                  <p className="text-sm text-gray-600"> View history of removed course enrollments</p>
+                  <p className="text-gray-700 font-medium">
+                    {" "}
+                    Removed Enrollments
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {" "}
+                    View history of removed course enrollments
+                  </p>
                 </div>
                 <Link href="/admin/removed-enrollments" passHref>
                   <StyledButton className="flex items-center">

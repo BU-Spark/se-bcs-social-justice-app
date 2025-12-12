@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "User not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     if (!appointmentTypeId || !date) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // Log useful information to diagnose issues
     console.log(
-      `Creating appointment with recurrence: ${shouldCreateRecurring}`
+      `Creating appointment with recurrence: ${shouldCreateRecurring}`,
     );
     console.log(`Recurrence pattern: ${recurrencePattern}`);
     console.log(`Recurrence data:`, recurrenceData);
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (!appointmentType) {
       return NextResponse.json(
         { error: "Invalid appointment type" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     try {
       const meetingTopic = `${appointmentType.title} with ${user.name || "Host"}`;
       const durationMinutes = Math.round(
-        (endTime.getTime() - startTime.getTime()) / (60 * 1000)
+        (endTime.getTime() - startTime.getTime()) / (60 * 1000),
       );
 
       const meetingDetails: ZoomMeetingDetails = {
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       if (isRecurring && recurrencePattern && recurrenceData) {
         meetingDetails.recurrence = formatRecurrenceData(
           recurrencePattern,
-          recurrenceData as RecurrenceData
+          recurrenceData as RecurrenceData,
         );
       }
 
@@ -192,13 +192,13 @@ export async function POST(request: NextRequest) {
           ? "Recurring appointment created successfully"
           : "Appointment created successfully",
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error creating appointment:", error);
     return NextResponse.json(
       { error: "Failed to create appointment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -210,7 +210,7 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "User not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching appointments:", error);
     return NextResponse.json(
       { error: "Failed to fetch appointments" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

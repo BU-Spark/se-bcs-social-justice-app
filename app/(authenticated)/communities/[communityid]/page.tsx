@@ -18,7 +18,6 @@ const StyledContainer = styled.div<{ isExpanded: boolean }>`
   transition: margin-left 0.3s ease-in-out;
 `;
 
-
 const StyledMainContent = styled.div`
   flex: 1;
   padding: 16px;
@@ -78,7 +77,6 @@ const StyledRightColumn = styled.div`
   overflow-y: auto;
 `;
 
-
 const StyledInfoPanel = styled.div`
   background: white;
   border: 1px solid #e0e0e0;
@@ -119,7 +117,7 @@ const WritePostButton = styled.button`
 
 const CommunityInfoPanel: React.FC<{
   community: Community;
-  permissions: CommunityPermissions; 
+  permissions: CommunityPermissions;
   onWritePostClick: () => void;
 }> = ({ community, permissions, onWritePostClick }) => (
   <StyledInfoPanel>
@@ -130,7 +128,6 @@ const CommunityInfoPanel: React.FC<{
     )}
   </StyledInfoPanel>
 );
-
 
 const StyledPostDetailPanel = styled.div`
   background: white;
@@ -173,7 +170,7 @@ const BackButton = styled.button`
   border: none;
   cursor: pointer;
   margin-bottom: 16px;
-  
+
   &:hover {
     color: #000;
   }
@@ -212,13 +209,14 @@ const PostDetailPanel: React.FC<{
 
 const CommunityPage = ({ params }: { params: { communityid: string } }) => {
   const [community, setCommunity] = useState<Community | null>(null);
-  const [permissions, setPermissions] = useState<CommunityPermissions | null>(null);
-  
+  const [permissions, setPermissions] = useState<CommunityPermissions | null>(
+    null,
+  );
+
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [postListKey, setPostListKey] = useState(Date.now());
   const { isExpanded } = useSidebar();
-  
 
   useEffect(() => {
     const fetchData = async () => {

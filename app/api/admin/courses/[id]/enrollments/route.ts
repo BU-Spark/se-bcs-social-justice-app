@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await currentUser();
@@ -26,7 +26,7 @@ export async function DELETE(
     if (!userId) {
       return NextResponse.json(
         { error: "User ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -51,7 +51,7 @@ export async function DELETE(
     if (!enrollment) {
       return NextResponse.json(
         { error: "Enrollment not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -82,20 +82,20 @@ export async function DELETE(
     });
 
     return NextResponse.json(
-      { 
+      {
         message: "User removed from course successfully",
         removedEnrollment: {
           userId,
           courseId,
-        }
+        },
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error removing enrollment:", error);
     return NextResponse.json(
       { error: "Failed to remove user from course" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

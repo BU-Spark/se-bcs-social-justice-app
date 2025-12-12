@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     if (!fileName || !contentType) {
       return NextResponse.json(
         { error: "Missing fileName or contentType" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     console.error("Signed URL Error:", err);
     return NextResponse.json(
       { error: "Failed to generate signed URL" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

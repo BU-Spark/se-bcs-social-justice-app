@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const appointmentType = await prisma.appointmentType.findUnique({
@@ -15,7 +15,7 @@ export async function GET(
     if (!appointmentType) {
       return NextResponse.json(
         { error: "Appointment type not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -24,7 +24,7 @@ export async function GET(
     console.error("Error fetching appointment type:", error);
     return NextResponse.json(
       { error: "Failed to fetch appointment type" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

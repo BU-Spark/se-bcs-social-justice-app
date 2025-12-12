@@ -98,7 +98,7 @@ const ClearSearchButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   padding: 4px 8px;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -489,25 +489,25 @@ export default function AdminCoursesPage() {
   // ------------------------------------------------------------------------------
   // STATE MANAGEMENT
   // ------------------------------------------------------------------------------
-  
+
   // Admin verification state (null = checking, true = admin, false = not admin)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  
+
   // Courses data array fetched from API
   const [courses, setCourses] = useState<Course[]>([]);
-  
+
   // Search query input for filtering courses
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Loading state while fetching courses
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Success/error message state for user feedback
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
-  
+
   // Delete confirmation modal state
   const [deleteModal, setDeleteModal] = useState<{
     show: boolean; // Whether modal is visible
@@ -522,7 +522,7 @@ export default function AdminCoursesPage() {
   // ------------------------------------------------------------------------------
   // EFFECT HOOKS
   // ------------------------------------------------------------------------------
-  
+
   /**
    * Check if current user is an admin
    * Runs once on component mount to verify admin permissions
@@ -550,7 +550,7 @@ export default function AdminCoursesPage() {
   // ------------------------------------------------------------------------------
   // DATA FETCHING FUNCTIONS
   // ------------------------------------------------------------------------------
-  
+
   /**
    * Fetch all courses from the API
    * Retrieves courses with modules and enrollment information
@@ -586,7 +586,7 @@ export default function AdminCoursesPage() {
   // ------------------------------------------------------------------------------
   // SEARCH & FILTERING
   // ------------------------------------------------------------------------------
-  
+
   /**
    * Filter courses based on search query
    * Searches across: course name, description, enrolled user names/emails
@@ -594,29 +594,29 @@ export default function AdminCoursesPage() {
    */
   const filteredCourses = courses.filter((course) => {
     if (!searchQuery.trim()) return true;
-    
+
     const query = searchQuery.toLowerCase();
-    
+
     // Search by course name
     if (course.name.toLowerCase().includes(query)) return true;
-    
+
     // Search by course description
     if (course.description?.toLowerCase().includes(query)) return true;
-    
+
     // Search by enrolled user name or email
     const hasMatchingUser = course.enrollments.some(
       (enrollment) =>
         enrollment.user.name?.toLowerCase().includes(query) ||
-        enrollment.user.email.toLowerCase().includes(query)
+        enrollment.user.email.toLowerCase().includes(query),
     );
-    
+
     return hasMatchingUser;
   });
 
   // ------------------------------------------------------------------------------
   // ACTION HANDLERS
   // ------------------------------------------------------------------------------
-  
+
   /**
    * Handle course deletion
    * Shows confirmation modal before deleting
@@ -636,7 +636,10 @@ export default function AdminCoursesPage() {
         fetchCourses();
       } else {
         const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Failed to delete course" });
+        setMessage({
+          type: "error",
+          text: data.error || "Failed to delete course",
+        });
       }
     } catch (error) {
       console.error("Error deleting course:", error);
@@ -663,7 +666,10 @@ export default function AdminCoursesPage() {
         fetchCourses();
       } else {
         const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Failed to remove user" });
+        setMessage({
+          type: "error",
+          text: data.error || "Failed to remove user",
+        });
       }
     } catch (error) {
       console.error("Error removing enrollment:", error);
@@ -674,7 +680,7 @@ export default function AdminCoursesPage() {
   // ------------------------------------------------------------------------------
   // RENDER GUARDS - Show loading/error states before main content
   // ------------------------------------------------------------------------------
-  
+
   // Show loading spinner while checking admin status or fetching courses
   if (isAdmin === null || isLoading) {
     return (
@@ -696,7 +702,7 @@ export default function AdminCoursesPage() {
   // ------------------------------------------------------------------------------
   // MAIN RENDER - Course management dashboard
   // ------------------------------------------------------------------------------
-  
+
   return (
     <StyledMainContent isExpanded={isExpanded}>
       <StyledContainer>
@@ -709,12 +715,15 @@ export default function AdminCoursesPage() {
             </StyledSubtitle>
           </HeaderContent>
           {/* Button to navigate to add-new-course page */}
-          <Button variant="primary" onClick={() => router.push("/admin/add-new-course")}>
+          <Button
+            variant="primary"
+            onClick={() => router.push("/admin/add-new-course")}
+          >
             <AddIcon fontSize="small" />
             Add New Course
           </Button>
         </StyledHeader>
-        
+
         {/* SEARCH SECTION - Filter courses by name, description, or users */}
         <SearchContainer>
           <SearchInput
@@ -727,7 +736,9 @@ export default function AdminCoursesPage() {
           {searchQuery && (
             <SearchInfo>
               <span>
-                Found {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
+                Found {filteredCourses.length} course
+                {filteredCourses.length !== 1 ? "s" : ""} matching &quot;
+                {searchQuery}&quot;
               </span>
               <ClearSearchButton onClick={() => setSearchQuery("")}>
                 Clear search
@@ -735,7 +746,7 @@ export default function AdminCoursesPage() {
             </SearchInfo>
           )}
         </SearchContainer>
-        
+
         {/* SUCCESS/ERROR MESSAGE DISPLAY */}
         {message && <Alert type={message.type}>{message.text}</Alert>}
 
@@ -782,7 +793,9 @@ export default function AdminCoursesPage() {
                   <CourseInfo>
                     <CourseTitle>{course.name}</CourseTitle>
                     {course.description && (
-                      <CourseDescription>{course.description}</CourseDescription>
+                      <CourseDescription>
+                        {course.description}
+                      </CourseDescription>
                     )}
                     {/* Course metadata: price, type, module count, enrollments */}
                     <CourseMeta>
@@ -790,7 +803,8 @@ export default function AdminCoursesPage() {
                         <strong>Price:</strong> ${course.price}
                       </MetaItem>
                       <MetaItem>
-                        <strong>Type:</strong> {course.isStandalone ? "Standalone" : "Bundle"}
+                        <strong>Type:</strong>{" "}
+                        {course.isStandalone ? "Standalone" : "Bundle"}
                       </MetaItem>
                       <MetaItem>
                         <strong>Modules:</strong> {course.modules.length}
@@ -806,7 +820,9 @@ export default function AdminCoursesPage() {
                     {/* Edit button - navigates to add-new-course page with course ID */}
                     <IconButton
                       variant="primary"
-                      onClick={() => router.push(`/admin/add-new-course?id=${course.id}`)}
+                      onClick={() =>
+                        router.push(`/admin/add-new-course?id=${course.id}`)
+                      }
                     >
                       Edit
                     </IconButton>
@@ -834,16 +850,22 @@ export default function AdminCoursesPage() {
                     // Display modules sorted by module number
                     <ModulesList>
                       {course.modules
-                        .sort((a, b) => (a.moduleNumber || 0) - (b.moduleNumber || 0))
+                        .sort(
+                          (a, b) =>
+                            (a.moduleNumber || 0) - (b.moduleNumber || 0),
+                        )
                         .map((module) => (
                           <ModuleItem key={module.id}>
-                            <strong>Module {module.moduleNumber}:</strong> {module.title}
+                            <strong>Module {module.moduleNumber}:</strong>{" "}
+                            {module.title}
                           </ModuleItem>
                         ))}
                     </ModulesList>
                   ) : (
                     // Show empty state if no modules
-                    <EmptyState style={{ padding: "20px" }}>No modules</EmptyState>
+                    <EmptyState style={{ padding: "20px" }}>
+                      No modules
+                    </EmptyState>
                   )}
                 </ModulesSection>
 
@@ -858,12 +880,16 @@ export default function AdminCoursesPage() {
                       {course.enrollments.map((enrollment) => (
                         <EnrollmentItem key={enrollment.userId}>
                           <UserInfo>
-                            {enrollment.user.name || "Unknown User"} ({enrollment.user.email})
+                            {enrollment.user.name || "Unknown User"} (
+                            {enrollment.user.email})
                           </UserInfo>
                           {/* Remove button to unenroll user */}
                           <SmallButton
                             onClick={() =>
-                              handleRemoveEnrollment(course.id, enrollment.userId)
+                              handleRemoveEnrollment(
+                                course.id,
+                                enrollment.userId,
+                              )
                             }
                           >
                             Remove
@@ -873,7 +899,9 @@ export default function AdminCoursesPage() {
                     </EnrollmentsList>
                   ) : (
                     // Show empty state if no enrollments
-                    <EmptyState style={{ padding: "20px" }}>No enrollments</EmptyState>
+                    <EmptyState style={{ padding: "20px" }}>
+                      No enrollments
+                    </EmptyState>
                   )}
                 </EnrollmentsSection>
               </CourseCard>
@@ -882,17 +910,30 @@ export default function AdminCoursesPage() {
         )}
 
         {/* DELETE CONFIRMATION MODAL */}
-        <Modal show={deleteModal.show} onClick={() => setDeleteModal({ show: false, courseId: null, courseName: "" })}>
+        <Modal
+          show={deleteModal.show}
+          onClick={() =>
+            setDeleteModal({ show: false, courseId: null, courseName: "" })
+          }
+        >
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalTitle>Delete Course</ModalTitle>
             <ModalText>
-              Are you sure you want to delete &quot;{deleteModal.courseName}&quot;? This action cannot be undone and will remove all associated modules and enrollments.
+              Are you sure you want to delete &quot;{deleteModal.courseName}
+              &quot;? This action cannot be undone and will remove all
+              associated modules and enrollments.
             </ModalText>
             {/* Modal action buttons */}
             <ModalButtons>
               <Button
                 variant="secondary"
-                onClick={() => setDeleteModal({ show: false, courseId: null, courseName: "" })}
+                onClick={() =>
+                  setDeleteModal({
+                    show: false,
+                    courseId: null,
+                    courseName: "",
+                  })
+                }
               >
                 Cancel
               </Button>

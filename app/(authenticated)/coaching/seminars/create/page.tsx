@@ -123,7 +123,7 @@ export default function CreateSeminarPage() {
 
     // Get uploadUrl + publicUrl from backend
     const res = await fetch(
-      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`
+      `/api/upload?fileName=${encodeURIComponent(fileName)}&contentType=${file.type}`,
     );
 
     const { uploadUrl, publicUrl } = await res.json();
