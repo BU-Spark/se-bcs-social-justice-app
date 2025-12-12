@@ -54,6 +54,11 @@ Most projects will require the use of other technologies. Below are a few guides
 
 This is a Next.js-based social justice application which is an all in one platform that facilitates community building, coaching sessions, and discussions around social justice topics. The application is built using modern web technologies and follows best practices for scalability and maintainability.
 
+## Errors and notices
+- The current CI workflow does not go around the unused variable checks, which will skip the rest of the CI workflows.
+- Tried to add new rule to the CI to show unused variables as warnings instead of erros, did not work.
+- The entire platform is slow, and needs 2-3 seconds to render a new pages/view.
+
 ## Technology Stack
 
 - **Frontend Framework**: Next.js 15.2.4
