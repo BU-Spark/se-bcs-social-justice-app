@@ -16,10 +16,6 @@ interface PostReviewModalProps {
   onClose: () => void;
 }
 
-function escapeRegExp(string: string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function highlightBannedWords(text: string | null, bannedWords: string[]) {
   if (!text) return text;
 

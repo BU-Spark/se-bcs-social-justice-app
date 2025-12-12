@@ -5,7 +5,6 @@ import CloudinaryImageWidget from "./CloudinaryImageWidget";
 
 const StyledFormContainer = styled.div`
   padding: 16px;
-  // border: 1px solid black;
   border-radius: 8px;
   background-color: white;
   margin: 24px 0px;
@@ -38,15 +37,6 @@ const StyledTextarea = styled.textarea`
   width: 100%;
   margin-bottom: 8px;
   resize: vertical;
-  border: 1px solid gray;
-  border-radius: 4px;
-`;
-
-const StyledSelect = styled.select`
-  padding: 8px;
-  font-size: 16px;
-  width: 100%;
-  margin-bottom: 8px;
   border: 1px solid gray;
   border-radius: 4px;
 `;
