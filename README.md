@@ -117,20 +117,31 @@ This is a Next.js-based social justice application which is an all in one platfo
     NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
     NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/?from=signup
     DATABASE_URL="prisma+postgres://..."
+
     # ZOOM SECRET KEYS
     ZOOM_ACCOUNT_ID="..."
     ZOOM_CLIENT_ID="..."
     ZOOM_CLIENT_SECRET="..."
+
     # CLOUDINARY SECRET KEYS
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..."
     NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="..."
-    # STRIPE SECRET KEYS
+
+    #STRIPE SECRET KEYS
     STRIPE_SECRET_KEY="sk_test_..." # or sk_live_... for production
     STRIPE_WEBHOOK_SECRET="whsec_..." # Webhook signing secret from Stripe Dashboard
+
     EMAIL_USER=...
     EMAIL_PASSWORD=...
     SMTP_HOST=...
     SMTP_PORT=...
+
+    #AWS  S3
+    AWS_ACCESS_KEY_ID=...
+    AWS_SECRET_ACCESS_KEY=...
+    AWS_REGION=us-east-2
+    S3_BUCKET_NAME=...
+    S3_PUBLIC_URL=...
    ```
 
 ### Database Setup
