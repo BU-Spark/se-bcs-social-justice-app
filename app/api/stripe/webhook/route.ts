@@ -47,52 +47,86 @@ export async function POST(req: NextRequest) {
   // Handle the checkout.session.completed event
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    const metadata = session.metadata || {};
+
+    if (session.payment_status !== "paid") {
+      console.warn(
+        "Ignoring checkout.session.completed with non-paid status:",
+        session.id,
+        session.payment_status,
+      );
+      return NextResponse.json({ received: true, ignored: true });
+    }
 
     try {
-      const { userId, courseId } = session.metadata || {};
+      const { userId, courseId, seminarId, userEmail, userName } = metadata;
 
-      if (!userId || !courseId) {
-        console.error("Missing metadata in session:", session.id);
-        return NextResponse.json(
-          { error: "Missing required metadata" },
-          { status: 400 },
-        );
-      }
-
-      // Check if enrollment already exists (prevent duplicates)
-      const existingEnrollment = await prisma.userCourse.findUnique({
-        where: {
-          userId_courseId: {
-            userId: userId,
-            courseId: courseId,
+      // Course purchase
+      if (userId && courseId) {
+        const existingEnrollment = await prisma.userCourse.findUnique({
+          where: {
+            userId_courseId: {
+              userId: userId,
+              courseId: courseId,
+            },
           },
-        },
-      });
+        });
 
-      if (existingEnrollment) {
-        console.log(
-          "Enrollment already exists for user:",
-          userId,
-          "course:",
-          courseId,
-        );
-        return NextResponse.json({ received: true });
+        if (existingEnrollment) {
+          console.log(
+            "Enrollment already exists for user:",
+            userId,
+            "course:",
+            courseId,
+          );
+        } else {
+          await prisma.userCourse.create({
+            data: {
+              userId: userId,
+              courseId: courseId,
+              completionStatus: "not_started",
+            },
+          });
+
+          console.log("Course enrollment created successfully:", {
+            userId,
+            courseId,
+          });
+        }
       }
 
-      // Create enrollment without trial expiration (permanent purchase)
-      await prisma.userCourse.create({
-        data: {
-          userId: userId,
-          courseId: courseId,
-          completionStatus: "not_started",
-          // Don't set trialExpiresAt - this indicates a permanent purchase
-        },
-      });
+      // Seminar purchase
+      if (seminarId && userEmail) {
+        const existingAttendee = await prisma.seminarAttendee.findUnique({
+          where: {
+            seminarId_email: {
+              seminarId,
+              email: userEmail,
+            },
+          },
+        });
 
-      console.log("Course enrollment created successfully:", {
-        userId,
-        courseId,
-      });
+        if (existingAttendee) {
+          console.log(
+            "Seminar attendee already exists:",
+            seminarId,
+            userEmail,
+          );
+        } else {
+          await prisma.seminarAttendee.create({
+            data: {
+              seminarId,
+              email: userEmail,
+              name: userName || null,
+            },
+          });
+
+          console.log("Seminar attendee recorded via webhook:", {
+            seminarId,
+            userEmail,
+          });
+        }
+      }
     } catch (error) {
       console.error("Error processing webhook:", error);
       return NextResponse.json(

@@ -169,6 +169,28 @@ This is a Next.js-based social justice application which is an all in one platfo
 1. User the admin email/ testing email for sending emails from the platform to users.
 2. view the .env structure.
 
+### Stripe Webhook 
+•	Prereqs: Stripe CLI installed and logged in (stripe login), Next.js dev server running at http://localhost:3000.
+1. Set env vars (view the .env)
+ ```bash
+  STRIPE_SECRET_KEY=sk_test_...
+  STRIPE_WEBHOOK_SECRET=whsec_...
+ ```
+2. run the app 
+3. Start the listener
+ ```bash
+   stripe listen --forward-to http://localhost:3000/api/stripe/webhook
+ ```
+- You should see “Ready! … Your webhook signing secret is whsec_…”.
+- Copy that value into STRIPE_WEBHOOK_SECRET if it changes.
+  Trigger test events(New terminal & Optional)
+ ```bash
+  stripe trigger checkout.session.completed
+ ```
+4. Confirm: In the Stripe CLI output, responses should be 200
+5. Debug: Check your terminal for handler logs and Stripe dashboard → Developers → Webhooks for delivery history.
+
+
 ### Create and run a migration (Optional)
 
 ```bash
