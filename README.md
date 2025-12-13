@@ -130,7 +130,8 @@ This is a Next.js-based social justice application which is an all in one platfo
     NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="..."
 
     #STRIPE SECRET KEYS
-    STRIPE_SECRET_KEY="sk_test_..." # or sk_live_... for production
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
+    STRIPE_SECRET_KEY="..." #for production
     STRIPE_WEBHOOK_SECRET="whsec_..." # Webhook signing secret from Stripe Dashboard
 
     EMAIL_USER=...
@@ -170,7 +171,7 @@ This is a Next.js-based social justice application which is an all in one platfo
 2. view the .env structure.
 
 ### Stripe Webhook 
-•	Prereqs: Stripe CLI installed and logged in (stripe login), Next.js dev server running at http://localhost:3000.
+Prereqs: Stripe CLI installed and logged in (stripe login), Next.js dev server running at http://localhost:3000.
 1. Set env vars (view the .env)
  ```bash
   STRIPE_SECRET_KEY=sk_test_...
