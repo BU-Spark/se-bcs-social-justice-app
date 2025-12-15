@@ -79,7 +79,6 @@ This is a Next.js-based social justice application which is an all in one platfo
   - Husky (for pre-commit hooks)
 - **Payment**
   - Stripe
-    - Current confirmation is based off redirection, need to link to a webhook, there is code for webhook.
 
 ## Project Setup and Installation
 
