@@ -91,7 +91,7 @@ const CloudinaryUploadWidget: React.FC<CloudinaryUploadWidgetProps> = ({
           } else if (error) {
             console.error("Cloudinary upload error:", error);
           }
-        }
+        },
       );
     }
   }, [onUpload, fileType]);

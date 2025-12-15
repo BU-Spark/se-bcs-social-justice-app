@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     if (!postId) {
       return NextResponse.json(
         { error: "postId query parameter is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     console.error("Error determining vote:", error);
     return NextResponse.json(
       { error: "Failed to determine vote" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

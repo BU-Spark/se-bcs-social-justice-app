@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
+import { currentUser } from "@clerk/nextjs/server";
+import { CommunityMemberStatus } from "@prisma/client";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function GET() {
     const joinedCommunities = await prisma.community.findMany({
       where: {
         members: {
-          some: { userId: localUser.id },
+          some: { userId: localUser.id, status: CommunityMemberStatus.active },
         },
       },
       select: {
@@ -35,6 +36,20 @@ export async function GET() {
         description: true,
         imageUrl: true,
         type: true,
+        _count: {
+          select: { members: true },
+        },
+        members: {
+          take: 3,
+          include: {
+            user: {
+              select: {
+                username: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -52,18 +67,21 @@ export async function GET() {
         description: true,
         imageUrl: true,
         type: true,
+        _count: {
+          select: { members: true },
+        },
       },
     });
 
     return NextResponse.json(
       { joinedCommunities, recommendedCommunities },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching communities:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -82,7 +100,7 @@ export async function POST(request: Request) {
     if (!localUser) {
       return NextResponse.json(
         { error: "User not found in the database" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -96,7 +114,7 @@ export async function POST(request: Request) {
     if (existingCommunity) {
       return NextResponse.json(
         { error: "A community with this name already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -124,7 +142,7 @@ export async function POST(request: Request) {
     console.error("Error creating community:", error);
     return NextResponse.json(
       { error: "Failed to create community" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

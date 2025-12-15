@@ -33,7 +33,7 @@ export async function getZoomToken(retryCount = 0): Promise<string> {
             "Content-Type": "application/x-www-form-urlencoded",
             Authorization: `Basic ${auth}`,
           },
-        }
+        },
       );
 
       return response.data.access_token;
@@ -65,7 +65,7 @@ export async function getZoomToken(retryCount = 0): Promise<string> {
         (error.response.status === 401 || error.response.status === 429)
       ) {
         console.log(
-          `Retrying Zoom token generation (${retryCount + 1}/${maxRetries})...`
+          `Retrying Zoom token generation (${retryCount + 1}/${maxRetries})...`,
         );
         // Exponential backoff
         const delay = 1000 * Math.pow(2, retryCount);
@@ -130,12 +130,22 @@ export async function createZoomMeeting(meetingDetails: ZoomMeetingDetails) {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
+    console.log("Zoom meeting API response:", response.data);
+
+    // Handle success or partial error
+    if (!response.data?.join_url) {
+      console.warn("⚠️ Zoom API did not return a join_url:", response.data);
+      return { join_url: "Zoom meeting unavailable" };
+    }
 
     return response.data;
-  } catch (error) {
-    console.error("Error creating Zoom meeting:", error);
+  } catch (error: any) {
+    console.error(
+      "Error creating Zoom meeting:",
+      error.response?.data || error.message,
+    );
     throw new Error("Failed to create Zoom meeting");
   }
 }
@@ -147,7 +157,7 @@ export async function createZoomMeeting(meetingDetails: ZoomMeetingDetails) {
  */
 export function formatRecurrenceData(
   pattern: string,
-  recurrenceData: ZoomRecurrenceData
+  recurrenceData: ZoomRecurrenceData,
 ) {
   // Default to recurring with fixed time (type 3)
   const zoomRecurrence: {

@@ -49,32 +49,49 @@ Most projects will require the use of other technologies. Below are a few guides
 - [Clerk Setup w/ Next.js](https://clerk.com/docs/quickstarts/nextjs) - Clerk will be the default user authentication software for all new Spark! projects. Please reach out to Omar for creating and retrieving API keys for your project. Do NOT use firebase/auth even if your project uses Firestore.
 - #### Component Libraries
   - All new projects will be required to use a [design system](https://www.figma.com/blog/design-systems-101-what-is-a-design-system/) You will receive designs from your DS488 design team which will utilize a design kit. Use the corresponding component library to implement those designs on the front end of your project.
- 
+
 ## Project Overview
+
 This is a Next.js-based social justice application which is an all in one platform that facilitates community building, coaching sessions, and discussions around social justice topics. The application is built using modern web technologies and follows best practices for scalability and maintainability.
 
+## Errors and notices
+- The current CI workflow does not go around the unused variable checks, which will skip the rest of the CI workflows.
+- Tried to add new rule to the CI to show unused variables as warnings instead of erros, did not work.
+- The entire platform is slow, and needs 2-3 seconds to render a new pages/view.
+- The communities admin tool has UX flow issues. When adding new words to banned words list, it doesn't go over existing posts to flag them, only for newly submitted posts. When deleting existing words from banned words list, existing flagged posts doesn't update.
+- The community creation form and post creation form has upload sections that use cloudinary, it isn't updated to use amazon s3.
+- Some of the community logic uses old logic via checkAdmin() to see proper permissions, but newer code in permissions.ts is used to see if users have proper permissions for posting and communities. This needs updating.
 ## Technology Stack
+
 - **Frontend Framework**: Next.js 15.2.4
-- **UI Libraries**: 
+- **UI Libraries**:
   - Material-UI (MUI) v7
   - Headless UI
   - Tailwind CSS
 - **Authentication**: Clerk
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**:
+  - PostgreSQL with Prisma ORM
+  - AWS S3 for media files
 - **Development Tools**:
   - TypeScript
   - ESLint
   - Prettier
   - Husky (for pre-commit hooks)
+- **Payment**
+  - Stripe
 
 ## Project Setup and Installation
 
 ### Prerequisites
+
 - Node.js (Latest LTS version)
 - PostgreSQL database
 - Clerk account for authentication
+- Stripe for payment
+- AWS S3 database
 
 ### Environment Setup
+
 1. Clone the repository
    ```bash
    git clone git@github.com:BU-Spark/se-bcs-social-justice-app.git
@@ -87,11 +104,12 @@ This is a Next.js-based social justice application which is an all in one platfo
    ```bash
    git checkout dev
    ```
-2. Install dependencies:
+4. Install dependencies:
    ```bash
    npm install
    ```
-3. Set up environment variables in `.env`:
+5. Set up environment variables in `.env`:
+
    ```
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="..."
     CLERK_SECRET_KEY="..."
@@ -100,17 +118,36 @@ This is a Next.js-based social justice application which is an all in one platfo
     NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
     NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/?from=signup
     DATABASE_URL="prisma+postgres://..."
+
     # ZOOM SECRET KEYS
     ZOOM_ACCOUNT_ID="..."
     ZOOM_CLIENT_ID="..."
     ZOOM_CLIENT_SECRET="..."
+
     # CLOUDINARY SECRET KEYS
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..."
     NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="..."
-   
+
+    #STRIPE SECRET KEYS
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
+    STRIPE_SECRET_KEY="..." #for production
+    STRIPE_WEBHOOK_SECRET="whsec_..." # Webhook signing secret from Stripe Dashboard
+
+    EMAIL_USER=...
+    EMAIL_PASSWORD=...
+    SMTP_HOST=...
+    SMTP_PORT=...
+
+    #AWS S3
+    AWS_ACCESS_KEY_ID=...
+    AWS_SECRET_ACCESS_KEY=...
+    S3_BUCKET_NAME=...
+    AWS_REGION=...
+    S3_PUBLIC_URL=...
    ```
 
 ### Database Setup
+
 1. Initialize the database:
    ```bash
    npx prisma migrate dev
@@ -121,7 +158,48 @@ This is a Next.js-based social justice application which is an all in one platfo
    npx tsx ./db/seed
    ```
 
+### AWS S3
+
+1. No initialization needed
+2. Need to check if the access to the AWS S3 is open for both upload and retrival, contact TPM
+3. Future implementation: need webhook for payment confirmation, currently flawed.
+
+### Emails
+
+1. User the admin email/ testing email for sending emails from the platform to users.
+2. view the .env structure.
+
+### Stripe Webhook 
+Prereqs: Stripe CLI installed and logged in (stripe login), Next.js dev server running at http://localhost:3000.
+1. Set env vars (view the .env)
+ ```bash
+  STRIPE_SECRET_KEY=sk_test_...
+  STRIPE_WEBHOOK_SECRET=whsec_...
+ ```
+2. run the app 
+3. Start the listener
+ ```bash
+   stripe listen --forward-to http://localhost:3000/api/stripe/webhook
+ ```
+- You should see “Ready! … Your webhook signing secret is whsec_…”.
+- Copy that value into STRIPE_WEBHOOK_SECRET if it changes.
+  Trigger test events(New terminal & Optional)
+ ```bash
+  stripe trigger checkout.session.completed
+ ```
+4. Confirm: In the Stripe CLI output, responses should be 200
+5. Debug: Check your terminal for handler logs and Stripe dashboard → Developers → Webhooks for delivery history.
+
+
+### Create and run a migration (Optional)
+
+```bash
+npx prisma migrate dev --name <name of the migration>
+npx prisma generate
+```
+
 ### Running the Application
+
 - Development mode (Frontend):
   ```bash
   npm run dev

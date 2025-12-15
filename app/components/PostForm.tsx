@@ -1,86 +1,84 @@
 "use client";
 
-import React, { useState } from "react";
 import styled from "@emotion/styled";
+import React, { useState } from "react";
 import CloudinaryUploadWidget from "./CloudinaryUploadWidget";
 
 const StyledPostFormContainer = styled.div`
-  padding: 16px;
-  border: 1px solid black;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  background-color: silver;
-  margin-bottom: 24px;
+  background-color: white;
 `;
-
 const StyledFormField = styled.div`
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 `;
-
 const StyledLabel = styled.label`
   display: block;
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: charcoal;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
 `;
-
 const StyledInput = styled.input`
-  padding: 8px;
-  font-size: 16px;
+  padding: 10px 12px;
+  font-size: 15px;
   width: 100%;
-  margin-bottom: 8px;
-  border: 1px solid gray;
-  border-radius: 4px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
 `;
-
 const StyledTextarea = styled.textarea`
-  padding: 8px;
-  font-size: 16px;
+  padding: 10px 12px;
+  font-size: 15px;
   width: 100%;
-  margin-bottom: 8px;
   resize: vertical;
-  border: 1px solid gray;
-  border-radius: 4px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  min-height: 120px;
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
 `;
-
 const StyledUploadSection = styled.div`
   margin-bottom: 16px;
 `;
-
 const StyledButtonContainer = styled.div`
   display: flex;
   gap: 12px;
   margin-top: 16px;
 `;
-
 const StyledButton = styled.button`
   padding: 12px 20px;
-  background-color: blue;
+  font-size: 15px;
+  font-weight: 600;
+  background-color: #2563eb;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  margin-right: 8px;
   &:hover {
-    background-color: red;
+    background-color: #1d4ed8;
   }
-
   &:disabled {
-    background-color: lightblue;
+    background-color: #9ca3af;
     cursor: not-allowed;
   }
+  &.cancel {
+    background-color: #f1f5f9;
+    color: #333;
+    &:hover {
+      background-color: #e2e8f0;
+    }
+  }
 `;
-
 const StyledErrorMessage = styled.p`
-  color: red;
+  color: #dc2626;
   font-size: 14px;
   margin-top: 4px;
-`;
-
-const StyledAttachmentNote = styled.p`
-  font-size: 14px;
-  color: gray;
-  margin-top: 4px;
-  font-style: italic;
 `;
 
 interface PostFormProps {
@@ -105,13 +103,8 @@ const PostForm: React.FC<PostFormProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!title.trim()) {
-      setError("Please enter a title for your post");
-      return;
-    }
-
-    if (!content.trim()) {
-      setError("Please enter content for your post");
+    if (!title.trim() || !content.trim()) {
+      setError("Title and content are required");
       return;
     }
 
@@ -162,7 +155,6 @@ const PostForm: React.FC<PostFormProps> = ({
             required
           />
         </StyledFormField>
-
         <StyledFormField>
           <StyledLabel htmlFor="content">Content</StyledLabel>
           <StyledTextarea
@@ -183,9 +175,6 @@ const PostForm: React.FC<PostFormProps> = ({
             currentUrl={imageUrl}
             label="Upload Image"
           />
-          <StyledAttachmentNote>
-            Attach an image: JPG, PNG, GIF (max 5MB)
-          </StyledAttachmentNote>
         </StyledUploadSection>
 
         <StyledUploadSection>
@@ -196,9 +185,6 @@ const PostForm: React.FC<PostFormProps> = ({
             currentUrl={pdfUrl}
             label="Upload PDF"
           />
-          <StyledAttachmentNote>
-            Attach a PDF: (max 10MB) available for download
-          </StyledAttachmentNote>
         </StyledUploadSection>
 
         {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
@@ -207,9 +193,8 @@ const PostForm: React.FC<PostFormProps> = ({
           <StyledButton type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Posting..." : "Post"}
           </StyledButton>
-
           {onCancel && (
-            <StyledButton type="button" onClick={onCancel}>
+            <StyledButton type="button" className="cancel" onClick={onCancel}>
               Cancel
             </StyledButton>
           )}

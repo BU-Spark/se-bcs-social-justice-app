@@ -1,12 +1,106 @@
-import { AppointmentAccessType, PrismaClient } from "@prisma/client";
-
+import {
+  AppointmentAccessType,
+  CommunityMemberStatus,
+  CommunityType,
+  PrismaClient,
+} from "@prisma/client";
+import { communities } from "../db/mock-data.ts";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Delete existing appointment types
-  await prisma.appointmentType.deleteMany();
+  console.log("Start seeding...");
 
-  // Create sample appointment types
+  // 1. Clean up existing data to avoid conflicts
+  // Delete in an order that respects foreign key constraints
+  // console.log("Deleting old data...");
+  await prisma.tierCourseAccess.deleteMany();
+  await prisma.userMembership.deleteMany();
+  await prisma.coursePrerequisite.deleteMany();
+  await prisma.userCourse.deleteMany();
+  await prisma.module.deleteMany();
+  await prisma.course.deleteMany();
+  await prisma.membershipTier.deleteMany();
+  await prisma.appointmentType.deleteMany();
+  await prisma.interest.deleteMany();
+
+  // --- Post Dependencies ---
+  await prisma.vote.deleteMany();
+  await prisma.comment.deleteMany();
+
+  // --- Appointment Dependencies ---
+  await prisma.appointmentAttendee.deleteMany();
+
+  // --- Community/Interest Dependencies ---
+  await prisma.userInterest.deleteMany();
+  await prisma.communityInterest.deleteMany();
+
+  // --- Course/Tier Dependencies ---
+  await prisma.tierCourseAccess.deleteMany();
+  await prisma.removedEnrollment.deleteMany();
+  await prisma.coursePrerequisite.deleteMany();
+  await prisma.userCourse.deleteMany();
+  await prisma.module.deleteMany();
+
+  // --- User/Membership Dependencies ---
+  await prisma.userMembership.deleteMany();
+
+  // --- delete "child" tables ---
+  await prisma.posting.deleteMany();
+  await prisma.appointment.deleteMany();
+  await prisma.communityMembers.deleteMany();
+  await prisma.communityLeader.deleteMany();
+  await prisma.leaderApplication.deleteMany();
+
+  // --- delete "parent" tables ---
+  await prisma.course.deleteMany();
+  await prisma.membershipTier.deleteMany();
+  await prisma.appointmentType.deleteMany();
+  await prisma.interest.deleteMany();
+  await prisma.community.deleteMany();
+  // --- delete users last ---
+  await prisma.user.deleteMany();
+
+  console.log("Old data deleted successfully.");
+  // 2. Create interests
+  console.log("Creating interests...");
+  const interests = [
+    "Community",
+    "Chat",
+    "Coaching",
+    "Events",
+    "Courses",
+    "Social Justice",
+    "Environmental Justice",
+    "Racial Justice",
+    "Identity",
+    "Culture",
+    "Diversity",
+    "Respect",
+    "Gender",
+    "Addinity Groups",
+    "Transformational Soul Coaching",
+    "Research",
+    "Social Justice Hub",
+    "Partnerships",
+    "Healthcare Justice",
+    "Structural Inequality",
+    "Academica",
+    "K-12 Education",
+    "Corporate",
+    "Nonprofit Organizations",
+    "Grassriits Organizations",
+  ];
+
+  for (const interestName of interests) {
+    await prisma.interest.create({
+      data: { name: interestName },
+    });
+  }
+
+  console.log("Sample interests have been created");
+
+  // 3. Create appointment types
+  console.log("Creating appointment types...");
   const appointmentTypes = [
     {
       title: "One-on-One Consultation",
@@ -60,6 +154,343 @@ async function main() {
   }
 
   console.log("Sample appointment types have been created");
+
+  //2. Creating testing users
+  console.log("Creating users...");
+  const user1 = await prisma.user.create({
+    data: {
+      id: "user1",
+      clerkUserId: "clerk_seed_user_1",
+      email: "host@example.com",
+      name: "Sample Host",
+      username: "samplehost",
+      role: "leader",
+      onboardingComplete: true,
+    },
+  });
+
+  const user3 = await prisma.user.create({
+    data: {
+      id: "user3",
+      clerkUserId: "clerk_seed_user_3",
+      email: "host3@example.com",
+      name: "Sample Host3",
+      username: "samplehost3",
+      role: "leader",
+      onboardingComplete: true,
+    },
+  });
+
+  const user2 = await prisma.user.create({
+    data: {
+      id: "user2",
+      clerkUserId: "clerk_seed_user_2",
+      email: "bob@example.com",
+      name: "Bob",
+      username: "bob",
+      role: "member",
+      onboardingComplete: true,
+    },
+  });
+
+  console.log("Sample users have been created");
+
+  //3. Creating Communities
+  console.log("Creating Global Announcement Community");
+
+  const announcementsCommunity = await prisma.community.upsert({
+    where: { name: "Announcements" },
+    update: {
+      type: CommunityType.ANNOUNCEMENT,
+    },
+    create: {
+      name: "Announcements",
+      description: "Official announcements from Dr.Chad Starks.",
+      accessType: CommunityType.ANNOUNCEMENT,
+    },
+  });
+
+  console.log("Successfully Created Global Announcement Community");
+
+  const allUsers = await prisma.user.findMany({
+    select: { id: true },
+  });
+
+  const existingMembers = await prisma.communityMembers.findMany({
+    where: { communityId: announcementsCommunity.id },
+    select: { userId: true },
+  });
+
+  const existingMemberIds = new Set(existingMembers.map((m) => m.userId));
+
+  // Filter out users who are already members
+  const newMembersData = allUsers
+    .filter((user) => !existingMemberIds.has(user.id))
+    .map((user) => {
+      return {
+        userId: user.id,
+        communityId: announcementsCommunity.id,
+        status: CommunityMemberStatus.active,
+        role: "MEMBER",
+      };
+    });
+
+  if (newMembersData.length > 0) {
+    await prisma.communityMembers.createMany({
+      data: newMembersData,
+    });
+    console.log(
+      `Added ${newMembersData.length} existing users to 'Announcements'.`,
+    );
+  } else {
+    console.log("All existing users are already in 'Announcements'.");
+  }
+
+  console.log("Creating General Discussion community...");
+  const community = await prisma.community.create({
+    data: {
+      id: "seed_comm_1",
+      name: "General Discussion",
+      type: "Social",
+      description: "A place to talk about anything and everything.",
+    },
+  });
+
+  console.log("Communities has been created");
+
+  console.log("Adding new users to community...");
+  await prisma.communityMembers.createMany({
+    data: [
+      {
+        userId: user3.id,
+        communityId: community.id,
+        status: CommunityMemberStatus.active,
+      },
+      {
+        userId: user2.id,
+        communityId: community.id,
+        status: CommunityMemberStatus.active,
+      },
+    ],
+  });
+
+  console.log("Successfully added members to the community.");
+
+  // Create a post in that community by Alice
+  console.log("Adding post to community...");
+  const post = await prisma.posting.create({
+    data: {
+      id: "seed_post_1",
+      title: "Hello world!",
+      content: "This is the first post in the general discussion community.",
+      communityId: "seed_comm_1",
+      userId: "user3",
+    },
+  });
+
+  console.log(`Created post: "${post.title}" by ${user3.name}`);
+
+  //create reply on post
+  console.log("Adding reply to post...");
+  const comment = await prisma.comment.create({
+    data: {
+      id: "seed_comment_1",
+      content: "Great to be here! Nice post, Alice.",
+      postId: post.id,
+      userId: "user2",
+    },
+  });
+
+  console.log("Adding reply to post");
+
+  // 4. Create Membership Tiers
+  console.log("Creating membership tiers...");
+  const starterTier = await prisma.membershipTier.create({
+    data: {
+      tierName: "The Starter Messenger",
+      monthlyPrice: 0,
+      annualPrice: 0,
+      description:
+        "Public-facing email list and private, entry-level community forum access.",
+    },
+  });
+
+  const actionTier = await prisma.membershipTier.create({
+    data: {
+      tierName: "The Action Messenger",
+      monthlyPrice: 19,
+      annualPrice: 197,
+      description:
+        "Includes private forum, monthly Q&A, and exclusive monthly resources.",
+    },
+  });
+
+  const multiplierTier = await prisma.membershipTier.create({
+    data: {
+      tierName: "The Multiplier Messenger",
+      monthlyPrice: 97,
+      annualPrice: 1067,
+      description:
+        "All Tier 2 benefits plus bi-weekly masterclasses, hot seat coaching, and the first core pillar course.",
+    },
+  });
+
+  // 5. Create Courses and Modules
+  console.log("Creating courses and modules...");
+  const entryCourse = await prisma.course.create({
+    data: {
+      name: "Courageous Hearts Companion: The 7-Day Messenger Launch",
+      price: 57.0,
+      isStandalone: true,
+      modules: {
+        create: [
+          { title: "The 7-Minute Journal: Beyond the Prompt." },
+          { title: "BTM Pillar Preview: Finding Your Core Courage." },
+          {
+            title:
+              "Practical Practice: How to Have a Hard Conversation This Week.",
+          },
+          { title: "Your First Messenger Move." },
+        ],
+      },
+    },
+  });
+
+  const course1 = await prisma.course.create({
+    data: {
+      name: "Mastering Identity: From Survival to the Self-Conscious Messenger",
+      price: 297.0,
+      isStandalone: true,
+      description:
+        "Healing core wounds and deconstructing limiting beliefs to claim authentic personal power.",
+      modules: {
+        create: [
+          {
+            title:
+              "The Criminology of Self: How Systems Shape Your Self-Worth.",
+          },
+          { title: "Healing Internal Injustice." },
+          { title: "Boundary Setting as a Radical Act of Self-Respect." },
+        ],
+      },
+    },
+  });
+
+  const course2 = await prisma.course.create({
+    data: {
+      name: "Decoding Culture: Systems, Power, and the Path to Equity",
+      price: 297.0,
+      isStandalone: true,
+      description:
+        "Moving from internal work to analyzing and influencing external environments.",
+      modules: {
+        create: [
+          {
+            title:
+              "Organizational Culture Audit: Spotting the Micro-Injustices.",
+          },
+          { title: "The Restorative Lens: Shifting from Blame to Repair." },
+          {
+            title:
+              "Systems Thinking for the Soul: Moving Beyond Individual Guilt.",
+          },
+        ],
+      },
+    },
+  });
+
+  const course3 = await prisma.course.create({
+    data: {
+      name: "The Diversity & Difference Dividend: Harnessing Intersectionality for Impact",
+      price: 297.0,
+      isStandalone: true,
+      description:
+        "Practical, high-level training on embracing difference and moving past fear.",
+      modules: {
+        create: [
+          { title: "The Empathy Gap: Bridging the Divide." },
+          { title: "Intent vs. Impact: A Communication Toolkit." },
+          { title: "Navigating Conflict as an Opportunity for Growth." },
+        ],
+      },
+    },
+  });
+
+  const course4 = await prisma.course.create({
+    data: {
+      name: "Respect & Reciprocity: The Ethics of Advocacy and Leadership",
+      price: 297.0,
+      isStandalone: true,
+      description:
+        "Practical communication and implementation for advocacy and leadership.",
+      modules: {
+        create: [
+          {
+            title:
+              "The Respect Toolkit: Non-Violent Communication (NVC) for Advocates.",
+          },
+          { title: "Leading with Integrity: Accountability and Forgiveness." },
+          {
+            title:
+              "Preventing Burnout: Sustainable Boundaries for the Messenger.",
+          },
+        ],
+      },
+    },
+  });
+
+  const cohortCourse = await prisma.course.create({
+    data: {
+      name: "52-Week Annual Cohort",
+      price: 997.0,
+      isStandalone: false,
+      description: "52 Structured Group Sessions per year focused on the book.",
+    },
+  });
+
+  const certCourse = await prisma.course.create({
+    data: {
+      name: "Be The Messenger Certified Practitioner (BTMC)",
+      price: 4997.0,
+      isStandalone: false,
+      description: "Certification & Professional Development program.",
+    },
+  });
+
+  // 6. Set up Relationships
+  console.log("Setting up relationships...");
+  console.log("Creating sample communities...");
+  for (const c of communities) {
+    await prisma.community.create({
+      data: {
+        name: c.name,
+        description: c.description,
+        imageUrl: c.imageUrl,
+        type: c.type,
+      },
+    });
+  }
+  console.log("✅ Communities created successfully");
+
+  // The Multiplier Messenger tier includes the 'Mastering Identity' course
+  await prisma.tierCourseAccess.create({
+    data: {
+      tierId: multiplierTier.id,
+      courseId: course1.id,
+    },
+  });
+
+  // The BTMC certification requires all 4 core pillar courses
+  await prisma.coursePrerequisite.createMany({
+    data: [
+      { courseId: certCourse.id, requiredCourseId: course1.id },
+      { courseId: certCourse.id, requiredCourseId: course2.id },
+      { courseId: certCourse.id, requiredCourseId: course3.id },
+      { courseId: certCourse.id, requiredCourseId: course4.id },
+    ],
+  });
+
+  console.log("Seeding finished.");
 }
 
 main()

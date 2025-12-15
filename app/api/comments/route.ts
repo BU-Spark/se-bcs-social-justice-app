@@ -1,5 +1,7 @@
+import { can } from "@/lib/permissions";
+import prisma from "@/lib/prisma";
+import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
@@ -8,7 +10,7 @@ export async function GET(request: Request) {
     if (!postId) {
       return NextResponse.json(
         { error: "postId query parameter is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -23,12 +25,10 @@ export async function GET(request: Request) {
     console.error("Error fetching comments:", error);
     return NextResponse.json(
       { error: "Failed to fetch comments" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
-import { currentUser } from "@clerk/nextjs/server";
 
 export async function POST(request: Request) {
   try {
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     if (!postId || !content) {
       return NextResponse.json(
         { error: "postId and content are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,6 +50,28 @@ export async function POST(request: Request) {
     });
     if (!userRecord) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const post = await prisma.posting.findUnique({
+      where: { id: postId },
+      select: { communityId: true },
+    });
+
+    if (!post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    const hasPermission = await can(
+      userRecord.id,
+      post.communityId,
+      "canComment",
+    );
+
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "You do not have permission to comment in this community." },
+        { status: 403 },
+      );
     }
 
     const comment = await prisma.comment.create({
@@ -66,7 +88,7 @@ export async function POST(request: Request) {
     console.error("Error adding comment:", error);
     return NextResponse.json(
       { error: "Failed to add comment" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

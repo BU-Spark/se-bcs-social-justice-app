@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if (existingApp) {
       return NextResponse.json(
         { error: "Leader application already submitted." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,13 +68,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { message: "Leader application submitted successfully.", leaderApp },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error submitting leader application:", error);
     return NextResponse.json(
       { error: "Failed to submit leader application." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -118,7 +118,7 @@ export async function GET(request: Request) {
     console.error("Error fetching applications:", error);
     return NextResponse.json(
       { error: "Error fetching applications" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
